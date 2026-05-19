@@ -1,0 +1,508 @@
+import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
+import { type Product, type Category } from '@/hooks/db-hooks';
+import { useState, useRef, useMemo, useCallback } from 'react';
+import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X, ImageIcon, ZoomIn, ScanBarcode, Loader2, Tag, Layers, QrCode } from 'lucide-react';
+import BarcodeScanner from '@/admin/components/BarcodeScanner';
+import PhotoCropModal from '@/admin/components/PhotoCropModal';
+import ProductVariantEditor from '@/admin/components/ProductVariantEditor';
+import { ProductVariantGroup } from '@/hooks/db-hooks';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { createPortal } from 'react-dom';
+
+export default function Produk() {
+  const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  // Form state
+  const [name, setName] = useState('');
+  const [sku, setSku] = useState('');
+  const [categoryId, setCategoryId] = useState<string>('');
+  const [price, setPrice] = useState('');
+  const [hpp, setHpp] = useState('');
+  const [stock, setStock] = useState('');
+  const [unit, setUnit] = useState('pcs');
+  const [barcode, setBarcode] = useState('');
+  const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+  const [variants, setVariants] = useState<ProductVariantGroup[]>([]);
+
+  // Refs
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const products = useDbQuery<Product>('products');
+  const categories = useDbQuery<Category>('categories');
+
+  const filtered = useMemo(() => {
+    return products?.filter(p => {
+      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
+      const matchCategory = filterCategory === 'all' || p.categoryId === Number(filterCategory);
+      return matchSearch && matchCategory;
+    }) ?? [];
+  }, [products, search, filterCategory]);
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    categories?.forEach(c => map.set(c.id!, c));
+    return map;
+  }, [categories]);
+
+  const getCategoryName = useCallback((catId: number) => categoryMap.get(catId)?.name ?? '-', [categoryMap]);
+  const getCategoryColor = useCallback((catId: number) => categoryMap.get(catId)?.color ?? '#999', [categoryMap]);
+
+  const openAdd = () => {
+    setEditProduct(null);
+    setName(''); setSku(''); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode(''); setPhoto(undefined); setVariants([]);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (p: Product) => {
+    setEditProduct(p);
+    setName(p.name); setSku(p.sku); setCategoryId(p.categoryId.toString()); setPrice(p.price.toString()); setHpp(p.hpp.toString()); setStock(p.stock.toString()); setUnit(p.unit); setBarcode(p.barcode ?? ''); setPhoto(p.photo); setVariants(p.variants || []);
+    setDialogOpen(true);
+  };
+
+  const handlePhotoFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('File harus berupa gambar');
+      return;
+    }
+    setCropFile(file);
+  };
+
+  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handlePhotoFile(file);
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+  };
+
+  const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handlePhotoFile(file);
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
+  const handleSave = async () => {
+    if (!name.trim() || !categoryId) return;
+
+    setIsSaving(true);
+    try {
+      let finalPhotoUrl = photo;
+      if (photo && photo.startsWith('data:image')) {
+        const fileName = `product-${Date.now()}.jpg`;
+        const url = await dbUploadFile('products', fileName, photo);
+        if (url) finalPhotoUrl = url;
+      }
+
+      const data: any = {
+        name: name.trim(),
+        categoryId: Number(categoryId),
+        price: Number(price) || 0,
+        hpp: Number(hpp) || 0,
+        stock: Number(stock) || 0,
+        unit: unit.trim() || 'pcs',
+        variants,
+        barcode: barcode.trim() || undefined,
+        photo: finalPhotoUrl || undefined,
+        updatedAt: new Date(),
+      };
+
+      if (sku.trim()) {
+        data.sku = sku.trim();
+      }
+
+      if (editProduct?.id) {
+        await dbUpdate('products', editProduct.id, data);
+        toast.success('Produk berhasil diperbarui');
+      } else {
+        await dbInsert('products', { ...data, createdAt: new Date() } as Product);
+        toast.success('Produk berhasil ditambahkan');
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menyimpan produk');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteId) {
+      await dbDelete('products', deleteId);
+      toast.success('Produk berhasil dihapus');
+      setDeleteId(null);
+    }
+  };
+
+  return (
+    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+      
+      {/* Action Header */}
+      <div className="flex justify-end">
+        <Button onClick={openAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
+          <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
+          Tambah Produk
+        </Button>
+      </div>
+
+      {/* Search & Filter Bar */}
+      <div className="bg-card border border-border/50 p-3 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input
+            placeholder="Cari nama produk atau SKU..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-10 h-11 bg-background border-border/60 rounded-xl shadow-sm focus-visible:ring-1"
+          />
+        </div>
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="w-full sm:w-[180px] h-11 bg-background border-border/60 rounded-xl font-semibold shadow-sm">
+            <SelectValue placeholder="Semua Kategori" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
+            <SelectItem value="all" className="font-medium">Semua Kategori</SelectItem>
+            {categories?.map(c => (
+              <SelectItem key={c.id} value={c.id!.toString()} className="font-medium">
+                <span className="flex items-center gap-2">
+                  <span className="text-base">{c.icon}</span> {c.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Stats Counter */}
+      <div className="flex items-center gap-2">
+        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors">
+          {filtered.length} Produk Ditemukan
+        </Badge>
+      </div>
+
+      {/* Product Grid / List */}
+      {filtered.length === 0 ? (
+        <div className="bg-card border border-dashed border-border/60 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center opacity-80">
+          <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+            <PackageIcon className="w-10 h-10 text-muted-foreground" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-lg font-bold text-foreground mb-1">Produk Tidak Ditemukan</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">Belum ada produk yang ditambahkan atau cocok dengan pencarian Anda.</p>
+          <Button variant="outline" className="mt-6 rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-bold" onClick={openAdd}>
+            <Plus className="w-4 h-4 mr-2" /> Tambah Produk Baru
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map(p => (
+            <Card key={p.id} className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden flex flex-col bg-card">
+              <CardContent className="p-4 flex flex-col h-full">
+                
+                {/* Upper Section: Image & Basic Info */}
+                <div className="flex gap-4">
+                  <div
+                    className={cn(
+                      'w-20 h-20 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden relative border border-border/50',
+                      p.photo && 'cursor-pointer hover:opacity-90 transition-opacity group/img'
+                    )}
+                    onClick={() => p.photo && setLightboxSrc(p.photo)}
+                  >
+                    {p.photo ? (
+                      <>
+                        <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                          <ZoomIn className="w-5 h-5 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <PackageIcon className="w-8 h-8 text-muted-foreground/30" strokeWidth={1.5} />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0 pt-1">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className="text-sm font-extrabold text-foreground truncate">{p.name}</h3>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-bold tracking-wide uppercase px-2 py-0 border-border/60 bg-muted/30" style={{ color: getCategoryColor(p.categoryId) }}>
+                      {getCategoryName(p.categoryId)}
+                    </Badge>
+                    <p className="text-[11px] text-muted-foreground font-mono mt-1.5 flex items-center gap-1">
+                      <Tag className="w-3 h-3" /> {p.sku || 'No SKU'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Middle Section: Prices */}
+                <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Harga Jual</p>
+                    <p className="text-base font-black text-primary">Rp {p.price.toLocaleString('id-ID')}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">HPP</p>
+                    <p className="text-sm font-semibold text-foreground">Rp {p.hpp.toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+
+                {/* Bottom Section: Stock & Actions */}
+                <div className="mt-auto pt-4 flex items-center justify-between">
+                  <div className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition-colors',
+                    p.stock <= 5 ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-success/10 border-success/20 text-success'
+                  )}>
+                    <Layers className="w-3.5 h-3.5" />
+                    Stok: {p.stock} {p.unit}
+                  </div>
+                  
+                  <div className="flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-background border-border/60 hover:bg-primary/10 hover:text-primary hover:border-primary/30" onClick={() => openEdit(p)}>
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-background border-border/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={() => setDeleteId(p.id!)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Modal Add/Edit Product */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl rounded-[2rem] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 border-border/60 shadow-2xl">
+          <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10 shrink-0">
+            <DialogTitle className="text-xl font-extrabold flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
+                {editProduct ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" strokeWidth={3} />}
+              </div>
+              {editProduct ? 'Edit Informasi Produk' : 'Tambah Produk Baru'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 custom-scrollbar">
+            
+            {/* Photo Dropzone Section */}
+            <div className="bg-card border border-border/60 rounded-2xl p-4 flex flex-col sm:flex-row gap-5 items-center sm:items-start shadow-sm">
+              <div
+                className={cn(
+                  'w-32 h-32 rounded-xl flex items-center justify-center shrink-0 overflow-hidden relative border-2 border-dashed transition-all',
+                  photo 
+                    ? 'border-primary/40 bg-muted/20 cursor-pointer group hover:opacity-90' 
+                    : 'border-border bg-muted/10 hover:border-primary/50 hover:bg-primary/5'
+                )}
+                onClick={() => photo ? setLightboxSrc(photo) : galleryInputRef.current?.click()}
+              >
+                {photo ? (
+                  <>
+                    <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                      <ZoomIn className="w-6 h-6 text-white" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
+                    <Camera className="w-8 h-8" strokeWidth={1.5} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Foto Produk</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex flex-col justify-center w-full space-y-2">
+                <p className="text-sm font-semibold text-foreground">Unggah Foto (Opsional)</p>
+                <p className="text-xs text-muted-foreground mb-2 leading-relaxed">Pilih foto dengan pencahayaan terang agar menu terlihat lebih menarik. Format JPG/PNG.</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" size="sm" className="h-9 rounded-lg text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20" onClick={() => galleryInputRef.current?.click()}>
+                    <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Galeri
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-9 rounded-lg text-xs font-bold border-border/60 hover:bg-muted" onClick={() => cameraInputRef.current?.click()}>
+                    <Camera className="w-3.5 h-3.5 mr-1.5" /> Kamera
+                  </Button>
+                  {photo && (
+                    <Button type="button" variant="ghost" size="sm" className="h-9 rounded-lg text-xs font-bold text-destructive hover:bg-destructive/10" onClick={() => setPhoto(undefined)}>
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Hidden Inputs */}
+              <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleGallerySelect} />
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraCapture} />
+            </div>
+
+            {/* Basic Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nama Produk <span className="text-destructive">*</span></Label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Misal: Kopi Gula Aren" className="h-11 bg-background rounded-xl focus-visible:ring-1" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Kategori <span className="text-destructive">*</span></Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="h-11 bg-background rounded-xl font-medium focus:ring-1"><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {categories?.map(c => (
+                      <SelectItem key={c.id} value={c.id!.toString()} className="font-medium">{c.icon} {c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Pricing Grid */}
+            <div className="grid grid-cols-2 gap-5">
+              <div className="space-y-2 relative group">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Harga Jual <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground group-focus-within:text-primary transition-colors">Rp</span>
+                  <Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0" className="h-11 pl-10 bg-background rounded-xl font-mono text-base focus-visible:ring-1" />
+                </div>
+              </div>
+              <div className="space-y-2 relative group">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">HPP (Modal)</Label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground group-focus-within:text-foreground transition-colors">Rp</span>
+                  <Input type="number" value={hpp} onChange={e => setHpp(e.target.value)} placeholder="0" className="h-11 pl-10 bg-background rounded-xl font-mono text-base focus-visible:ring-1" />
+                </div>
+              </div>
+            </div>
+
+            {/* Inventory Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Stok Awal</Label>
+                <Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder="0" className="h-11 bg-background rounded-xl font-mono text-base focus-visible:ring-1" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Satuan</Label>
+                <Select value={unit} onValueChange={setUnit}>
+                  <SelectTrigger className="h-11 bg-background rounded-xl font-medium focus:ring-1"><SelectValue /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {['pcs', 'kg', 'gram', 'liter', 'ml', 'porsi', 'cup', 'botol', 'bungkus'].map(u => (
+                      <SelectItem key={u} value={u} className="font-medium">{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 col-span-2 sm:col-span-1">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Barcode (SKU)</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input value={barcode} onChange={e => setBarcode(e.target.value)} placeholder="Opsional" className="h-11 pl-9 bg-background rounded-xl text-sm focus-visible:ring-1" />
+                  </div>
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl bg-muted/30 hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors" title="Scan Barcode" onClick={() => setScannerOpen(true)}>
+                    <ScanBarcode className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Variant Editor Component */}
+            <div className="pt-2">
+              <ProductVariantEditor variants={variants} onChange={setVariants} />
+            </div>
+
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-border/50 bg-muted/10 shrink-0 gap-2 sm:gap-0">
+            <Button variant="outline" className="h-12 rounded-xl font-bold border-border/60 hover:bg-muted" onClick={() => setDialogOpen(false)} disabled={isSaving}>
+              Batal
+            </Button>
+            <Button className="h-12 rounded-xl font-bold shadow-md hover:shadow-lg active:scale-[0.98] transition-all px-8" onClick={handleSave} disabled={!name.trim() || !categoryId || isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" /> 
+                  {photo && photo.startsWith('data:image') ? 'Mengunggah...' : 'Menyimpan...'}
+                </>
+              ) : (
+                editProduct ? 'Simpan Perubahan' : 'Tambah Produk'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent className="max-w-[400px] rounded-2xl p-6">
+          <AlertDialogHeader>
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2 mx-auto">
+              <Trash2 className="w-6 h-6 text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-center text-xl">Hapus Produk Ini?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Tindakan ini tidak dapat dibatalkan. Produk akan dihapus dari sistem secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="flex-1 rounded-xl h-11 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-md shadow-destructive/20">
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Photo Lightbox */}
+      {lightboxSrc && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in duration-200" onClick={() => setLightboxSrc(null)}>
+          <button className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors backdrop-blur-md border border-white/10" onClick={() => setLightboxSrc(null)}>
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()} />
+        </div>,
+        document.body
+      )}
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={(code) => {
+          setBarcode(code);
+          setScannerOpen(false);
+          toast.success('Barcode berhasil dipindai');
+        }}
+      />
+
+      {/* Photo Cropper Modal */}
+      <PhotoCropModal
+        open={!!cropFile}
+        onOpenChange={(open) => { if (!open) setCropFile(null); }}
+        file={cropFile}
+        onCropped={(croppedDataUrl) => {
+          setPhoto(croppedDataUrl);
+          setCropFile(null);
+        }}
+      />
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.3); border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156, 163, 175, 0.5); }
+      `}} />
+    </div>
+  );
+}

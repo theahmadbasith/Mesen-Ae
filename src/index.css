@@ -1,0 +1,246 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 12%;
+
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 20% 94%;
+    --secondary-foreground: 215 25% 20%;
+
+    --muted: 215 15% 94%;
+    --muted-foreground: 215 10% 46%;
+
+    --accent: 172 66% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 215 20% 90%;
+    --input: 215 20% 90%;
+    --ring: 25 95% 53%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 215 28% 8%;
+    --foreground: 210 20% 95%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 172 66% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
+    --ring: 25 95% 53%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+
+  html,
+  body {
+    overflow-y: auto;
+    height: 100%;
+  }
+
+  /* PWA safe area */
+  html {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+@layer utilities {
+  /* Customer-scoped theme overrides: make existing blue-* utilities follow --primary */
+  .customer-theme {
+    /* text */
+  }
+
+  .customer-theme .text-blue-600 { color: hsl(var(--primary)) !important; }
+  .customer-theme .text-blue-700 { color: hsl(var(--primary)) !important; }
+  .customer-theme .text-blue-400 { color: hsl(var(--primary) / 0.85) !important; }
+
+  /* backgrounds */
+  .customer-theme .bg-blue-600 { background-color: hsl(var(--primary)) !important; }
+  .customer-theme .bg-blue-700 { background-color: hsl(var(--primary)) !important; }
+  .customer-theme .bg-blue-50 { background-color: hsl(var(--primary) / 0.08) !important; }
+  .customer-theme .bg-blue-100 { background-color: hsl(var(--primary) / 0.12) !important; }
+  .customer-theme .bg-blue-500\/10 { background-color: hsl(var(--primary) / 0.1) !important; }
+
+  /* borders and rings */
+  .customer-theme .border-blue-500 { border-color: hsl(var(--primary)) !important; }
+  .customer-theme .ring-blue-500\/20 { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.12) !important; }
+
+  /* shadows */
+  .customer-theme .shadow-blue-600\/20 { box-shadow: 0 8px 30px hsl(var(--primary) / 0.18) !important; }
+
+  /* hover helpers: use a slight brightness change to emulate darker hover */
+  .customer-theme .hover\:bg-blue-700:hover { filter: brightness(0.88) !important; }
+  .customer-theme .hover\:text-blue-600:hover { color: hsl(var(--primary)) !important; }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: var(--muted-foreground);
+  }
+
+  /* Safe area */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+
+  /* Zigzag edge for receipt */
+  .zigzag-bg {
+    background: linear-gradient(-45deg, #f3f4f6 8px, transparent 0), linear-gradient(45deg, #f3f4f6 8px, transparent 0);
+    background-position: left-bottom;
+    background-repeat: repeat-x;
+    background-size: 16px 16px;
+  }
+
+  .dark .zigzag-bg-dark {
+    background: linear-gradient(-45deg, #030712 8px, transparent 0), linear-gradient(45deg, #030712 8px, transparent 0);
+    background-position: left-bottom;
+    background-repeat: repeat-x;
+    background-size: 16px 16px;
+  }
+
+  /* Animations */
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  @keyframes bounce-slow {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s linear infinite;
+  }
+}
