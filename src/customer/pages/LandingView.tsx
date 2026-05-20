@@ -74,28 +74,16 @@ export default function LandingView({
 
   const storeName = storeSettings?.storeName || 'Toko Kami';
 
-  // Penawaran dinamis hasil konfigurasi di Tab 2 Admin
+  const banners = useDbQuery<any>('banners') || [];
+
+  // Penawaran dinamis hasil konfigurasi di Tab Banner Admin
   const activeBanners = React.useMemo(() => {
-    if (storeSettings?.promoBanners && Array.isArray(storeSettings.promoBanners)) {
-      return storeSettings.promoBanners.filter((b: any) => b.isActive);
-    }
-    return [];
-  }, [storeSettings?.promoBanners]);
+    return banners.filter((b: any) => b.isActive);
+  }, [banners]);
 
   const displayOffers = React.useMemo(() => {
-    if (activeBanners.length > 0) {
-      return activeBanners;
-    }
-    // Fallback ke voucher aktif jika belum ada banner kustom diatur
-    return activeVouchers.map((v) => ({
-      id: v.id,
-      type: 'voucher',
-      title: v.type === 'percentage' ? `Diskon Spesial ${v.value}%` : `Potongan Harga Spesial`,
-      description: v.description || v.desc || 'Nikmati penawaran spesial terbaik untuk pesanan menu favorit Anda hari ini!',
-      imageUrl: null,
-      isActive: true,
-    }));
-  }, [activeBanners, activeVouchers]);
+    return activeBanners;
+  }, [activeBanners]);
 
   const [activeDotIndex, setActiveDotIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);

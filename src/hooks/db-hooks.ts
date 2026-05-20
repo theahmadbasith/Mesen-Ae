@@ -18,8 +18,9 @@ export interface PaymentMethod { id?: number; name: string; category: string; is
 export interface Transaction { id?: number; subtotal: number; discountType: string | null; discountValue: number; discountAmount: number; total: number; paymentMethodId: number; paymentAmount: number; payments?: any[]; change: number; profit: number; date: Date; receiptNumber: string; status: string; kitchenStatus?: string; orderNumber?: string; customerName?: string; tableNumber?: string; remarks?: string; }
 export interface TransactionItemRecord { id?: number; transactionId: number; productId: number; productName: string; quantity: number; price: number; hpp: number; discountType: string | null; discountValue: number; discountAmount: number; subtotal: number; selectedVariants?: any[]; notes?: string; }
 export interface StoreSettings { id?: number; storeName: string; address: string; phone: string; receiptFooter: string; onboardingDone: boolean; themeColor?: string; logo?: string; tables?: string[]; promoBanners?: any[]; }
-export interface User { id?: number; username: string; password_hash: string; role: string; }
+export interface User { id?: number; username: string; password_hash: string; role: string; name?: string; whatsapp?: string; }
 export interface Voucher { id?: number; code: string; type: string; value: number; isActive: boolean; applicableProductIds?: number[]; validUntil: Date | null; }
+export interface Banner { id?: number; title: string; description?: string; imageUrl: string; isActive: boolean; link?: string; }
 
 // ── Table name mapping (camelCase → snake_case) ──────────────
 const TABLE_MAP: Record<string, string> = {
@@ -35,6 +36,7 @@ const TABLE_MAP: Record<string, string> = {
   storeSettings: 'store_settings',
   users: 'users',
   vouchers: 'vouchers',
+  banners: 'banners',
 };
 
 // ── Converters ────────────────────────────────────────────────

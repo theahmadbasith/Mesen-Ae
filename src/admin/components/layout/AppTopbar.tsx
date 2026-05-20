@@ -235,7 +235,10 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border/60" />
-            <DropdownMenuItem className="rounded-md py-2 cursor-pointer font-semibold text-xs text-muted-foreground hover:text-foreground gap-2">
+            <DropdownMenuItem 
+              onClick={() => navigate('/admin/settings')}
+              className="rounded-md py-2 cursor-pointer font-semibold text-xs text-muted-foreground hover:text-foreground gap-2"
+            >
               <User className="w-4 h-4" /> Profil Pengguna
             </DropdownMenuItem>
             <DropdownMenuItem 

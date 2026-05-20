@@ -236,12 +236,6 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
       
       {/* Footer Area */}
       <div className="p-4 border-t border-white/10 bg-white/3">
-        {!isCollapsed && (
-          <div className="flex items-center gap-2 px-2 pb-4">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
-            <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Sistem Online</span>
-          </div>
-        )}
         <button 
           onClick={() => {
             localStorage.removeItem('admin_auth');

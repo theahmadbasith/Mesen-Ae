@@ -1,5 +1,5 @@
-import { useDbQuery, dbInsert, dbUpdate, dbDelete } from '@/hooks/db-hooks';
-import { type PaymentMethod, type Category, type User, type StoreSettings } from '@/hooks/db-hooks';
+import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
+import { type PaymentMethod, type Category, type User, type StoreSettings, type Banner } from '@/hooks/db-hooks';
 import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Store, CreditCard, Tag, Plus, Trash2, Edit2,
@@ -8,7 +8,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight,
+  ChevronRight, Image as ImageIcon
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 import { setThemeColor } from '@/hooks/use-theme-color';
@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 /* ─────────────────────────────────────────────────────────────────────────────
    TAB CONFIG
 ───────────────────────────────────────────────────────────────────────────── */
-type Tab = 'toko' | 'pembayaran' | 'kategori' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
+type Tab = 'toko' | 'pembayaran' | 'kategori' | 'pengguna' | 'banner' | 'tampilan' | 'data' | 'tentang';
 
 interface TabItem { id: Tab; label: string; icon: React.ReactNode }
 
@@ -40,6 +40,7 @@ const TABS: TabItem[] = [
   { id: 'pembayaran', label: 'Pembayaran',   icon: <CreditCard className="w-4 h-4" /> },
   { id: 'kategori',  label: 'Kategori',     icon: <Tag className="w-4 h-4" /> },
   { id: 'pengguna',  label: 'Pengguna',     icon: <Users className="w-4 h-4" /> },
+  { id: 'banner',    label: 'Banner',       icon: <ImageIcon className="w-4 h-4" /> },
   { id: 'tampilan',  label: 'Tampilan',     icon: <Palette className="w-4 h-4" /> },
   { id: 'data',      label: 'Data & Backup', icon: <Database className="w-4 h-4" /> },
   { id: 'tentang',   label: 'Tentang',      icon: <Settings className="w-4 h-4" /> },
@@ -155,6 +156,7 @@ export default function Pengaturan() {
   const paymentMethods  = useDbQuery<PaymentMethod>('paymentMethods');
   const categories      = useDbQuery<Category>('categories');
   const users           = useDbQuery<User>('users');
+  const banners         = useDbQuery<Banner>('banners');
 
   /* ── Active Tab ── */
   const [activeTab, setActiveTab] = useState<Tab>('toko');
@@ -264,14 +266,16 @@ export default function Pengaturan() {
   /* ── Users ── */
   const [userDialog,    setUserDialog]    = useState(false);
   const [userUsername,  setUserUsername]  = useState('');
+  const [userName,      setUserName]      = useState('');
+  const [userWhatsapp,  setUserWhatsapp]  = useState('');
   const [userPassword,  setUserPassword]  = useState('');
   const [userRole,      setUserRole]      = useState<'admin' | 'user'>('user');
   const [userEditId,    setUserEditId]    = useState<number | null>(null);
   const [showPassword,  setShowPassword]  = useState(false);
   const [isSavingUser,  setIsSavingUser]  = useState(false);
 
-  const openUserAdd  = () => { setUserEditId(null); setUserUsername(''); setUserPassword(''); setUserRole('user'); setShowPassword(false); setUserDialog(true); };
-  const openUserEdit = (u: User) => { setUserEditId(u.id!); setUserUsername(u.username); setUserPassword(''); setUserRole(u.role as 'admin' | 'user'); setShowPassword(false); setUserDialog(true); };
+  const openUserAdd  = () => { setUserEditId(null); setUserUsername(''); setUserName(''); setUserWhatsapp(''); setUserPassword(''); setUserRole('user'); setShowPassword(false); setUserDialog(true); };
+  const openUserEdit = (u: User) => { setUserEditId(u.id!); setUserUsername(u.username); setUserName(u.name ?? ''); setUserWhatsapp(u.whatsapp ?? ''); setUserPassword(''); setUserRole(u.role as 'admin' | 'user'); setShowPassword(false); setUserDialog(true); };
   const saveUser = async () => {
     if (!userUsername.trim()) return;
     if (!userEditId && !userPassword) { toast.error('Password wajib diisi untuk pengguna baru'); return; }
@@ -280,16 +284,47 @@ export default function Pengaturan() {
       let password_hash = '';
       if (userPassword) password_hash = await bcrypt.hash(userPassword, 10);
       if (userEditId) {
-        const updates: Record<string, unknown> = { username: userUsername.trim(), role: userRole };
+        const updates: Record<string, unknown> = { username: userUsername.trim(), role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim() };
         if (password_hash) updates.password_hash = password_hash;
         await dbUpdate('users', userEditId, updates);
       } else {
-        await dbInsert('users', { username: userUsername.trim(), password_hash, role: userRole, createdAt: new Date() });
+        await dbInsert('users', { username: userUsername.trim(), password_hash, role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim(), createdAt: new Date() });
       }
       setUserDialog(false); toast.success('Pengguna disimpan');
     } finally { setIsSavingUser(false); }
   };
   const deleteUser = async (id: number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
+
+  /* ── Banner ── */
+  const [bannerDialog,    setBannerDialog]    = useState(false);
+  const [bannerEditId,    setBannerEditId]    = useState<number | null>(null);
+  const [bannerTitle,     setBannerTitle]     = useState('');
+  const [bannerDesc,      setBannerDesc]      = useState('');
+  const [bannerImage,     setBannerImage]     = useState<File | string | null>(null);
+  const [bannerIsActive,  setBannerIsActive]  = useState(true);
+  const [isSavingBanner,  setIsSavingBanner]  = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const openBannerAdd  = () => { setBannerEditId(null); setBannerTitle(''); setBannerDesc(''); setBannerImage(null); setBannerIsActive(true); setBannerDialog(true); };
+  const openBannerEdit = (b: Banner) => { setBannerEditId(b.id!); setBannerTitle(b.title); setBannerDesc(b.description || ''); setBannerImage(b.imageUrl); setBannerIsActive(b.isActive); setBannerDialog(true); };
+  const saveBanner = async () => {
+    if (!bannerTitle.trim() || !bannerImage) { toast.error('Judul dan gambar wajib diisi'); return; }
+    setIsSavingBanner(true);
+    try {
+      let imageUrl = typeof bannerImage === 'string' ? bannerImage : '';
+      if (bannerImage instanceof File) {
+        const uploaded = await dbUploadFile('mesenae', `banner-${Date.now()}`, bannerImage);
+        if (uploaded) imageUrl = uploaded;
+        else throw new Error('Upload gambar gagal');
+      }
+      const payload = { title: bannerTitle.trim(), description: bannerDesc.trim(), imageUrl, isActive: bannerIsActive };
+      if (bannerEditId) await dbUpdate('banners', bannerEditId, payload);
+      else await dbInsert('banners', payload);
+      setBannerDialog(false); toast.success('Banner disimpan');
+    } catch (err) { toast.error('Gagal menyimpan banner'); }
+    finally { setIsSavingBanner(false); }
+  };
+  const deleteBanner = async (id: number) => { await dbDelete('banners', id); toast.success('Banner dihapus'); };
 
   /* ── Storage ── */
   const [storageUsage, setStorageUsage] = useState<{ usage: number; quota: number } | null>(null);
@@ -573,11 +608,11 @@ export default function Pengaturan() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium truncate">{u.username}</span>
+                        <span className="text-sm font-medium truncate">{u.name || u.username}</span>
                         <RoleBadge role={u.role} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {u.role === 'admin' ? 'Akses penuh ke semua fitur' : 'Akses terbatas: dapur & pesanan'}
+                        {u.whatsapp ? `WA: ${u.whatsapp}` : (u.role === 'admin' ? 'Akses penuh ke semua fitur' : 'Akses terbatas: dapur & pesanan')}
                       </p>
                     </div>
                     <div className="flex gap-1 shrink-0">
@@ -585,6 +620,60 @@ export default function Pengaturan() {
                         <Edit2 className="w-3.5 h-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => deleteUser(u.id!)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </SettingCard>
+            )}
+          </Section>
+        )}
+
+        {/* ══════════════ BANNER ══════════════ */}
+        {activeTab === 'banner' && (
+          <Section
+            title="Kelola Banner Promo"
+            description="Atur gambar banner yang tampil di halaman pelanggan."
+            action={
+              <Button size="sm" onClick={openBannerAdd} className="h-8 gap-1.5 text-xs shadow-sm">
+                <Plus className="w-3.5 h-3.5" /> Tambah Banner
+              </Button>
+            }
+          >
+            {!banners?.length ? (
+              <SettingCard>
+                <div className="flex flex-col items-center py-10 text-center text-muted-foreground gap-2">
+                  <ImageIcon className="w-8 h-8 opacity-25" />
+                  <p className="text-sm">Belum ada banner diatur</p>
+                  <Button size="sm" variant="outline" className="mt-1 gap-1.5 text-xs h-8" onClick={openBannerAdd}>
+                    <Plus className="w-3.5 h-3.5" /> Tambah Banner Pertama
+                  </Button>
+                </div>
+              </SettingCard>
+            ) : (
+              <SettingCard>
+                {banners.map((b, i) => (
+                  <div key={b.id} className={cn('flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors', i < banners.length - 1 && 'border-b border-border/50')}>
+                    <div className="w-16 h-10 bg-muted rounded-md overflow-hidden shrink-0 border border-border/50">
+                      {b.imageUrl ? <img src={b.imageUrl} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-4 h-4 m-auto text-muted-foreground mt-3" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">{b.title}</span>
+                        {b.isActive ? (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Nonaktif</span>
+                        )}
+                      </div>
+                      {b.description && <p className="text-xs text-muted-foreground truncate">{b.description}</p>}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openBannerEdit(b)}>
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => deleteBanner(b.id!)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -925,8 +1014,17 @@ export default function Pengaturan() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />Username</Label>
+              <Label className="text-xs flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />Username Login</Label>
               <Input value={userUsername} onChange={e => setUserUsername(e.target.value)} placeholder="contoh: kasir1" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nama Lengkap</Label>
+              <Input value={userName} onChange={e => setUserName(e.target.value)} placeholder="contoh: Budi Santoso" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">No WhatsApp</Label>
+              <Input value={userWhatsapp} onChange={e => setUserWhatsapp(e.target.value)} placeholder="085..." />
             </div>
 
             <div className="space-y-1.5">
@@ -998,6 +1096,65 @@ export default function Pengaturan() {
 
             <Button className="w-full" onClick={saveUser} disabled={!userUsername.trim() || isSavingUser}>
               {isSavingUser ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Pengguna'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Banner Dialog ── */}
+      <Dialog open={bannerDialog} onOpenChange={setBannerDialog}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" /> {bannerEditId ? 'Edit' : 'Tambah'} Banner
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Gambar Banner</Label>
+              <div
+                onClick={() => bannerInputRef.current?.click()}
+                className={cn(
+                  "relative w-full aspect-[21/9] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors overflow-hidden group",
+                  bannerImage ? "border-primary bg-primary/5" : "border-border hover:border-primary hover:bg-primary/5"
+                )}
+              >
+                {bannerImage ? (
+                  <>
+                    <img src={typeof bannerImage === 'string' ? bannerImage : URL.createObjectURL(bannerImage)} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <Camera className="w-6 h-6" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <UploadCloud className="w-6 h-6" />
+                    <span className="text-xs font-medium">Klik untuk upload (21:9)</span>
+                  </div>
+                )}
+                <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={async e => {
+                  const file = e.target.files?.[0];
+                  if (file) setBannerImage(await compressImage(file));
+                }} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Judul Banner</Label>
+              <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="Contoh: Promo Lebaran" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Deskripsi (Opsional)</Label>
+              <Input value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} placeholder="Contoh: Diskon 50% untuk minuman" />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
+              <div>
+                <p className="text-xs font-semibold">Aktifkan Banner</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Banner akan ditampilkan di halaman depan</p>
+              </div>
+              <Switch checked={bannerIsActive} onCheckedChange={setBannerIsActive} />
+            </div>
+            <Button className="w-full" onClick={saveBanner} disabled={!bannerTitle.trim() || !bannerImage || isSavingBanner}>
+              {isSavingBanner ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Banner'}
             </Button>
           </div>
         </DialogContent>
