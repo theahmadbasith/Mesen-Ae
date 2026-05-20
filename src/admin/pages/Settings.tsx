@@ -11,6 +11,7 @@ import {
   ChevronRight, Image as ImageIcon
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
+import PromoBanner from '@/customer/components/PromoBanner';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -163,15 +164,8 @@ export default function Pengaturan() {
 
   /* ── Theme ── */
   const [themeHue, setThemeHue] = useState(storeSettings?.themeColor ?? '25');
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => { setThemeHue(storeSettings?.themeColor ?? '25'); }, [storeSettings?.themeColor]);
-
-  const toggleDarkMode = (enabled: boolean) => {
-    setIsDark(enabled);
-    document.documentElement.classList.toggle('dark', enabled);
-    localStorage.setItem('mesenae-theme', enabled ? 'dark' : 'light');
-  };
 
   /* ── Store ── */
   const [storeDialog, setStoreDialog]   = useState(false);
@@ -653,32 +647,26 @@ export default function Pengaturan() {
               </SettingCard>
             ) : (
               <SettingCard>
-                {banners.map((b, i) => (
-                  <div key={b.id} className={cn('flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors', i < banners.length - 1 && 'border-b border-border/50')}>
-                    <div className="w-16 h-10 bg-muted rounded-md overflow-hidden shrink-0 border border-border/50">
-                      {b.imageUrl ? <img src={b.imageUrl} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-4 h-4 m-auto text-muted-foreground mt-3" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">{b.title}</span>
-                        {b.isActive ? (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
-                        ) : (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Nonaktif</span>
-                        )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+                  {banners.map((b) => (
+                    <div key={b.id} className="relative group">
+                      <PromoBanner banner={b} className="h-full min-h-[160px]" />
+                      <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        <Button size="icon" className="h-8 w-8 bg-black/50 hover:bg-black text-white rounded-full backdrop-blur-md border border-white/10 shadow-sm" onClick={() => openBannerEdit(b)}>
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="icon" className="h-8 w-8 bg-destructive/80 hover:bg-destructive text-white rounded-full backdrop-blur-md border border-white/10 shadow-sm" onClick={() => deleteBanner(b.id!)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-                      {b.description && <p className="text-xs text-muted-foreground truncate">{b.description}</p>}
+                      {!b.isActive && (
+                        <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px] rounded-[1.5rem] flex items-center justify-center z-10">
+                          <span className="bg-background/80 text-foreground font-bold px-3 py-1.5 rounded-lg shadow-sm text-xs">Nonaktif</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openBannerEdit(b)}>
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => deleteBanner(b.id!)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </SettingCard>
             )}
           </Section>
@@ -686,16 +674,7 @@ export default function Pengaturan() {
 
         {/* ══════════════ TAMPILAN ══════════════ */}
         {activeTab === 'tampilan' && (
-          <Section title="Tampilan & Tema" description="Mode gelap, warna utama, dan preferensi visual.">
-            <SettingCard>
-              <SettingRow
-                label="Mode Gelap"
-                description="Aktifkan tampilan dark mode"
-              >
-                <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
-              </SettingRow>
-              <SettingRow last label="Ikon aktif" description={isDark ? '🌙 Dark mode aktif' : '☀️ Light mode aktif'} />
-            </SettingCard>
+          <Section title="Tampilan & Tema" description="Mode warna utama dan preferensi visual.">
 
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Warna Tema</p>

@@ -15,10 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { VouchersSkeleton } from '@/admin/components/SkeletonLoaders';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import BannerSettingsTab from '@/admin/components/BannerSettingsTab';
-
 export default function Vouchers() {
-  const [activeTab, setActiveTab] = useState<'vouchers' | 'banners'>('vouchers');
 
   // --- Voucher States ---
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -103,46 +100,14 @@ export default function Vouchers() {
 
   return (
     <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
-      
-      {/* Sleek Tabs Selection Header */}
-      <div className="flex gap-2 border-b border-border/50 pb-2">
-        <button
-          onClick={() => setActiveTab('vouchers')}
-          className={cn(
-            "px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
-            activeTab === 'vouchers'
-              ? "bg-primary text-white shadow-md shadow-primary/20"
-              : "hover:bg-muted text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Promo & Voucher
-        </button>
-        <button
-          onClick={() => setActiveTab('banners')}
-          className={cn(
-            "px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2",
-            activeTab === 'banners'
-              ? "bg-primary text-white shadow-md shadow-primary/20"
-              : "hover:bg-muted text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Sparkles className="w-4 h-4" />
-          Beranda Customer (Banner)
-        </button>
+      {/* Action Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">Kelola Voucher</h2>
+        <Button onClick={openAdd} className="h-11 px-5 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 active:scale-[0.98] transition-all shrink-0">
+          <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
+          Buat Voucher
+        </Button>
       </div>
-
-      {/* ==========================================
-          TAB 1: Vouchers / Promos List
-          ========================================== */}
-      {activeTab === 'vouchers' && (
-        <>
-          {/* Action Header */}
-          <div className="flex justify-end">
-            <Button onClick={openAdd} className="h-11 px-5 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 active:scale-[0.98] transition-all shrink-0">
-              <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
-              Buat Voucher
-            </Button>
-          </div>
 
           {vouchers.length === 0 ? (
             <div className="bg-card border border-dashed border-border/60 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center opacity-80 mt-6">
@@ -226,15 +191,6 @@ export default function Vouchers() {
               ))}
             </div>
           )}
-        </>
-      )}
-
-      {/* ==========================================
-          TAB 2: Beranda Customer (Banners Settings Tab component)
-          ========================================== */}
-      {activeTab === 'banners' && (
-        <BannerSettingsTab vouchers={vouchers} products={products} />
-      )}
 
       {/* ==========================================
           MODALS & DIALOGS

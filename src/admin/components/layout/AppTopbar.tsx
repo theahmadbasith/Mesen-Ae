@@ -29,6 +29,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState, useEffect } from 'react';
+import { dbUpdate } from '@/hooks/db-hooks';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { Moon, Sun, Loader2 } from 'lucide-react';
 
 interface AppTopbarProps {
   isFullscreen: boolean;
@@ -46,6 +53,44 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
   const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
   const role = authData.role || 'admin';
   const username = authData.username || 'Staf Kasir';
+
+  // Dark/Light Mode State
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDark(isDark);
+  }, []);
+  const toggleDarkMode = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    document.documentElement.classList.toggle('dark', newDark);
+    localStorage.setItem('mesenae-theme', newDark ? 'dark' : 'light');
+  };
+
+  // Profile Modal State
+  const [profileDialog, setProfileDialog] = useState(false);
+  const [profileName, setProfileName] = useState(authData.name || '');
+  const [profileWa, setProfileWa] = useState(authData.whatsapp || '');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const saveProfile = async () => {
+    setIsSavingProfile(true);
+    try {
+      if (!authData.id) throw new Error('ID user tidak valid');
+      const updates = { name: profileName.trim(), whatsapp: profileWa.trim() };
+      await dbUpdate('users', authData.id, updates);
+      
+      const newAuth = { ...authData, ...updates };
+      localStorage.setItem('admin_auth', JSON.stringify(newAuth));
+      
+      toast.success('Profil berhasil diperbarui');
+      setProfileDialog(false);
+    } catch (err) {
+      toast.error('Gagal memperbarui profil');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   // Dynamic Page Info based on path
   const getPageInfo = (pathname: string) => {
@@ -203,6 +248,17 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
           </span>
         </div>
 
+        {/* Dark/Light Mode Button */}
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={toggleDarkMode} 
+          className="bg-background/80 backdrop-blur-sm border-border/60 hover:bg-accent/40 rounded-lg h-10 w-10 shrink-0 shadow-sm"
+          title={isDark ? "Mode Terang" : "Mode Gelap"}
+        >
+          {isDark ? <Sun className="w-4.5 h-4.5 text-muted-foreground" /> : <Moon className="w-4.5 h-4.5 text-muted-foreground" />}
+        </Button>
+
         {/* Fullscreen Button */}
         <Button 
           variant="outline" 
@@ -236,7 +292,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border/60" />
             <DropdownMenuItem 
-              onClick={() => navigate('/admin/settings')}
+              onClick={() => setProfileDialog(true)}
               className="rounded-md py-2 cursor-pointer font-semibold text-xs text-muted-foreground hover:text-foreground gap-2"
             >
               <User className="w-4 h-4" /> Profil Pengguna
@@ -251,6 +307,30 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
         </DropdownMenu>
 
       </div>
+
+      {/* Profil Modal */}
+      <Dialog open={profileDialog} onOpenChange={setProfileDialog}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-4 h-4" /> Profil Pengguna
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nama Lengkap</Label>
+              <Input value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="Contoh: Budi Santoso" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">No WhatsApp</Label>
+              <Input value={profileWa} onChange={e => setProfileWa(e.target.value)} placeholder="085..." />
+            </div>
+            <Button className="w-full" onClick={saveProfile} disabled={isSavingProfile}>
+              {isSavingProfile ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Profil'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

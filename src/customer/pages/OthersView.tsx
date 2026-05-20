@@ -41,10 +41,16 @@ export default function OthersView({
   const [showVouchers, setShowVouchers] = useState<boolean>(false);
 
   const vouchers = (useDbQuery('vouchers') as Voucher[]) ?? [];
+  const users = (useDbQuery('users') as any[]) ?? [];
   
   const activeVouchers = useMemo(() => {
     return vouchers.filter((v: Voucher) => v.isActive || v.is_active);
   }, [vouchers]);
+
+  const activeKasirWa = useMemo(() => {
+    const kasir = users.find(u => u.whatsapp);
+    return kasir?.whatsapp || storeSettings?.phone;
+  }, [users, storeSettings?.phone]);
 
   // Modifikasi fungsi openWhatsApp untuk menerima pre-filled message
   const openWhatsApp = (phone?: string, message?: string) => {
@@ -171,7 +177,7 @@ export default function OthersView({
                 
                 {/* Opsi 1: Bantuan Kasir */}
                 <button 
-                  onClick={() => openWhatsApp(storeSettings?.phone, orderMessageTemplate)} 
+                  onClick={() => openWhatsApp(activeKasirWa, orderMessageTemplate)} 
                   className="w-full flex items-center gap-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl active:scale-[0.98] hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800 transition-all group"
                 >
                   <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform shrink-0">

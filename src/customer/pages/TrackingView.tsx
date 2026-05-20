@@ -13,6 +13,7 @@ import {
 import { FORMAT_IDR } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReceiptModal from '../../components/Receipt';
+import { useDbQuery } from '@/hooks/db-hooks';
 
 // ==========================================
 // Tipe Data & Interfaces (TypeScript)
@@ -68,6 +69,12 @@ export default function TrackingView({
   const [activeItems, setActiveItems] = useState<any[]>(finalOrderData?.items || []);
   const [paymentMethodName, setPaymentMethodName] = useState<string>(finalOrderData?.paymentMethodName || 'Pembayaran');
   const [loadingActive, setLoadingActive] = useState<boolean>(!finalOrderData);
+
+  const users = (useDbQuery('users') as any[]) ?? [];
+  const activeKasirWa = React.useMemo(() => {
+    const kasir = users.find(u => u.whatsapp);
+    return kasir?.whatsapp || storeSettings?.phone;
+  }, [users, storeSettings?.phone]);
 
   const isPaid = liveTx?.status === 'lunas' || liveTx?.status === 'completed';
 
@@ -358,7 +365,7 @@ export default function TrackingView({
               const tbl = liveTx?.table_number || liveTx?.tableNumber || '-';
               const tblLabel = tbl === 'Bawa Pulang' ? 'Take Away' : `Meja *${tbl}*`;
               const text = `Halo, saya ingin menanyakan status pesanan saya dengan nomor order *${orderNum}* (${tblLabel}). Terimakasih!`;
-              openWhatsApp(storeSettings?.phone, text);
+              openWhatsApp(activeKasirWa, text);
             }}
             className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-[1.2rem] py-4 font-bold flex items-center justify-center text-sm shadow-lg shadow-[#25D366]/20 active:scale-[0.98] transition-all"
           >

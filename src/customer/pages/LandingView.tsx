@@ -1,8 +1,10 @@
 import React, { JSX, useState, useEffect, useRef } from 'react';
 import { 
+import { 
   MapPin, Flame, Moon, Sun, Gift, Package, 
   Image as ImageIcon, ArrowRight, Store
 } from 'lucide-react';
+import PromoBanner from '@/customer/components/PromoBanner';
 
 import { FORMAT_IDR, cn } from '@/lib/utils';
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -268,43 +270,12 @@ export default function LandingView({
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {[...displayOffers, ...displayOffers, ...displayOffers].map((promo, index) => (
-                    <div 
+                    <PromoBanner 
                       key={`${promo.id}-${index}`}
-                      className="rounded-[1.5rem] p-6 text-white relative overflow-hidden snap-start shrink-0 w-full min-h-[180px] flex flex-col justify-between shadow-md"
-                    >
-                      {promo.imageUrl ? (
-                        <div className="absolute inset-0 z-0">
-                          <img src={promo.imageUrl} alt={promo.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-transparent" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">
-                          <Gift size={160} strokeWidth={1} className="absolute -right-4 -bottom-8 text-white/10 rotate-[-15deg] z-0" />
-                        </div>
-                      )}
-
-                      <div className="relative z-10 w-[70%] mt-auto">
-                        <span className={cn(
-                          "text-[10px] px-2.5 py-1 rounded-md backdrop-blur-md font-bold mb-3 inline-block uppercase tracking-wider border shadow-sm",
-                          promo.imageUrl ? "bg-white/10 border-white/20 text-white" : "bg-white/20 border-white/10"
-                        )}>
-                          {promo.type === 'voucher' ? 'Promo' : promo.type === 'menu' ? 'Menu Baru' : 'Penawaran Spesial'}
-                        </span>
-                        <h4 className="font-extrabold text-2xl mb-1.5 leading-tight line-clamp-1 drop-shadow-md">
-                          {promo.title}
-                        </h4>
-                        <p className="text-xs text-slate-200 mb-5 font-medium line-clamp-2 leading-relaxed drop-shadow-sm">
-                          {promo.description}
-                        </p>
-                        <button 
-                          onClick={() => setView('menu')}
-                          className="bg-white text-slate-900 text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg hover:bg-slate-100 active:scale-95 transition-all flex items-center gap-2"
-                        >
-                          Lihat Sekarang <ArrowRight size={16} />
-                        </button>
-                      </div>
-                    </div>
+                      banner={promo}
+                      className="snap-start shrink-0 w-full min-h-[180px]"
+                      onAction={() => setView('menu')}
+                    />
                   ))}
                 </div>
                 
@@ -328,34 +299,11 @@ export default function LandingView({
               </div>
             ) : (
               // Jika cuma 1 promo aktif, tampilkan full width banner
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[1.5rem] p-6 text-white shadow-lg shadow-blue-600/20 relative overflow-hidden min-h-[160px] flex flex-col justify-between">
-                {displayOffers[0].imageUrl ? (
-                  <div className="absolute inset-0 z-0">
-                    <img src={displayOffers[0].imageUrl} alt={displayOffers[0].title} className="w-full h-full object-cover opacity-35" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-900/95 to-indigo-900/40" />
-                  </div>
-                ) : (
-                  <Gift size={140} strokeWidth={1} className="absolute -right-6 -bottom-6 text-white/15 rotate-[-15deg] z-0" />
-                )}
-
-                <div className="relative z-10 w-2/3">
-                  <span className="bg-white/20 text-[10px] px-2.5 py-1 rounded-md backdrop-blur-md font-bold mb-3 inline-block uppercase tracking-wider border border-white/10">
-                    {displayOffers[0].type === 'voucher' ? 'Promo' : displayOffers[0].type === 'menu' ? 'Menu Baru' : 'Spesial'}
-                  </span>
-                  <h4 className="font-extrabold text-2xl mb-1.5 leading-tight line-clamp-1">
-                    {displayOffers[0].title}
-                  </h4>
-                  <p className="text-xs text-blue-50 mb-5 font-medium line-clamp-2 leading-relaxed">
-                    {displayOffers[0].description}
-                  </p>
-                  <button 
-                    onClick={() => setView('menu')}
-                    className="bg-white text-blue-600 text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm hover:bg-blue-50 active:scale-95 transition-all"
-                  >
-                    Cek Katalog
-                  </button>
-                </div>
-              </div>
+              <PromoBanner 
+                banner={displayOffers[0]}
+                className="w-full min-h-[160px]"
+                onAction={() => setView('menu')}
+              />
             )}
           </div>
         ) : (
@@ -364,27 +312,11 @@ export default function LandingView({
             <div className="flex justify-between items-end mb-4">
               <h3 className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">Penawaran Menarik</h3>
             </div>
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[1.5rem] p-6 text-white shadow-lg shadow-blue-600/20 relative overflow-hidden">
-              <div className="relative z-10 w-2/3">
-                <span className="bg-white/20 text-[10px] px-2.5 py-1 rounded-md backdrop-blur-md font-bold mb-3 inline-block uppercase tracking-wider border border-white/10">
-                  Terbatas
-                </span>
-                <h4 className="font-extrabold text-2xl mb-1.5 leading-tight">
-                  Diskon Spesial
-                </h4>
-                <p className="text-sm text-blue-50 mb-5 font-medium line-clamp-2">
-                  Gunakan promo menarik dari kami untuk pesanan Anda hari ini.
-                </p>
-                <button 
-                  onClick={() => setView('menu')}
-                  className="bg-white text-blue-600 text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm hover:bg-blue-50 active:scale-95 transition-all"
-                >
-                  Cek Katalog
-                </button>
-              </div>
-              {/* Dekorasi Ikon Kado Besar */}
-              <Gift size={140} strokeWidth={1} className="absolute -right-6 -bottom-6 text-white/15 rotate-[-15deg]" />
-            </div>
+            <PromoBanner 
+              banner={{ id: 'fallback', title: 'Diskon Spesial', description: 'Gunakan promo menarik dari kami untuk pesanan Anda hari ini.', imageUrl: '', isActive: true }}
+              className="w-full min-h-[160px]"
+              onAction={() => setView('menu')}
+            />
           </div>
         )}
 
