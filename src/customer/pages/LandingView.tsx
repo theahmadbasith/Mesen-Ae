@@ -312,7 +312,7 @@ export default function LandingView({
               <h3 className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">Penawaran Menarik</h3>
             </div>
             <PromoBanner 
-              banner={{ id: 'fallback', title: 'Diskon Spesial', description: 'Gunakan promo menarik dari kami untuk pesanan Anda hari ini.', imageUrl: '', isActive: true }}
+              banner={{ id: -1, title: 'Diskon Spesial', description: 'Gunakan promo menarik dari kami untuk pesanan Anda hari ini.', imageUrl: '', isActive: true }}
               className="w-full min-h-[160px]"
               onAction={() => setView('menu')}
             />

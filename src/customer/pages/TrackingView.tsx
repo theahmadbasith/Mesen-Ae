@@ -14,6 +14,7 @@ import { FORMAT_IDR } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReceiptModal from '../../components/Receipt';
 import { useDbQuery } from '@/hooks/db-hooks';
+import { signalBus } from '@/lib/signal-bus';
 
 // ==========================================
 // Tipe Data & Interfaces (TypeScript)
@@ -200,25 +201,23 @@ export default function TrackingView({
     lookupActiveTransaction();
   }, [customerName, liveTx, extractPaymentMethod]);
 
-  // 2. AGGRESSIVE POLLING — poll the transaction every 3 seconds for instant updates
+  // 2. TRUE REALTIME SIGNAL + AGGRESSIVE POLLING FALLBACK
   useEffect(() => {
     const txId = liveTx?.id;
     if (!txId) return;
 
-    // Do an immediate fresh fetch on mount/re-entry
+    // Fast sync function
     const fetchLatest = async () => {
       try {
         const rows = await dbSelect<any>('transactions', { id: txId });
         if (rows && rows.length > 0) {
           const updated = rows[0];
           setLiveTx(prev => {
-            // Only update state if something actually changed
             if (
               prev?.status !== updated.status ||
               prev?.kitchen_status !== updated.kitchen_status ||
               prev?.kitchenStatus !== updated.kitchenStatus
             ) {
-              // When status transitions to paid, show a toast
               const wasPaid = prev?.status === 'lunas' || prev?.status === 'completed';
               const nowPaid = updated.status === 'lunas' || updated.status === 'completed';
               if (!wasPaid && nowPaid) {
@@ -226,23 +225,45 @@ export default function TrackingView({
               }
               return updated;
             }
-            // Still update total/payments silently
             return { ...prev, ...updated };
           });
           setPaymentMethodName(extractPaymentMethod(updated));
         }
-      } catch (err) {
-        // Silently retry on next poll
-      }
+      } catch (err) {}
     };
 
     // Immediate fetch
     fetchLatest();
 
-    // Set up fast polling
+    // 2a. Listen to true real-time broadcasts
+    const unsubscribeSignal = signalBus.subscribe(txId, (signal) => {
+      setLiveTx(prev => {
+        if (!prev) return prev;
+        
+        // Let's also verify if payment completed
+        const wasPaid = prev.status === 'lunas' || prev.status === 'completed';
+        const nowPaid = signal.status === 'lunas' || signal.status === 'completed';
+        
+        if (!wasPaid && nowPaid) {
+           toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
+        }
+
+        return {
+          ...prev,
+          status: signal.status || prev.status,
+          kitchen_status: signal.kitchenStatus || prev.kitchen_status,
+          kitchenStatus: signal.kitchenStatus || prev.kitchenStatus
+        };
+      });
+      // A broadcast usually implies we should do a full sync just to be safe
+      setTimeout(fetchLatest, 500); 
+    });
+
+    // 2b. Set up fast polling as a fallback
     pollRef.current = setInterval(fetchLatest, POLL_INTERVAL);
 
     return () => {
+      unsubscribeSignal();
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;

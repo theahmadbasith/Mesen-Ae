@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Product, Category, Transaction, TransactionItemRecord, PaymentMethod, StoreSettings, Voucher } from '@/hooks/db-hooks';
 import { dbAdmin as db, dbDelete } from '@/lib/db';
+import { signalBus } from '@/lib/signal-bus';
 import { toDatabaseTransaction, toDatabaseTransactionItem, toDatabaseProduct, mapCategory, mapProduct, mapPaymentMethod, mapTransaction, mapTransactionItem, mapStoreSettings } from '@/lib/sync';
 import {
   Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote,
@@ -609,6 +610,16 @@ export default function Kasir() {
 
       toast.success(`Transaksi berhasil!`);
       setReceiptOpen(true);
+
+      // 🔥 Broadcast payment confirmation to customer tracking
+      signalBus.broadcast({
+        type: 'TRANSACTION_STATUS_UPDATE',
+        transactionId: editingTxId,
+        kitchenStatus: 'diproses',
+        status: 'completed',
+        receiptNumber: openBillObj ? openBillObj.receiptNumber : `TX${editingTxId}`,
+        timestamp: Date.now(),
+      });
     } else {
       const receiptNumber = `TX${Date.now()}`;
 
@@ -653,6 +664,16 @@ export default function Kasir() {
 
         toast.success(`Transaksi berhasil! ${receiptNumber}`);
         setReceiptOpen(true);
+
+        // 🔥 Broadcast new transaction to customer tracking
+        signalBus.broadcast({
+          type: 'TRANSACTION_STATUS_UPDATE',
+          transactionId: newTx.id,
+          kitchenStatus: 'diproses',
+          status: 'completed',
+          receiptNumber,
+          timestamp: Date.now(),
+        });
       }
     }
 
