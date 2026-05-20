@@ -73,7 +73,7 @@ export default function AppLayout() {
             </div>
             <Skeleton className="w-9 h-9 rounded-lg" />
           </div>
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <main className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 pt-2 md:pt-3 pb-6">
             <div className="space-y-4">
               <div className="flex justify-between">
                 <Skeleton className="h-7 w-40" />
@@ -113,7 +113,7 @@ export default function AppLayout() {
         />
 
         {/* Main Scrollable Content */}
-        <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto w-full px-4 md:px-6 lg:px-8 pt-2 md:pt-3 pb-6">
           <Outlet />
         </main>
       </div>

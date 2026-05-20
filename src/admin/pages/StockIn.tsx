@@ -119,15 +119,9 @@ export default function StockInPage() {
   };
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
-      <div className="flex justify-between items-center gap-4">
-        <Link to="/admin/settings">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl border border-border/40 bg-background/50 hover:bg-muted">
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        
+      <div className="flex justify-end items-center gap-4">
         <Button size="sm" onClick={openAdd} className="h-10 rounded-xl gap-2 px-4 shadow-sm font-medium">
           <Plus className="w-4 h-4" /> Tambah Stok
         </Button>

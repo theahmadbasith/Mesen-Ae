@@ -111,7 +111,7 @@ export default function SharedLogin() {
           <div className="space-y-4 text-left">
             {[
               { icon: '💼', title: 'Admin & Kasir POS', desc: 'Kelola laporan penjualan, stok, supplier, dan kasir penjualan' },
-              { icon: '🍳', title: 'Kitchen Display (KDS)', desc: 'Monitor antrean pesanan masakan real-time untuk koki' },
+              { icon: '🍳', title: 'Layar Dapur (KDS)', desc: 'Monitor antrean pesanan masakan real-time untuk koki' },
               { icon: '☁️', title: 'Google Sheet Database', desc: 'Integrasi cloud database aman, instan, dan mudah dikustomisasi' },
             ].map((item, idx) => (
               <div key={idx} className="flex items-start gap-4 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl p-4 border border-zinc-800/60">

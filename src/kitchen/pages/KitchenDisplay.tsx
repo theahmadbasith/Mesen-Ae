@@ -4,7 +4,7 @@ import { Transaction, TransactionItemRecord, StoreSettings } from '@/hooks/db-ho
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UtensilsCrossed, User, Clock, Printer, ChefHat, Timer, CheckCircle2, Flame, ArrowRight } from 'lucide-react';
+import { UtensilsCrossed, User, Clock, Printer, ChefHat, Timer, CheckCircle2, Flame, ArrowRight, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -55,6 +55,7 @@ const KITCHEN_STEPS = ['diproses', 'dimasak', 'disiapkan', 'siap', 'diantarkan']
 
 export default function KitchenDisplay() {
   useThemeColor();
+  const [activeTab, setActiveTab] = useState<'aktif' | 'riwayat'>('aktif');
   const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -69,6 +70,8 @@ export default function KitchenDisplay() {
   const billsDimasak = activeBills.filter(t => t.kitchenStatus === 'dimasak').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const billsDisiapkan = activeBills.filter(t => t.kitchenStatus === 'disiapkan').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const billsSiap = activeBills.filter(t => t.kitchenStatus === 'siap').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const billsRiwayat = allBills.filter(t => t.kitchenStatus === 'diantarkan' || t.status === 'batal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Live clock
   useEffect(() => {
@@ -196,10 +199,75 @@ export default function KitchenDisplay() {
     </div>
   );
 
+  const HistoryTicket = ({ bill }: { bill: Transaction }) => {
+    const isCancelled = bill.status === 'batal';
+    
+    return (
+      <Card className="border-zinc-800 shadow-lg flex flex-col bg-zinc-900/60 rounded-xl overflow-hidden opacity-90">
+        <div className={cn("px-3 py-2 flex flex-col gap-2 relative border-b border-zinc-800/80", isCancelled ? "bg-red-950/20" : "bg-emerald-950/20")}>
+          <div className="flex justify-between items-start">
+            <Badge variant="outline" className="bg-zinc-950/50 text-slate-300 font-mono text-[10px] font-bold border-zinc-700/50 px-1.5 py-0.5">
+              {bill.receiptNumber}
+            </Badge>
+            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-white/10 rounded-md text-slate-400 hover:text-white" onClick={() => setReceiptTx(bill)} title="Print Tiket">
+              <Printer className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="flex justify-between items-end">
+            <div>
+              {bill.tableNumber ? (
+                <div className="flex flex-col leading-none">
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Nomor Meja</span>
+                  <span className="text-xl font-black text-white">Meja {bill.tableNumber}</span>
+                </div>
+              ) : (
+                <div className="flex flex-col leading-none">
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Tipe Pesanan</span>
+                  <span className="text-sm font-black text-slate-200">Bawa Pulang</span>
+                </div>
+              )}
+            </div>
+            
+            <div className={cn(
+              "flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded border",
+              isCancelled ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+            )}>
+              {isCancelled ? 'DIBATALKAN' : 'SELESAI'}
+            </div>
+          </div>
+        </div>
+        <CardContent className="p-3 flex-1 flex flex-col bg-zinc-900/80">
+          <div className="flex-1 opacity-70">
+            <KitchenItemsList transactionId={bill.id!} />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="flex-1 h-full flex flex-col gap-4">
-      {/* KANBAN BOARD GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 overflow-hidden h-full pb-2">
+      {/* KITCHEN TABS */}
+      <div className="flex bg-zinc-900/80 p-1 rounded-xl w-fit border border-zinc-800 shadow-sm shrink-0">
+        <button 
+          onClick={() => setActiveTab('aktif')}
+          className={cn("px-5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'aktif' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-zinc-800')}
+        >
+          <Flame className="w-3.5 h-3.5" />
+          Pesanan Aktif
+        </button>
+        <button 
+          onClick={() => setActiveTab('riwayat')}
+          className={cn("px-5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'riwayat' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-zinc-800')}
+        >
+          <History className="w-3.5 h-3.5" />
+          Riwayat
+        </button>
+      </div>
+
+      {activeTab === 'aktif' ? (
+        /* KANBAN BOARD GRID */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 overflow-hidden pb-2">
         
         {/* Kolom 1: Baru Masuk */}
         <KanbanColumn 
@@ -262,6 +330,23 @@ export default function KitchenDisplay() {
         />
         
       </div>
+      ) : (
+        /* RIWAYAT GRID */
+        <div className="flex-1 overflow-y-auto bg-zinc-950/30 rounded-2xl border border-zinc-800/50 p-4 custom-scrollbar">
+          {billsRiwayat.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-4 opacity-50">
+              <History className="w-10 h-10 text-zinc-500 mb-3" />
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Belum ada riwayat pesanan</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-2">
+              {billsRiwayat.map(bill => (
+                <HistoryTicket key={bill.id} bill={bill} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Printer / Receipt Modal Khusus Dapur */}
       {receiptTx && (

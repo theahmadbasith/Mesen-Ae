@@ -231,9 +231,9 @@ export default function Kasir() {
   // ==========================================
   if (loading) {
     return (
-      <div className="px-4 pt-6 pb-4 h-[calc(100vh-4rem)]">
-        <div className="flex flex-col md:flex-row gap-0 md:gap-4 h-full">
-          <div className="flex-1 flex flex-col overflow-hidden space-y-3">
+      <div className="pt-2 pb-24 w-full">
+        <div className="flex flex-col md:flex-row gap-0 md:gap-4">
+          <div className="flex-1 flex flex-col space-y-3">
             <div className="flex items-center justify-between">
               <div className="h-6 w-20 bg-muted animate-pulse rounded" />
               <div className="flex gap-2">
@@ -249,7 +249,7 @@ export default function Kasir() {
             <div className="flex gap-2">
               {[1,2,3,4].map(i => <div key={i} className="h-7 w-16 bg-muted animate-pulse rounded-full" />)}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 flex-1 overflow-hidden">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               {[1,2,3,4,5,6,7,8].map(i => (
                 <div key={i} className="rounded-xl border overflow-hidden">
                   <div className="aspect-square bg-muted animate-pulse" />
@@ -262,7 +262,7 @@ export default function Kasir() {
               ))}
             </div>
           </div>
-          <div className="hidden md:flex md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0 p-4 space-y-3">
+          <div className="hidden md:flex md:w-80 lg:w-96 flex-col bg-card rounded-xl border border-border shrink-0 p-4 space-y-3">
             <div className="h-5 w-32 bg-muted animate-pulse rounded" />
             <div className="flex-1 space-y-3">
               {[1,2,3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />)}
@@ -703,9 +703,9 @@ export default function Kasir() {
   };
 
   return (
-    <div className="px-4 pt-4 pb-4 w-full h-[calc(100vh-13rem)] sm:h-[calc(100vh-14rem)] md:h-[calc(100vh-15rem)] lg:h-[calc(100vh-16rem)] flex flex-col min-h-0 overflow-hidden">
-      <div className="flex flex-col md:flex-row gap-0 md:gap-4 h-full min-h-0 overflow-hidden">
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+    <div className="pt-2 pb-24 w-full flex flex-col">
+      <div className="flex flex-col md:flex-row gap-0 md:gap-4">
+        <div className="flex-1 min-w-0 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -749,7 +749,7 @@ export default function Kasir() {
           </div>
 
           {/* Search */}
-          <div className="flex gap-2 mb-3 px-1 -mx-1">
+          <div className="flex gap-2 mb-2 py-1">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
@@ -760,7 +760,7 @@ export default function Kasir() {
           </div>
 
           {/* SKU / Barcode scan input */}
-          <div className="flex gap-2 mb-3 px-1 -mx-1">
+          <div className="flex gap-2 mb-2 py-1">
             <div className="relative flex-1">
               <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -787,7 +787,7 @@ export default function Kasir() {
           </div>
 
           {/* Product Grid */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
+          <div className="flex-1">
             {filtered.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-sm text-muted-foreground">

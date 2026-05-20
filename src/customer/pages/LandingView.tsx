@@ -4,7 +4,7 @@ import {
   Image as ImageIcon, ArrowRight, Store
 } from 'lucide-react';
 
-import { FORMAT_IDR } from '@/lib/utils';
+import { FORMAT_IDR, cn } from '@/lib/utils';
 import { useDbQuery } from '@/hooks/db-hooks';
 
 // ==========================================

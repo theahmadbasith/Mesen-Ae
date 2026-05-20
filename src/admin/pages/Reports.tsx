@@ -146,7 +146,7 @@ export default function Laporan() {
   };
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
       <div className="flex justify-end">
         <Button
@@ -155,7 +155,7 @@ export default function Laporan() {
           onClick={() => setShareOpen(true)}
         >
           <Share2 className="w-4 h-4" />
-          Bagikan
+          Invoice
         </Button>
       </div>
 

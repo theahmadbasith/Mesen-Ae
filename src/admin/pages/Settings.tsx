@@ -423,16 +423,7 @@ export default function Pengaturan() {
               />
             </SettingCard>
 
-            {/* Stock quick links */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Stok & Supplier</p>
-              <SettingCard>
-                <StockLink to="/admin/supplier"    icon={<Truck className="w-4 h-4" />}            label="Supplier"      description="Kelola data supplier" />
-                <StockLink to="/admin/stock-in"    icon={<ArrowDownToLine className="w-4 h-4" />}  label="Stock In"      description="Catat barang masuk & HPP otomatis" />
-                <StockLink to="/admin/stock-out"   icon={<ArrowUpFromLine className="w-4 h-4" />}  label="Stock Out"     description="Catat barang keluar non-penjualan" />
-                <StockLink to="/admin/stock-report" icon={<Package className="w-4 h-4" />}         label="Laporan Stok"  description="Lihat pergerakan stok per periode" />
-              </SettingCard>
-            </div>
+
           </Section>
         )}
 

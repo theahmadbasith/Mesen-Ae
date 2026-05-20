@@ -72,7 +72,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
     }
     if (pathname.includes('/admin/kitchen')) {
       return {
-        title: 'Kitchen Display',
+        title: 'Layar Dapur',
         description: 'Kelola status masakan dan antrean dapur.',
         icon: <UtensilsCrossed className="w-5 h-5 text-primary" />
       };

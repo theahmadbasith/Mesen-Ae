@@ -52,7 +52,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   const storeSettings = storeSettingsList[0] || null;
 
   const openBillsCount = (useDbQuery<any>('transactions') || []).filter((t: any) => t.status === 'open').length;
-  const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => t.status === 'processing').length;
+  const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending').length;
 
   const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
   const role = authData.role || 'admin';

@@ -138,21 +138,7 @@ export default function Kitchen() {
   return (
     <div className="px-5 pt-8 pb-20 space-y-8 animate-in fade-in duration-500 w-full mx-auto min-h-[calc(100vh-4rem)]">
       
-      {/* Action Header */}
-      <div className="flex justify-end border-b border-border/50 pb-5">
-        {/* Live Clock Indicator */}
-        <div className="flex items-center gap-3 bg-card border border-border/60 px-4 py-2 rounded-xl shadow-sm">
-          <div className="relative flex items-center justify-center">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 z-10" />
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 absolute animate-ping opacity-75" />
-          </div>
-          <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">Kitchen Online</span>
-          <div className="h-4 w-px bg-border mx-1" />
-          <span className="font-mono text-base font-black text-foreground">
-            {format(currentTime, 'HH:mm:ss')}
-          </span>
-        </div>
-      </div>
+
 
       {/* Main Content */}
       {!processingBills || processingBills.length === 0 ? (

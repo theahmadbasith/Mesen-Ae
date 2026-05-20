@@ -1,13 +1,13 @@
 import React, { ErrorInfo } from 'react';
-import { AlertTriangle, Copy, RefreshCcw, Terminal } from 'lucide-react';
+import { AlertTriangle, Copy, RefreshCcw, Terminal, Check } from 'lucide-react';
 
 type Props = { children: React.ReactNode };
-type State = { hasError: boolean; error?: Error; errorInfo?: ErrorInfo };
+type State = { hasError: boolean; error?: Error; errorInfo?: ErrorInfo; copied?: boolean };
 
 export default class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, copied: false };
   }
 
   static getDerivedStateFromError(error: Error) {
@@ -34,15 +34,21 @@ ${errorInfo?.componentStack || 'No component stack available'}
     `.trim();
 
     navigator.clipboard.writeText(errorDetails).then(() => {
-      alert('Teks eror berhasil disalin! Silakan paste (Ctrl+V) ke chat untuk dianalisa.');
+      this.setState({ copied: true });
+      setTimeout(() => this.setState({ copied: false }), 3000);
     }).catch(() => {
-      alert('Gagal menyalin otomatis. Silakan blok dan copy teks secara manual.');
+      console.error('Gagal menyalin teks secara otomatis.');
     });
   }
 
   render() {
     if (this.state.hasError) {
       const { error, errorInfo } = this.state;
+      
+      const stackLines = error?.stack?.split('\n') || [];
+      const errorLocation = stackLines.find(line => line.includes('at ') && (line.includes('http') || line.includes('://') || line.includes('.ts') || line.includes('.js')))?.trim() || 'Lokasi file tidak terdeteksi';
+      const componentLocation = errorInfo?.componentStack?.split('\n').filter(Boolean)[0]?.trim() || 'Komponen tidak terdeteksi';
+
       return (
         <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center justify-center p-4 md:p-8 text-slate-200 font-sans">
           <div className="w-full max-w-5xl bg-slate-900 border border-red-900/40 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -78,6 +84,21 @@ ${errorInfo?.componentStack || 'No component stack available'}
                 </h3>
                 <div className="bg-red-950/20 border-l-4 border-l-red-500 border-y border-r border-y-red-900/30 border-r-red-900/30 rounded-r-lg p-4 font-mono text-sm md:text-base font-bold text-red-400 break-words">
                   {error?.message || 'Unknown Error'}
+                  
+                  <div className="mt-4 pt-4 border-t border-red-900/30 text-[11px] md:text-xs font-normal text-red-300 space-y-3">
+                    <div>
+                      <strong className="text-red-400 uppercase tracking-wider text-[10px] block mb-1">📍 File & Baris Kode:</strong>
+                      <span className="bg-red-950/50 border border-red-900/30 px-2 py-1 rounded font-mono break-all text-red-200 block">
+                        {errorLocation}
+                      </span>
+                    </div>
+                    <div>
+                      <strong className="text-red-400 uppercase tracking-wider text-[10px] block mb-1">🧩 Komponen Asal:</strong>
+                      <span className="bg-red-950/50 border border-red-900/30 px-2 py-1 rounded font-mono text-red-200 block">
+                        {componentLocation}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -92,8 +113,8 @@ ${errorInfo?.componentStack || 'No component stack available'}
                     onClick={this.handleCopyError}
                     className="flex items-center gap-2 text-xs font-extrabold bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg border border-slate-600 hover:border-slate-500 transition-colors shadow-sm active:scale-95"
                   >
-                    <Copy className="w-4 h-4" />
-                    Copy Seluruh Eror
+                    {this.state.copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    {this.state.copied ? <span className="text-emerald-400">Tersalin!</span> : 'Copy Seluruh Eror'}
                   </button>
                 </div>
                 

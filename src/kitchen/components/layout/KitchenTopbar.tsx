@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChefHat, LogOut, Maximize, Minimize } from 'lucide-react';
+import { ChefHat, LogOut, Maximize, Minimize, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDbQuery } from '@/hooks/db-hooks';
 
 export default function KitchenTopbar() {
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  const toggleDarkMode = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('mesenae-theme', next ? 'dark' : 'light');
+  };
 
   const storeSettingsList = useDbQuery<any>('storeSettings') ?? [];
   const storeSettings = storeSettingsList[0] || null;
@@ -74,13 +82,24 @@ export default function KitchenTopbar() {
           </div>
           <div className="text-left pr-2 leading-tight">
             <p className="text-[11px] font-extrabold text-slate-200">{username}</p>
-            <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">Kepala Koki</p>
+            <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">User</p>
           </div>
         </div>
 
         <div className="w-px h-8 bg-zinc-800/80 hidden sm:block"></div>
 
         <div className="flex items-center gap-2">
+          {/* Dark Mode Button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={toggleDarkMode} 
+            className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 rounded-xl h-10 w-10 shrink-0 shadow-sm text-slate-400 hover:text-white transition-all active:scale-95"
+            title={isDark ? "Ganti ke Light Mode" : "Ganti ke Dark Mode"}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
+
           {/* Fullscreen Button */}
           <Button 
             variant="outline" 
