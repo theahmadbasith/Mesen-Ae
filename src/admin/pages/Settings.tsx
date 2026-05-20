@@ -8,7 +8,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Image as ImageIcon
+  ChevronRight, Image as ImageIcon, UploadCloud
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 import PromoBanner from '@/customer/components/PromoBanner';
@@ -777,7 +777,7 @@ export default function Pengaturan() {
             <SettingCard>
               <div className="flex items-center gap-4 p-5 border-b border-border/50">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
-                  <img src="/mesenae.png" alt="MesenAe" className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  <img src="/logo.png" alt="MesenAe" className="w-full h-full object-contain p-2" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <div>
                   <p className="font-semibold text-sm">MesenAe</p>

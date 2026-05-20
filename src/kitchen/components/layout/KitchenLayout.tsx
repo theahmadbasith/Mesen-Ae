@@ -6,7 +6,7 @@ export default function KitchenLayout() {
   useThemeColor(); // Apply saved theme color on mount
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-950 text-slate-100 overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden select-none">
       
       {/* ── KITCHEN TOPBAR PREMIUM ── */}
       <KitchenTopbar />

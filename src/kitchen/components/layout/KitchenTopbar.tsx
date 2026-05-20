@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChefHat, LogOut, Maximize, Minimize, Moon, Sun } from 'lucide-react';
+import { LogOut, Maximize, Minimize, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDbQuery } from '@/hooks/db-hooks';
 
@@ -46,18 +46,18 @@ export default function KitchenTopbar() {
   };
 
   return (
-    <header className="w-full shrink-0 border-b border-orange-900/30 bg-zinc-950/80 backdrop-blur-2xl px-6 py-4 flex items-center justify-between gap-4 relative shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-10">
+    <header className="w-full shrink-0 border-b border-orange-900/30 bg-background/80 backdrop-blur-2xl px-6 py-4 flex items-center justify-between gap-4 relative shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-10 transition-colors">
       
       {/* Glow efek dekoratif */}
       <div className="absolute top-0 left-[10%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-50"></div>
       
       {/* Brand/Store Info */}
       <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center border border-orange-400/30 shadow-[0_0_15px_rgba(249,115,22,0.3)] shrink-0">
-          <ChefHat className="w-6 h-6 text-white drop-shadow-md" />
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center border border-orange-400/30 shadow-[0_0_15px_rgba(249,115,22,0.3)] shrink-0 overflow-hidden">
+          <img src="/logo.png" alt="MesenAe Logo" className="w-9 h-9 object-contain drop-shadow-md brightness-0 invert" />
         </div>
         <div className="flex flex-col justify-center">
-          <h2 className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 tracking-tight leading-none uppercase">
+          <h2 className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70 tracking-tight leading-none uppercase">
             DAPUR {storeSettings?.storeName || 'MesenAe'}
           </h2>
           <div className="flex items-center gap-2 mt-1">
@@ -76,17 +76,17 @@ export default function KitchenTopbar() {
       <div className="flex items-center gap-4 shrink-0">
         
         {/* User Profile Badge */}
-        <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-inner">
-          <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 font-black text-sm flex items-center justify-center">
+        <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl border border-border bg-muted/50 shadow-inner transition-colors">
+          <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-500 font-black text-sm flex items-center justify-center">
             {username.charAt(0).toUpperCase()}
           </div>
           <div className="text-left pr-2 leading-tight">
-            <p className="text-[11px] font-extrabold text-slate-200">{username}</p>
+            <p className="text-[11px] font-extrabold text-foreground">{username}</p>
             <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">User</p>
           </div>
         </div>
 
-        <div className="w-px h-8 bg-zinc-800/80 hidden sm:block"></div>
+        <div className="w-px h-8 bg-border hidden sm:block"></div>
 
         <div className="flex items-center gap-2">
           {/* Dark Mode Button */}
@@ -94,7 +94,7 @@ export default function KitchenTopbar() {
             variant="outline" 
             size="icon" 
             onClick={toggleDarkMode} 
-            className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 rounded-xl h-10 w-10 shrink-0 shadow-sm text-slate-400 hover:text-white transition-all active:scale-95"
+            className="border-border bg-muted/50 hover:bg-muted rounded-xl h-10 w-10 shrink-0 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
             title={isDark ? "Ganti ke Light Mode" : "Ganti ke Dark Mode"}
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -105,7 +105,7 @@ export default function KitchenTopbar() {
             variant="outline" 
             size="icon" 
             onClick={toggleFullscreen} 
-            className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 rounded-xl h-10 w-10 shrink-0 shadow-sm text-slate-400 hover:text-white transition-all active:scale-95"
+            className="border-border bg-muted/50 hover:bg-muted rounded-xl h-10 w-10 shrink-0 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
             title={isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
@@ -116,7 +116,7 @@ export default function KitchenTopbar() {
             variant="ghost" 
             size="icon"
             onClick={handleLogout}
-            className="h-10 w-10 bg-red-500/5 hover:bg-red-500/20 border border-red-500/10 text-red-400 hover:text-red-400 rounded-xl shrink-0 transition-all active:scale-95"
+            className="h-10 w-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 hover:text-red-600 rounded-xl shrink-0 transition-all active:scale-95"
             title="Keluar Dapur"
           >
             <LogOut className="w-4 h-4" />
