@@ -289,18 +289,20 @@ export default function Pengaturan() {
   };
   const deleteUser = async (id: number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
 
-  /* ── Banner ── */
   const [bannerDialog,    setBannerDialog]    = useState(false);
   const [bannerEditId,    setBannerEditId]    = useState<number | null>(null);
   const [bannerTitle,     setBannerTitle]     = useState('');
   const [bannerDesc,      setBannerDesc]      = useState('');
+  const [bannerLink,      setBannerLink]      = useState('');
   const [bannerImage,     setBannerImage]     = useState<File | string | null>(null);
   const [bannerIsActive,  setBannerIsActive]  = useState(true);
   const [isSavingBanner,  setIsSavingBanner]  = useState(false);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  const openBannerAdd  = () => { setBannerEditId(null); setBannerTitle(''); setBannerDesc(''); setBannerImage(null); setBannerIsActive(true); setBannerDialog(true); };
-  const openBannerEdit = (b: Banner) => { setBannerEditId(b.id!); setBannerTitle(b.title); setBannerDesc(b.description || ''); setBannerImage(b.imageUrl); setBannerIsActive(b.isActive); setBannerDialog(true); };
+  const PRESET_BANNERS = ['/promo1.jpg', '/promo2.jpg', '/promo3.jpg'];
+
+  const openBannerAdd  = () => { setBannerEditId(null); setBannerTitle(''); setBannerDesc(''); setBannerLink(''); setBannerImage(null); setBannerIsActive(true); setBannerDialog(true); };
+  const openBannerEdit = (b: Banner) => { setBannerEditId(b.id!); setBannerTitle(b.title); setBannerDesc(b.description || ''); setBannerLink(b.link || ''); setBannerImage(b.imageUrl); setBannerIsActive(b.isActive); setBannerDialog(true); };
   const saveBanner = async () => {
     if (!bannerTitle.trim() || !bannerImage) { toast.error('Judul dan gambar wajib diisi'); return; }
     setIsSavingBanner(true);
@@ -311,7 +313,7 @@ export default function Pengaturan() {
         if (uploaded) imageUrl = uploaded;
         else throw new Error('Upload gambar gagal');
       }
-      const payload = { title: bannerTitle.trim(), description: bannerDesc.trim(), imageUrl, isActive: bannerIsActive };
+      const payload = { title: bannerTitle.trim(), description: bannerDesc.trim(), imageUrl, link: bannerLink.trim(), isActive: bannerIsActive };
       if (bannerEditId) await dbUpdate('banners', bannerEditId, payload);
       else await dbInsert('banners', payload);
       setBannerDialog(false); toast.success('Banner disimpan');
@@ -1116,6 +1118,20 @@ export default function Pengaturan() {
                   if (file) setBannerImage(await compressImage(file));
                 }} />
               </div>
+              <div className="flex items-center justify-between gap-2 mt-2">
+                {PRESET_BANNERS.map((preset, i) => (
+                  <button 
+                    key={preset}
+                    onClick={() => setBannerImage(preset)}
+                    className={cn(
+                      "flex-1 aspect-[21/9] rounded-lg overflow-hidden border-2 transition-all",
+                      bannerImage === preset ? "border-primary" : "border-transparent hover:border-border"
+                    )}
+                  >
+                    <img src={preset} className="w-full h-full object-cover" alt={`Preset ${i+1}`} />
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Judul Banner</Label>
@@ -1124,6 +1140,10 @@ export default function Pengaturan() {
             <div className="space-y-1.5">
               <Label className="text-xs">Deskripsi (Opsional)</Label>
               <Input value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} placeholder="Contoh: Diskon 50% untuk minuman" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Link (Opsional)</Label>
+              <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="Contoh: https://wa.me/... atau /produk" />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
               <div>

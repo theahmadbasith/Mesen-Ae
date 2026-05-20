@@ -53,6 +53,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
   const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
   const role = authData.role || 'admin';
   const username = authData.username || 'Staf Kasir';
+  const displayName = authData.name || username;
 
   // Dark/Light Mode State
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -69,28 +70,6 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
 
   // Profile Modal State
   const [profileDialog, setProfileDialog] = useState(false);
-  const [profileName, setProfileName] = useState(authData.name || '');
-  const [profileWa, setProfileWa] = useState(authData.whatsapp || '');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  const saveProfile = async () => {
-    setIsSavingProfile(true);
-    try {
-      if (!authData.id) throw new Error('ID user tidak valid');
-      const updates = { name: profileName.trim(), whatsapp: profileWa.trim() };
-      await dbUpdate('users', authData.id, updates);
-      
-      const newAuth = { ...authData, ...updates };
-      localStorage.setItem('admin_auth', JSON.stringify(newAuth));
-      
-      toast.success('Profil berhasil diperbarui');
-      setProfileDialog(false);
-    } catch (err) {
-      toast.error('Gagal memperbarui profil');
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
 
   // Dynamic Page Info based on path
   const getPageInfo = (pathname: string) => {
@@ -275,10 +254,10 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2.5 p-1 px-2.5 rounded-lg border border-border/60 bg-background/50 hover:bg-accent/40 hover:border-border transition-all focus:outline-none shrink-0">
               <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-black text-xs flex items-center justify-center shadow-sm uppercase">
-                {username.charAt(0)}
+                {displayName.charAt(0)}
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-xs font-bold text-foreground leading-tight truncate max-w-[100px]">{username}</p>
+                <p className="text-xs font-bold text-foreground leading-tight truncate max-w-[100px]">{displayName}</p>
                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-none mt-0.5">{role}</p>
               </div>
             </button>
@@ -286,7 +265,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
           <DropdownMenuContent align="end" className="w-56 rounded-lg border-border/60 shadow-xl p-1.5">
             <DropdownMenuLabel className="px-2.5 py-2">
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-foreground">{username}</span>
+                <span className="text-sm font-bold text-foreground">{displayName}</span>
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">{role}</span>
               </div>
             </DropdownMenuLabel>
@@ -318,16 +297,17 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Nama Lengkap</Label>
-              <Input value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="Contoh: Budi Santoso" />
+              <Label className="text-xs text-muted-foreground">Nama Lengkap</Label>
+              <div className="text-sm font-semibold p-2.5 bg-accent/30 border border-border/50 rounded-lg">{authData.name || '-'}</div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">No WhatsApp</Label>
-              <Input value={profileWa} onChange={e => setProfileWa(e.target.value)} placeholder="085..." />
+              <Label className="text-xs text-muted-foreground">Username</Label>
+              <div className="text-sm font-semibold p-2.5 bg-accent/30 border border-border/50 rounded-lg">{authData.username}</div>
             </div>
-            <Button className="w-full" onClick={saveProfile} disabled={isSavingProfile}>
-              {isSavingProfile ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Profil'}
-            </Button>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">No WhatsApp</Label>
+              <div className="text-sm font-semibold p-2.5 bg-accent/30 border border-border/50 rounded-lg">{authData.whatsapp || '-'}</div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

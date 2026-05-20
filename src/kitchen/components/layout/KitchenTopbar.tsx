@@ -21,6 +21,7 @@ export default function KitchenTopbar() {
 
   const authData = JSON.parse(localStorage.getItem('kitchen_auth') || '{}');
   const username = authData.username || 'Koki Dapur';
+  const displayName = authData.name || username;
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -78,10 +79,10 @@ export default function KitchenTopbar() {
         {/* User Profile Badge */}
         <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl border border-border bg-muted/50 shadow-inner transition-colors">
           <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-500 font-black text-sm flex items-center justify-center">
-            {username.charAt(0).toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="text-left pr-2 leading-tight">
-            <p className="text-[11px] font-extrabold text-foreground">{username}</p>
+            <p className="text-[11px] font-extrabold text-foreground">{displayName}</p>
             <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">User</p>
           </div>
         </div>

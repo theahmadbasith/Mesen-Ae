@@ -40,7 +40,7 @@ export default function SharedLogin() {
 
       if (data && data.success) {
         const role = data.user.role;
-        const authData = JSON.stringify({ role, username: data.user.username });
+        const authData = JSON.stringify({ role, username: data.user.username, name: data.user.name, whatsapp: data.user.whatsapp });
         
         // Dynamically save the session in localStorage and route based on the account's role
         if (role === 'admin') {

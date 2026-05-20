@@ -298,6 +298,8 @@ export const SHEETS: Record<string, SheetMetadata> = {
       { key: 'username', title: 'Username' },
       { key: 'password_hash', title: 'Password Hash' },
       { key: 'role', title: 'Role' },
+      { key: 'name', title: 'Nama' },
+      { key: 'whatsapp', title: 'No. WA' },
       { key: 'created_at', title: 'Dibuat Pada' }
     ]
   },
@@ -312,6 +314,17 @@ export const SHEETS: Record<string, SheetMetadata> = {
       { key: 'applicable_product_ids', title: 'Berlaku Untuk Produk' },
       { key: 'valid_until', title: 'Berlaku Hingga' },
       { key: 'created_at', title: 'Dibuat Pada' }
+    ]
+  },
+  banners: {
+    name: 'Banners',
+    columns: [
+      { key: 'id', title: 'ID' },
+      { key: 'title', title: 'Judul' },
+      { key: 'description', title: 'Deskripsi' },
+      { key: 'image_url', title: 'URL Gambar' },
+      { key: 'link', title: 'Link (Tautan)' },
+      { key: 'is_active', title: 'Aktif' }
     ]
   }
 };
@@ -1616,7 +1629,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           user: {
             id: user.id,
             username: user.username,
-            role: user.role
+            role: user.role,
+            name: user.name,
+            whatsapp: user.whatsapp
           }
         });
       }

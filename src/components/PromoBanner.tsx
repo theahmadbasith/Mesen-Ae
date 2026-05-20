@@ -39,9 +39,19 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
             {banner.description}
           </p>
         )}
-        {onAction && (
+        {(onAction || banner.link) && (
           <button 
-            onClick={onAction}
+            onClick={() => {
+              if (banner.link) {
+                if (banner.link.startsWith('http')) {
+                  window.open(banner.link, '_blank');
+                } else {
+                  window.location.href = banner.link;
+                }
+              } else if (onAction) {
+                onAction();
+              }
+            }}
             className="bg-white text-slate-900 text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg hover:bg-slate-100 active:scale-95 transition-all flex items-center gap-2 mt-auto"
           >
             Lihat Sekarang <ArrowRight size={16} />
