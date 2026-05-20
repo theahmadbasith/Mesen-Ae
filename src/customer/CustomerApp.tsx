@@ -22,7 +22,7 @@ import SuccessView from './pages/SuccessView';
 import BottomNav from './components/BottomNav';
 import MenuDetailSheet from './components/MenuDetailSheet';
 import CustomerInfoModal from './components/CustomerInfoModal';
-import CustomerScanner from './components/CustomerScanner';
+
 
 // ==========================================
 // Tipe Data & Interfaces
@@ -90,18 +90,13 @@ export default function CustomerApp() {
     return '';
   });
   const [tableNumber, setTableNumber] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('mesenae_tableNumber') || '';
-    return '';
+    if (typeof window !== 'undefined') return localStorage.getItem('mesenae_tableNumber') || 'Bawa Pulang';
+    return 'Bawa Pulang';
   });
-  
-  // Modals & Scanners
+
+  // Modals
   const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
-  const [showScanner, setShowScanner] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') return !localStorage.getItem('mesenae_tableNumber');
-    return false;
-  });
-  const [tableFromQR, setTableFromQR] = useState<boolean>(false);
-  
+
   // Data States
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
@@ -114,10 +109,10 @@ export default function CustomerApp() {
     }
     return [];
   });
-  
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null); 
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     const saved = localStorage.getItem('mesenae_darkMode');
@@ -125,7 +120,7 @@ export default function CustomerApp() {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [finalOrderData, setFinalOrderData] = useState<FinalOrderData | null>(null);
-  
+
   // Gunakan optional chaining atau type assertion sesuai pengembalian useDbQuery
   const storeSettingsList = (useDbQuery('storeSettings') as unknown[]) ?? [];
   const storeSettings = storeSettingsList[0] || null;
@@ -146,7 +141,7 @@ export default function CustomerApp() {
         window.history.pushState({ view: newView }, '', url.toString());
       }
     }
-    
+
     setViewState(newView);
   }, [viewState]);
 
@@ -158,7 +153,7 @@ export default function CustomerApp() {
       // Tutup modal detail menu jika sedang terbuka saat user menekan back
       if (selectedItem) {
         setSelectedItem(null);
-        return; 
+        return;
       }
       // Tutup modal customer info jika terbuka
       if (showCustomerModal) {
@@ -175,7 +170,7 @@ export default function CustomerApp() {
     };
 
     window.addEventListener('popstate', handlePopState);
-    
+
     // Setup initial state di history
     if (!window.history.state) {
       const url = new URL(window.location.href);
@@ -211,7 +206,7 @@ export default function CustomerApp() {
         document.documentElement.classList.remove('dark');
       }
       localStorage.setItem('mesenae_darkMode', String(isDarkMode));
-    } catch (_) {}
+    } catch (_) { }
   }, [isDarkMode]);
 
   // Handle URL Query Params for direct table scan
@@ -219,43 +214,35 @@ export default function CustomerApp() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const table = params.get('table');
-    
+
     if (table) {
       setTableNumber(table);
-      setTableFromQR(true);
-      setShowScanner(false);
-    } else if (!tableNumber) {
-      setShowScanner(true);
     }
-  }, [tableNumber]);
+  }, []);
 
   // Splash Screen & Routing Logic
   useEffect(() => {
     if (viewState === 'splash') {
       const timer = setTimeout(() => {
-        if (!tableNumber) {
-          setView('landing', true); 
-        } else if (!customerName) {
+        if (!customerName) {
           setShowCustomerModal(true);
-          setView('landing', true);
-        } else {
-          setView('landing', true);
         }
-      }, 2000); 
+        setView('landing', true);
+      }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [viewState, customerName, tableNumber, setView]);
+  }, [viewState, customerName, setView]);
 
   // ==========================================
   // Business Logic
   // ==========================================
   const addToCart = (item: MenuItem, qty: number, notes: string, selectedVariants: Variant[]) => {
-    const existingIndex = cart.findIndex((c) => 
-      c.id === item.id && 
-      JSON.stringify(c.selectedVariants) === JSON.stringify(selectedVariants) && 
+    const existingIndex = cart.findIndex((c) =>
+      c.id === item.id &&
+      JSON.stringify(c.selectedVariants) === JSON.stringify(selectedVariants) &&
       c.notes === notes
     );
-    
+
     if (existingIndex >= 0) {
       const newCart = [...cart];
       newCart[existingIndex].qty += qty;
@@ -268,7 +255,7 @@ export default function CustomerApp() {
 
   const directBuy = (item: MenuItem, qty: number, notes: string, selectedVariants: Variant[]) => {
     addToCart(item, qty, notes, selectedVariants);
-    setTimeout(() => setView('checkout'), 100); 
+    setTimeout(() => setView('checkout'), 100);
   };
 
   const handleCustomerInfoSubmit = (name: string, table: string) => {
@@ -334,7 +321,7 @@ export default function CustomerApp() {
   return (
     // Background utama netral; darkmode hanya diterapkan di dalam kontainer customer
     <div className={`min-h-[100dvh] font-sans flex flex-col transition-colors duration-300 bg-slate-50`}>
-      
+
       {/* 
         PERUBAHAN UTAMA DESKTOP RESPONSIVE:
         1. max-w-full untuk melebar hingga memenuhi batas
@@ -343,59 +330,29 @@ export default function CustomerApp() {
         4. margin auto agar selalu pas di tengah (jika ada pembatas) 
       */}
       <div className={`w-full max-w-[1920px] mx-auto bg-white flex-1 relative flex flex-col md:border-x border-slate-200 dark:border-slate-800 shadow-sm md:shadow-none transition-all ${isDarkMode ? 'dark customer-theme' : 'customer-theme'}`}>
-        
+
         {viewState === 'splash' && <SplashScreen />}
-        
+
         {viewState === 'landing' && (
-          !tableNumber ? (
-            <CustomerScanner
-              showScanner={showScanner}
-              onOpenScanner={() => setShowScanner(true)}
-              onOpenCustomerModal={() => setShowCustomerModal(true)}
-              onCloseScanner={() => setShowScanner(false)}
-              onDetected={(text: string) => {
-                try {
-                  const u = new URL(text, window.location.href);
-                  const t = u.searchParams.get('table') || text;
-                  if (t) {
-                    setTableNumber(t);
-                    setTableFromQR(true);
-                    setShowScanner(false);
-                    const newUrl = new URL(window.location.href);
-                    newUrl.searchParams.set('table', t);
-                    window.history.replaceState({ view: viewState }, '', newUrl.toString());
-                  }
-                } catch (e) {
-                  const t = String(text).trim();
-                  if (t) {
-                    setTableNumber(t);
-                    setTableFromQR(true);
-                    setShowScanner(false);
-                  }
-                }
-              }}
-            />
-          ) : (
-            <LandingView 
-              setView={setView} 
-              customerName={customerName} 
-              isDarkMode={isDarkMode} 
-              setIsDarkMode={setIsDarkMode} 
-              tableNumber={tableNumber} 
-              setSelectedItem={setSelectedItem} 
-            />
-          )
+          <LandingView
+            setView={setView}
+            customerName={customerName}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            tableNumber={tableNumber}
+            setSelectedItem={setSelectedItem}
+          />
         )}
 
         {viewState === 'menu' && (
-          <MenuView 
-            setView={setView} 
+          <MenuView
+            setView={setView}
             searchQuery={searchQuery} setSearchQuery={setSearchQuery}
             selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
             setSelectedItem={setSelectedItem}
           />
         )}
-        
+
         {viewState === 'cart' && <CartView setView={setView} cart={cart as any} updateCartQty={updateCartQty} totals={cartTotal} setCart={setCart as any} />}
         {viewState === 'checkout' && <CheckoutView setView={setView} totals={cartTotal} cart={cart as any} customerName={customerName} setFinalOrderData={setFinalOrderData as any} setCart={setCart as any} tableNumber={tableNumber} setTableNumber={setTableNumber} />}
         {viewState === 'tracking' && <TrackingView setView={setView} finalOrderData={finalOrderData as any} tableNumber={tableNumber} storeSettings={storeSettings as any} customerName={customerName} />}
@@ -453,7 +410,7 @@ export default function CustomerApp() {
                 </div>
               </div>
             )}
-            
+
             <BottomNav currentView={viewState} setView={setView} />
           </>
         )}

@@ -1,4 +1,4 @@
-import { useDbQuery, dbUpdate } from '@/hooks/db-hooks';
+import { useDbQuery, dbUpdate, dbUploadFile } from '@/hooks/db-hooks';
 import { type Voucher, type Product, type StoreSettings } from '@/hooks/db-hooks';
 import { useState, useRef } from 'react';
 import { 
@@ -132,6 +132,20 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
 
     const currentBanners: PromoBanner[] = storeSettings.promoBanners || [];
     
+    let finalImageUrl = bannerImage;
+    if (bannerImage && bannerImage.startsWith('data:image')) {
+      toast.loading('Mengunggah gambar banner...', { id: 'upload-banner' });
+      try {
+        const url = await dbUploadFile('banners', `banner-${Date.now()}.jpg`, bannerImage);
+        if (url) finalImageUrl = url;
+        toast.dismiss('upload-banner');
+      } catch (e) {
+        toast.dismiss('upload-banner');
+        toast.error('Gagal mengunggah gambar');
+        return;
+      }
+    }
+    
     const bannerData: PromoBanner = {
       id: editBanner ? editBanner.id : Date.now().toString(),
       type: bannerType,
@@ -139,7 +153,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
       description: bannerDesc.trim(),
       voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) || bannerVoucherId : undefined,
       productId: bannerType === 'menu' ? Number(bannerProductId) || bannerProductId : undefined,
-      imageUrl: bannerImage,
+      imageUrl: finalImageUrl,
       isActive: bannerIsActive
     };
 

@@ -22,7 +22,6 @@ const StockOutPage = lazy(() => import("./pages/StockOut"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const StockReport = lazy(() => import("./pages/StockReport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Login = lazy(() => import("./pages/Login"));
 const ActiveOrders = lazy(() => import("./pages/ActiveOrders"));
 const Kitchen = lazy(() => import("./pages/Kitchen"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
@@ -32,16 +31,16 @@ const Vouchers = lazy(() => import("./pages/Vouchers"));
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const authString = localStorage.getItem('admin_auth');
   if (!authString) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   try {
     const auth = JSON.parse(authString);
-    if (!auth || !auth.role) return <Navigate to="/admin/login" replace />;
+    if (!auth || !auth.role) return <Navigate to="/login" replace />;
   } catch (e) {
     // If it's a legacy 'true', let it pass
     if (authString !== 'true') {
-      return <Navigate to="/admin/login" replace />;
+      return <Navigate to="/login" replace />;
     }
   }
   
@@ -63,33 +62,6 @@ const AdminOnlyRoute = ({ children, allowedForUser = false }: { children: React.
 export default function AdminApp() {
   return (
     <Routes>
-      <Route path="login" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex bg-background">
-            <div className="hidden lg:block lg:w-1/2 xl:w-[55%] bg-gradient-to-br from-primary/80 via-primary/50 to-primary/30 animate-pulse" />
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="w-full max-w-md space-y-6">
-                <div className="h-8 w-32 bg-muted animate-pulse rounded-lg mx-auto" />
-                <div className="bg-card border rounded-3xl p-8 space-y-5">
-                  <div className="space-y-2">
-                    <div className="h-4 w-28 bg-muted animate-pulse rounded" />
-                    <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-                    <div className="h-3 w-full bg-muted animate-pulse rounded" />
-                  </div>
-                  <div className="space-y-4">
-                    <div className="h-12 w-full bg-muted animate-pulse rounded-xl" />
-                    <div className="h-12 w-full bg-muted animate-pulse rounded-xl" />
-                    <div className="h-12 w-full bg-primary/20 animate-pulse rounded-xl" />
-                  </div>
-                  <div className="h-16 w-full bg-muted animate-pulse rounded-xl" />
-                </div>
-              </div>
-            </div>
-          </div>
-        }>
-          <Login />
-        </Suspense>
-      } />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="" element={
           <AdminOnlyRoute>

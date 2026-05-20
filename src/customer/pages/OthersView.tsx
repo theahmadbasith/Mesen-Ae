@@ -72,7 +72,7 @@ export default function OthersView({
   };
 
   // Pre-filled messages templates
-  const orderMessageTemplate = `Halo Admin, saya *${customerName || 'Tamu'}* ${tableNumber ? `(Meja ${tableNumber})` : ''}. Saya butuh bantuan terkait pesanan saya.`;
+  const orderMessageTemplate = `Halo Admin, saya *${customerName || 'Tamu'}* ${tableNumber === 'Bawa Pulang' ? '(Take Away)' : tableNumber ? `(Meja ${tableNumber})` : ''}. Saya butuh bantuan terkait pesanan saya.`;
   const techMessageTemplate = `Halo Tim Support, saya *${customerName || 'Tamu'}*. Saya mengalami kendala teknis saat menggunakan aplikasi pemesanan.`;
 
   return (
@@ -90,7 +90,7 @@ export default function OthersView({
             </h1>
             <div className="flex items-center gap-1.5 mt-1 text-slate-500 dark:text-slate-400 text-sm font-medium">
               <MapPin size={14} />
-              <span>{tableNumber ? `Meja ${tableNumber}` : 'Pilih meja saat memesan'}</span>
+              <span>{tableNumber === 'Bawa Pulang' ? 'Take Away' : tableNumber ? `Meja ${tableNumber}` : '-'}</span>
             </div>
           </div>
         </div>

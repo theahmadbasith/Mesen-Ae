@@ -131,7 +131,7 @@ export default function ActiveOrders() {
                       <div className="bg-muted p-1.5 rounded-md mr-2.5 text-foreground/70">
                         <Hash className="w-4 h-4" />
                       </div>
-                      <span>Meja <span className="font-semibold text-foreground">{bill.tableNumber}</span></span>
+                      <span>{String(bill.tableNumber) === 'Bawa Pulang' ? 'Take Away' : <>Meja <span className="font-semibold text-foreground">{bill.tableNumber}</span></>}</span>
                     </div>
                   )}
 

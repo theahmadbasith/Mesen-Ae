@@ -246,10 +246,10 @@ export default function LandingView({
             </div>
             <div>
               <p className="text-[11px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">
-                Lokasi Anda
+                {tableNumber === 'Bawa Pulang' ? 'Tipe Pesanan' : 'Lokasi Anda'}
               </p>
               <p className="font-extrabold text-lg text-slate-800 dark:text-white leading-none">
-                {tableNumber ? `Meja ${tableNumber}` : 'Belum Pilih Meja'}
+                {tableNumber === 'Bawa Pulang' ? 'Take Away (Bawa Pulang)' : tableNumber ? `Meja ${tableNumber}` : 'Belum Ada Meja'}
               </p>
             </div>
           </div>
@@ -282,32 +282,38 @@ export default function LandingView({
                   {[...displayOffers, ...displayOffers, ...displayOffers].map((promo, index) => (
                     <div 
                       key={`${promo.id}-${index}`}
-                      className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[1.5rem] p-6 text-white relative overflow-hidden snap-start shrink-0 w-full min-h-[160px] flex flex-col justify-between"
+                      className="rounded-[1.5rem] p-6 text-white relative overflow-hidden snap-start shrink-0 w-full min-h-[180px] flex flex-col justify-between shadow-md"
                     >
                       {promo.imageUrl ? (
                         <div className="absolute inset-0 z-0">
-                          <img src={promo.imageUrl} alt={promo.title} className="w-full h-full object-cover opacity-35" />
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/95 to-indigo-900/40" />
+                          <img src={promo.imageUrl} alt={promo.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
                         </div>
                       ) : (
-                        <Gift size={140} strokeWidth={1} className="absolute -right-6 -bottom-6 text-white/15 rotate-[-15deg] z-0" />
+                        <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">
+                          <Gift size={160} strokeWidth={1} className="absolute -right-4 -bottom-8 text-white/10 rotate-[-15deg] z-0" />
+                        </div>
                       )}
 
-                      <div className="relative z-10 w-2/3">
-                        <span className="bg-white/20 text-[10px] px-2.5 py-1 rounded-md backdrop-blur-md font-bold mb-3 inline-block uppercase tracking-wider border border-white/10">
-                          {promo.type === 'voucher' ? 'Promo' : promo.type === 'menu' ? 'Menu Baru' : 'Spesial'}
+                      <div className="relative z-10 w-[70%] mt-auto">
+                        <span className={cn(
+                          "text-[10px] px-2.5 py-1 rounded-md backdrop-blur-md font-bold mb-3 inline-block uppercase tracking-wider border shadow-sm",
+                          promo.imageUrl ? "bg-white/10 border-white/20 text-white" : "bg-white/20 border-white/10"
+                        )}>
+                          {promo.type === 'voucher' ? 'Promo' : promo.type === 'menu' ? 'Menu Baru' : 'Penawaran Spesial'}
                         </span>
-                        <h4 className="font-extrabold text-2xl mb-1.5 leading-tight line-clamp-1">
+                        <h4 className="font-extrabold text-2xl mb-1.5 leading-tight line-clamp-1 drop-shadow-md">
                           {promo.title}
                         </h4>
-                        <p className="text-xs text-blue-50 mb-5 font-medium line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-slate-200 mb-5 font-medium line-clamp-2 leading-relaxed drop-shadow-sm">
                           {promo.description}
                         </p>
                         <button 
                           onClick={() => setView('menu')}
-                          className="bg-white text-blue-600 text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm hover:bg-blue-50 active:scale-95 transition-all"
+                          className="bg-white text-slate-900 text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg hover:bg-slate-100 active:scale-95 transition-all flex items-center gap-2"
                         >
-                          Cek Katalog
+                          Lihat Sekarang <ArrowRight size={16} />
                         </button>
                       </div>
                     </div>

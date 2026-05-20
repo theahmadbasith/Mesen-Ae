@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { VouchersSkeleton } from '@/admin/components/SkeletonLoaders';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import BannerSettingsTab from '@/admin/components/vouchers/BannerSettingsTab';
+import BannerSettingsTab from '@/admin/components/BannerSettingsTab';
 
 export default function Vouchers() {
   const [activeTab, setActiveTab] = useState<'vouchers' | 'banners'>('vouchers');

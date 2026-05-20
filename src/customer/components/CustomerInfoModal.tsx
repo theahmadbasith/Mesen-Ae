@@ -97,7 +97,7 @@ export default function CustomerInfoModal({
           </div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Data Pesanan</h2>
           <p className="text-sm text-slate-500 mt-2">
-            Silakan isi nama Anda untuk memesan. Nomor meja hanya dapat diisi dengan memindai QR Code di meja.
+            Silakan isi nama Anda untuk memesan. Nomor meja telah disesuaikan otomatis oleh sistem.
           </p>
         </div>
 
@@ -138,19 +138,19 @@ export default function CustomerInfoModal({
                 type="text"
                 value={tableNumber}
                 disabled={true}
-                placeholder="Wajib Pindai QR Code"
+                placeholder="Otomatis oleh sistem"
                 className="w-full pl-11 pr-4 py-3.5 border rounded-2xl text-slate-500 bg-slate-100 border-slate-200 font-semibold focus:outline-none transition-all cursor-not-allowed select-none"
               />
             </div>
-            {initialTableNumber ? (
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-500 ml-1 font-semibold">
-                *Nomor meja terisi otomatis dari QR Code
-              </p>
-            ) : (
+            {initialTableNumber === 'Bawa Pulang' ? (
               <p className="text-[11px] text-orange-600 dark:text-orange-400 ml-1 font-bold">
-                *Harap pindai QR Code di meja Anda untuk memesan.
+                *Pesanan Anda akan dicatat sebagai Take Away (Bawa Pulang).
               </p>
-            )}
+            ) : initialTableNumber ? (
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-500 ml-1 font-semibold">
+                *Nomor meja terisi otomatis dari sistem.
+              </p>
+            ) : null}
           </div>
 
           {/* Submit Button */}

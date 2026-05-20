@@ -242,10 +242,10 @@ export default function TrackingView({
           <div className="text-right relative z-10 border-l border-white/20 pl-5">
             <div className="flex items-center justify-end gap-1.5 text-blue-100/80 mb-1">
               <MapPin size={14} />
-              <p className="text-[11px] uppercase font-bold tracking-widest">Meja</p>
+              <p className="text-[11px] uppercase font-bold tracking-widest">{(liveTx?.table_number || liveTx?.tableNumber) === 'Bawa Pulang' ? 'Take Away' : 'Meja'}</p>
             </div>
             <p className="font-black text-3xl text-white leading-none">
-              {liveTx?.table_number || liveTx?.tableNumber || '-'}
+              {(liveTx?.table_number || liveTx?.tableNumber) === 'Bawa Pulang' ? '🛍️' : (liveTx?.table_number || liveTx?.tableNumber || '-')}
             </p>
           </div>
         </div>
@@ -356,7 +356,8 @@ export default function TrackingView({
             onClick={() => {
               const orderNum = liveTx?.receipt_number || liveTx?.receiptNumber || '';
               const tbl = liveTx?.table_number || liveTx?.tableNumber || '-';
-              const text = `Halo, saya ingin menanyakan status pesanan saya dengan nomor order *${orderNum}* (Meja *${tbl}*). Terimakasih!`;
+              const tblLabel = tbl === 'Bawa Pulang' ? 'Take Away' : `Meja *${tbl}*`;
+              const text = `Halo, saya ingin menanyakan status pesanan saya dengan nomor order *${orderNum}* (${tblLabel}). Terimakasih!`;
               openWhatsApp(storeSettings?.phone, text);
             }}
             className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-[1.2rem] py-4 font-bold flex items-center justify-center text-sm shadow-lg shadow-[#25D366]/20 active:scale-[0.98] transition-all"

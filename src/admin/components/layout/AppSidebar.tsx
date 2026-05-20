@@ -25,18 +25,28 @@ interface AppSidebarProps {
 }
 
 export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
-  const [isProductsOpen, setIsProductsOpen] = useState(false);
+  const location = useLocation();
+  const [isProductsOpen, setIsProductsOpen] = useState(() => {
+    const paths = ["/admin/products", "/admin/supplier", "/admin/stock-in", "/admin/stock-out", "/admin/stock-report"];
+    return paths.some(p => location.pathname.startsWith(p));
+  });
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (isMobile) return false;
     return localStorage.getItem('mesenae_sidebar_collapsed') === 'true';
   });
-  const location = useLocation();
 
   useEffect(() => {
     if (!isMobile) {
       localStorage.setItem('mesenae_sidebar_collapsed', String(isCollapsed));
     }
   }, [isCollapsed, isMobile]);
+
+  useEffect(() => {
+    const paths = ["/admin/products", "/admin/supplier", "/admin/stock-in", "/admin/stock-out", "/admin/stock-report"];
+    if (paths.some(p => location.pathname.startsWith(p))) {
+      setIsProductsOpen(true);
+    }
+  }, [location.pathname]);
 
   const storeSettingsList = useDbQuery<any>('storeSettings') ?? [];
   const storeSettings = storeSettingsList[0] || null;
@@ -58,7 +68,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
         to={to}
         title={isCollapsed ? label : undefined}
         className={cn(
-          "group relative flex items-center px-3 py-2.5 my-0.5 rounded-xl transition-all duration-200 text-sm font-medium outline-none",
+          "group relative flex items-center px-3 py-2.5 my-0.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none",
           isCollapsed ? "justify-center" : "gap-3",
           isActive 
             ? "bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20" 
@@ -105,10 +115,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
 
   return (
     <div className={cn(
-      "flex flex-col text-slate-200 shadow-2xl shadow-slate-950/40 transition-all duration-300 relative z-20 overflow-visible", 
+      "flex flex-col text-slate-200 shadow-xl shadow-slate-950/20 transition-all duration-300 relative z-20 overflow-visible", 
       isMobile 
         ? "h-full w-full m-0 rounded-none border-none bg-gradient-to-b from-[#0a1128] to-[#101f42]" 
-        : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[3rem] border border-white/10 bg-gradient-to-b from-[#0a1128] to-[#101f42]",
+        : "h-screen m-0 rounded-none border-r border-white/10 bg-gradient-to-b from-[#0a1128] to-[#101f42]",
       isCollapsed && !isMobile ? "w-[80px]" : "w-64"
     )}>
       {/* Tombol Toggle Sidebar melayang */}
@@ -123,7 +133,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
 
       {/* Profil Toko / Brand Header */}
       <div className={cn("flex items-center mt-7 mb-5", isCollapsed ? "justify-center" : "gap-3 px-5")}>
-        <div className="w-10 h-10 bg-white/5 backdrop-blur-md rounded-xl shrink-0 flex items-center justify-center shadow-lg border border-white/10 p-1 relative overflow-hidden group">
+        <div className="w-10 h-10 bg-white/5 backdrop-blur-md rounded-lg shrink-0 flex items-center justify-center shadow-lg border border-white/10 p-1 relative overflow-hidden group">
           {storeSettings?.logo ? (
             <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain rounded-lg transition-transform group-hover:scale-105" />
           ) : (
@@ -167,7 +177,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 }}
                 title={isCollapsed ? "Inventori" : undefined}
                 className={cn(
-                  "w-full flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium outline-none group", 
+                  "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
                   isCollapsed ? "justify-center" : "gap-3",
                   isProductsOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
@@ -235,11 +245,11 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
         <button 
           onClick={() => {
             localStorage.removeItem('admin_auth');
-            window.location.href = '/admin/login';
+            window.location.href = '/login';
           }}
           title={isCollapsed ? "Keluar Aplikasi" : undefined}
           className={cn(
-            "w-full flex items-center justify-center p-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 font-bold transition-colors group", 
+            "w-full flex items-center justify-center p-2.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 font-bold transition-colors group", 
             !isCollapsed && "gap-3"
           )}
         >

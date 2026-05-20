@@ -51,21 +51,22 @@ export default function AppLayout() {
     return (
       <div className="flex h-screen w-full bg-background overflow-hidden">
         {/* Desktop Sidebar Skeleton */}
-        <div className="hidden lg:flex h-full w-64 shrink-0 flex-col border-r bg-card p-4 gap-4">
+        <div className="hidden lg:flex h-screen w-64 shrink-0 flex-col border-r bg-card p-4 gap-4">
           <div className="flex items-center gap-3 px-2 py-3">
-            <Skeleton className="w-9 h-9 rounded-xl" />
+            <Skeleton className="w-9 h-9 rounded-lg" />
             <Skeleton className="h-5 w-24" />
           </div>
           <div className="space-y-1.5 flex-1">
             {[1,2,3,4,5,6,7].map(i => (
-              <Skeleton key={i} className="h-10 w-full rounded-lg" />
+              <Skeleton key={i} className="h-10 w-full rounded-md" />
             ))}
           </div>
         </div>
 
         {/* Main Content Skeleton */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <div className="lg:hidden flex items-center justify-between p-4 border-b bg-card">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+          {/* Topbar Skeleton */}
+          <div className="w-full bg-card border-b px-6 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <Skeleton className="w-8 h-8 rounded-lg" />
               <Skeleton className="h-5 w-20" />
@@ -91,12 +92,12 @@ export default function AppLayout() {
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block h-full">
+      <div className="hidden lg:block h-screen shrink-0">
         <AppSidebar />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-50 dark:bg-slate-950">
         {/* Mobile Sidebar Drawer Sheet */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="left" className="p-0 w-64 border-r-0 bg-[#0a1128]">
@@ -104,14 +105,15 @@ export default function AppLayout() {
           </SheetContent>
         </Sheet>
 
+        {/* Fixed Topbar docked at the top */}
+        <AppTopbar 
+          isFullscreen={isFullscreen} 
+          onToggleFullscreen={toggleFullscreen} 
+          onToggleMobileSidebar={() => setMobileOpen(true)}
+        />
+
         {/* Main Scrollable Content */}
-        <main className="flex-1 overflow-y-auto w-full max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-          {/* Topbar for desktop & mobile */}
-          <AppTopbar 
-            isFullscreen={isFullscreen} 
-            onToggleFullscreen={toggleFullscreen} 
-            onToggleMobileSidebar={() => setMobileOpen(true)}
-          />
+        <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

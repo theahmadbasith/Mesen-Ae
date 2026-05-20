@@ -158,11 +158,11 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
 
   const handleLogout = () => {
     localStorage.removeItem('admin_auth');
-    navigate('/admin/login');
+    navigate('/login');
   };
 
   return (
-    <div className="w-full bg-card/65 backdrop-blur-xl border border-border/40 shadow-sm rounded-2xl px-6 py-4 flex items-center justify-between gap-4 animate-in fade-in duration-300">
+    <div className="w-full bg-card/65 backdrop-blur-xl border-b border-border/40 shadow-sm px-6 py-4 flex items-center justify-between gap-4 animate-in fade-in duration-300">
       
       {/* Kiri: Judul Halaman Dinamis */}
       <div className="flex items-center gap-3 min-w-0">
@@ -171,12 +171,12 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
             variant="ghost" 
             size="icon" 
             onClick={onToggleMobileSidebar}
-            className="lg:hidden h-9 w-9 p-0 hover:bg-accent/40 rounded-xl mr-1 shrink-0"
+            className="lg:hidden h-9 w-9 p-0 hover:bg-accent/40 rounded-lg mr-1 shrink-0"
           >
             <Menu className="w-5.5 h-5.5 text-foreground" />
           </Button>
         )}
-        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 hidden sm:flex">
+        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 hidden sm:flex">
           {pageInfo.icon}
         </div>
         <div className="min-w-0">
@@ -193,7 +193,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
       <div className="flex items-center gap-3.5 shrink-0">
         
         {/* Status System Online */}
-        <div className="hidden lg:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
+        <div className="hidden lg:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -208,7 +208,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
           variant="outline" 
           size="icon" 
           onClick={onToggleFullscreen} 
-          className="bg-background/80 backdrop-blur-sm border-border/60 hover:bg-accent/40 rounded-xl h-10 w-10 hidden sm:flex shrink-0 shadow-sm"
+          className="bg-background/80 backdrop-blur-sm border-border/60 hover:bg-accent/40 rounded-lg h-10 w-10 hidden sm:flex shrink-0 shadow-sm"
           title={isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}
         >
           {isFullscreen ? <Minimize className="w-4.5 h-4.5 text-muted-foreground" /> : <Maximize className="w-4.5 h-4.5 text-muted-foreground" />}
@@ -217,8 +217,8 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
         {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 p-1 px-2.5 rounded-xl border border-border/60 bg-background/50 hover:bg-accent/40 hover:border-border transition-all focus:outline-none shrink-0">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-black text-xs flex items-center justify-center shadow-sm uppercase">
+            <button className="flex items-center gap-2.5 p-1 px-2.5 rounded-lg border border-border/60 bg-background/50 hover:bg-accent/40 hover:border-border transition-all focus:outline-none shrink-0">
+              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-black text-xs flex items-center justify-center shadow-sm uppercase">
                 {username.charAt(0)}
               </div>
               <div className="text-left hidden sm:block">
@@ -227,7 +227,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
               </div>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 rounded-xl border-border/60 shadow-xl p-1.5">
+          <DropdownMenuContent align="end" className="w-56 rounded-lg border-border/60 shadow-xl p-1.5">
             <DropdownMenuLabel className="px-2.5 py-2">
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-foreground">{username}</span>
@@ -235,12 +235,12 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border/60" />
-            <DropdownMenuItem className="rounded-lg py-2 cursor-pointer font-semibold text-xs text-muted-foreground hover:text-foreground gap-2">
+            <DropdownMenuItem className="rounded-md py-2 cursor-pointer font-semibold text-xs text-muted-foreground hover:text-foreground gap-2">
               <User className="w-4 h-4" /> Profil Pengguna
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={handleLogout} 
-              className="rounded-lg py-2 cursor-pointer font-bold text-xs text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+              className="rounded-md py-2 cursor-pointer font-bold text-xs text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
             >
               <LogOut className="w-4 h-4" /> Keluar Sistem
             </DropdownMenuItem>

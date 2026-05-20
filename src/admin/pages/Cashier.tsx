@@ -10,8 +10,8 @@ import {
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
-import ProcessingBillsModal from '@/admin/components/cashier/ProcessingBillsModal';
-import OpenBillsModal from '@/admin/components/cashier/OpenBillsModal';
+import ProcessingBillsModal from '@/admin/components/CashierProcessingBillsModal';
+import OpenBillsModal from '@/admin/components/CashierOpenBillsModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1078,24 +1078,42 @@ export default function Kasir() {
               </div>
 
               {/* Customer / Table quick inputs */}
-              <div className="flex gap-2 mb-2">
-                <div className="relative flex-1">
-                  <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Nama pelanggan"
-                    value={customerName}
-                    onChange={e => setCustomerName(e.target.value)}
-                    className="pl-8 h-9 text-xs"
-                  />
+              <div className="space-y-2 mb-2">
+                <div className="flex bg-muted/50 p-1 rounded-lg">
+                  <button 
+                    className={cn("flex-1 text-[11px] py-1.5 rounded-md font-bold transition-all", tableNumber === 'Bawa Pulang' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
+                    onClick={() => setTableNumber('Bawa Pulang')}
+                  >
+                    Bawa Pulang (Take Away)
+                  </button>
+                  <button 
+                    className={cn("flex-1 text-[11px] py-1.5 rounded-md font-bold transition-all", tableNumber !== 'Bawa Pulang' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
+                    onClick={() => setTableNumber(tableNumber === 'Bawa Pulang' ? '' : tableNumber)}
+                  >
+                    Makan di Tempat
+                  </button>
                 </div>
-                <div className="relative flex-[0.6]">
-                  <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Meja"
-                    value={tableNumber}
-                    onChange={e => setTableNumber(e.target.value)}
-                    className="pl-8 h-9 text-xs"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Nama pelanggan"
+                      value={customerName}
+                      onChange={e => setCustomerName(e.target.value)}
+                      className="pl-8 h-9 text-xs"
+                    />
+                  </div>
+                  {tableNumber !== 'Bawa Pulang' && (
+                    <div className="relative flex-[0.6]">
+                      <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="No. Meja"
+                        value={tableNumber}
+                        onChange={e => setTableNumber(e.target.value)}
+                        className="pl-8 h-9 text-xs"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1321,7 +1339,21 @@ export default function Kasir() {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-3 pt-2">
+              <div className="flex bg-muted/50 p-1 rounded-xl">
+                <button 
+                  className={cn("flex-1 text-xs py-2 rounded-lg font-bold transition-all", tableNumber === 'Bawa Pulang' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
+                  onClick={() => setTableNumber('Bawa Pulang')}
+                >
+                  Bawa Pulang (Take Away)
+                </button>
+                <button 
+                  className={cn("flex-1 text-xs py-2 rounded-lg font-bold transition-all", tableNumber !== 'Bawa Pulang' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
+                  onClick={() => setTableNumber(tableNumber === 'Bawa Pulang' ? '' : tableNumber)}
+                >
+                  Makan di Tempat
+                </button>
+              </div>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -1332,15 +1364,17 @@ export default function Kasir() {
                     className="pl-8 h-10 text-sm"
                   />
                 </div>
-                <div className="relative flex-[0.7]">
-                  <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Meja"
-                    value={tableNumber}
-                    onChange={e => setTableNumber(e.target.value)}
-                    className="pl-8 h-10 text-sm"
-                  />
-                </div>
+                {tableNumber !== 'Bawa Pulang' && (
+                  <div className="relative flex-[0.7]">
+                    <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Nomor Meja"
+                      value={tableNumber}
+                      onChange={e => setTableNumber(e.target.value)}
+                      className="pl-8 h-10 text-sm"
+                    />
+                  </div>
+                )}
               </div>
               <Input
                 placeholder="Catatan tambahan (opsional)"

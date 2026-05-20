@@ -201,7 +201,7 @@ export default function CheckoutView({
 
   const handlePay = async () => {
     if (!tableNumber) {
-      toast.error('Harap pindai QR Code di meja Anda terlebih dahulu untuk melakukan pemesanan!');
+      toast.error('Terjadi kesalahan, coba muat ulang halaman.');
       setView('landing');
       return;
     }
@@ -411,13 +411,13 @@ export default function CheckoutView({
               <MapPin size={18} />
             </div>
             <div className="flex-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meja Anda</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{tableNumber === 'Bawa Pulang' ? 'Tipe Pesanan' : 'Meja Anda'}</p>
               <input 
                 type="text"
                 disabled={true}
-                placeholder="Pindai QR meja untuk mengisi"
-                value={tableNumber ? `Meja ${tableNumber}` : ''}
-                className="w-full bg-transparent border-none pb-1 text-sm font-bold text-slate-900 dark:text-white outline-none cursor-not-allowed select-none placeholder-orange-500"
+                placeholder="-"
+                value={tableNumber === 'Bawa Pulang' ? 'Take Away (Bawa Pulang)' : tableNumber ? `Meja ${tableNumber}` : '-'}
+                className="w-full bg-transparent border-none pb-1 text-sm font-bold text-slate-900 dark:text-white outline-none cursor-not-allowed select-none placeholder-slate-400"
               />
             </div>
           </div>

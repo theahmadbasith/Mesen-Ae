@@ -274,10 +274,10 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
                       {tx.table_number && (
                         <div className="text-right border-r border-slate-200 dark:border-slate-700 pr-4">
                           <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">
-                            Meja
+                            {String(tx.table_number) === 'Bawa Pulang' ? 'Tipe' : 'Meja'}
                           </p>
                           <p className="font-bold text-slate-900 dark:text-white">
-                            {tx.table_number}
+                            {String(tx.table_number) === 'Bawa Pulang' ? 'Take Away' : tx.table_number}
                           </p>
                         </div>
                       )}
