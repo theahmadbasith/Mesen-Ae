@@ -455,12 +455,13 @@ export function subscribeToTransactionUpdates(
   transactionId: number,
   onUpdate: (transaction: any) => void
 ): () => void {
+  // Poll every 3s for fast status updates (e.g. when admin confirms payment)
   const interval = setInterval(async () => {
     const rows = await dbSelect<any>('transactions', { id: transactionId });
     if (rows && rows.length > 0) {
       onUpdate(rows[0]);
     }
-  }, 5000);
+  }, 3000);
 
   return () => clearInterval(interval);
 }

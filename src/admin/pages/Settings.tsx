@@ -11,7 +11,7 @@ import {
   ChevronRight, Image as ImageIcon, UploadCloud
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
-import PromoBanner from '@/customer/components/PromoBanner';
+import PromoBanner from '@/components/PromoBanner';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';

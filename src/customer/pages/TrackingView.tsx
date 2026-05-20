@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Plus, Bell, MessageCircle,
   ClipboardList, ChefHat, PackageOpen, BellRing, CheckCircle2,
@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 import { 
   fetchTransactionByOrderNumber, 
-  subscribeToTransactionUpdates,
   fetchTransactionsByCustomerName,
-  fetchTransactionItems
+  fetchTransactionItems,
+  dbSelect
 } from '@/lib/db';
 import { FORMAT_IDR } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -56,6 +56,8 @@ interface Step {
   icon: LucideIcon;
 }
 
+const POLL_INTERVAL = 3000; // 3 seconds for fast status sync
+
 export default function TrackingView({ 
   setView, 
   finalOrderData, 
@@ -64,12 +66,36 @@ export default function TrackingView({
   customerName
 }: TrackingViewProps) {
   
-  const [liveTx, setLiveTx] = useState<TransactionInfo | undefined>(finalOrderData?.transaction);
+  const [liveTx, setLiveTx] = useState<TransactionInfo | undefined>(() => {
+    // Try to restore from sessionStorage for persistence across view switches
+    if (finalOrderData?.transaction) return finalOrderData.transaction;
+    try {
+      const cached = sessionStorage.getItem('mesenae_tracking_tx');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return undefined;
+  });
   const [receiptOpen, setReceiptOpen] = useState<boolean>(false);
-  const [activeItems, setActiveItems] = useState<any[]>(finalOrderData?.items || []);
-  const [paymentMethodName, setPaymentMethodName] = useState<string>(finalOrderData?.paymentMethodName || 'Pembayaran');
-  const [loadingActive, setLoadingActive] = useState<boolean>(!finalOrderData);
+  const [activeItems, setActiveItems] = useState<any[]>(() => {
+    if (finalOrderData?.items) return finalOrderData.items as any[];
+    try {
+      const cached = sessionStorage.getItem('mesenae_tracking_items');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return [];
+  });
+  const [paymentMethodName, setPaymentMethodName] = useState<string>(() => {
+    if (finalOrderData?.paymentMethodName) return finalOrderData.paymentMethodName as string;
+    try {
+      const cached = sessionStorage.getItem('mesenae_tracking_pm');
+      if (cached) return cached;
+    } catch (_) {}
+    return 'Pembayaran';
+  });
+  const [loadingActive, setLoadingActive] = useState<boolean>(!finalOrderData && !liveTx);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // --- All hooks MUST be called before any conditional returns ---
   const users = (useDbQuery('users') as any[]) ?? [];
   const activeKasirWa = React.useMemo(() => {
     const kasir = users.find(u => u.whatsapp);
@@ -78,7 +104,7 @@ export default function TrackingView({
 
   const isPaid = liveTx?.status === 'lunas' || liveTx?.status === 'completed';
 
-  const openWhatsApp = (phone: string | undefined, text: string) => {
+  const openWhatsApp = useCallback((phone: string | undefined, text: string) => {
     if (!phone) {
       toast.error('Nomor telepon restoran belum diatur');
       return;
@@ -88,15 +114,62 @@ export default function TrackingView({
       formattedPhone = '62' + formattedPhone.substring(1);
     }
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`, '_blank');
-  };
+  }, []);
 
-  // 1. Hook to scan/lookup the active transaction in the background on mount
+  // Persist tracking state to sessionStorage so it survives view switches
   useEffect(() => {
+    if (liveTx) {
+      try {
+        sessionStorage.setItem('mesenae_tracking_tx', JSON.stringify(liveTx));
+      } catch (_) {}
+    }
+  }, [liveTx]);
+
+  useEffect(() => {
+    if (activeItems.length > 0) {
+      try {
+        sessionStorage.setItem('mesenae_tracking_items', JSON.stringify(activeItems));
+      } catch (_) {}
+    }
+  }, [activeItems]);
+
+  useEffect(() => {
+    if (paymentMethodName) {
+      try {
+        sessionStorage.setItem('mesenae_tracking_pm', paymentMethodName);
+      } catch (_) {}
+    }
+  }, [paymentMethodName]);
+
+  // Extract payment method name from transaction data
+  const extractPaymentMethod = useCallback((tx: any): string => {
+    let pmName = 'Pembayaran';
+    if (tx.payments) {
+      try {
+        const parsed = typeof tx.payments === 'string' ? JSON.parse(tx.payments) : tx.payments;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          pmName = parsed[0].method_name || 'Pembayaran';
+        }
+      } catch (_) {}
+    }
+    if (tx.payment_method_id === 0) {
+      pmName = 'Bayar di Kasir';
+    }
+    return pmName;
+  }, []);
+
+  // 1. Initial lookup — find the active transaction if we don't already have one
+  useEffect(() => {
+    if (liveTx) {
+      setLoadingActive(false);
+      return;
+    }
+    if (!customerName) {
+      setLoadingActive(false);
+      return;
+    }
+
     const lookupActiveTransaction = async () => {
-      if (!customerName) {
-        setLoadingActive(false);
-        return;
-      }
       try {
         const txs = await fetchTransactionsByCustomerName(customerName);
         const sorted = (txs || []).sort((a, b) => {
@@ -115,20 +188,7 @@ export default function TrackingView({
           setLiveTx(active);
           const items = await fetchTransactionItems(active.id);
           setActiveItems(items || []);
-          
-          let pmName = 'Pembayaran';
-          if (active.payments) {
-            try {
-              const parsed = typeof active.payments === 'string' ? JSON.parse(active.payments) : active.payments;
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                pmName = parsed[0].method_name || 'Pembayaran';
-              }
-            } catch (_) {}
-          }
-          if (active.payment_method_id === 0) {
-            pmName = 'Bayar di Kasir';
-          }
-          setPaymentMethodName(pmName);
+          setPaymentMethodName(extractPaymentMethod(active));
         }
       } catch (err) {
         console.error('Error looking up active transaction:', err);
@@ -138,9 +198,90 @@ export default function TrackingView({
     };
 
     lookupActiveTransaction();
-  }, [customerName]);
+  }, [customerName, liveTx, extractPaymentMethod]);
 
-  // Loading spinner during background lookup (if finalOrderData is not present)
+  // 2. AGGRESSIVE POLLING — poll the transaction every 3 seconds for instant updates
+  useEffect(() => {
+    const txId = liveTx?.id;
+    if (!txId) return;
+
+    // Do an immediate fresh fetch on mount/re-entry
+    const fetchLatest = async () => {
+      try {
+        const rows = await dbSelect<any>('transactions', { id: txId });
+        if (rows && rows.length > 0) {
+          const updated = rows[0];
+          setLiveTx(prev => {
+            // Only update state if something actually changed
+            if (
+              prev?.status !== updated.status ||
+              prev?.kitchen_status !== updated.kitchen_status ||
+              prev?.kitchenStatus !== updated.kitchenStatus
+            ) {
+              // When status transitions to paid, show a toast
+              const wasPaid = prev?.status === 'lunas' || prev?.status === 'completed';
+              const nowPaid = updated.status === 'lunas' || updated.status === 'completed';
+              if (!wasPaid && nowPaid) {
+                toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
+              }
+              return updated;
+            }
+            // Still update total/payments silently
+            return { ...prev, ...updated };
+          });
+          setPaymentMethodName(extractPaymentMethod(updated));
+        }
+      } catch (err) {
+        // Silently retry on next poll
+      }
+    };
+
+    // Immediate fetch
+    fetchLatest();
+
+    // Set up fast polling
+    pollRef.current = setInterval(fetchLatest, POLL_INTERVAL);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [liveTx?.id, extractPaymentMethod]);
+
+  // 3. Also fetch initial data from receiptNumber if available
+  useEffect(() => {
+    const receiptNum = liveTx?.receipt_number || liveTx?.receiptNumber;
+    if (!receiptNum || !liveTx?.id) return;
+
+    // If we have a receipt number but no items loaded, fetch them
+    if (activeItems.length === 0) {
+      const loadItems = async () => {
+        const items = await fetchTransactionItems(liveTx.id as number);
+        if (items && items.length > 0) {
+          setActiveItems(items);
+        }
+      };
+      loadItems();
+    }
+  }, [liveTx?.id, liveTx?.receipt_number, liveTx?.receiptNumber, activeItems.length]);
+
+  // Steps definition
+  const stepsList: Step[] = [
+    { id: 'diproses', title: 'Pesanan Diterima', desc: 'Kasir telah menerima pesanan Anda', icon: ClipboardList },
+    { id: 'dimasak', title: 'Sedang Dimasak', desc: 'Koki kami sedang menyiapkan hidangan', icon: ChefHat },
+    { id: 'disiapkan', title: 'Sedang Disiapkan', desc: 'Pesanan sedang dikemas atau diplating', icon: PackageOpen },
+    { id: 'siap', title: 'Pesanan Siap', desc: 'Menunggu pelayan mengantar ke meja', icon: BellRing },
+    { id: 'diantarkan', title: 'Selesai', desc: 'Selamat menikmati pesanan Anda!', icon: CheckCircle2 },
+  ];
+
+  const currentStatus = (liveTx?.kitchen_status || liveTx?.kitchenStatus || 'diproses').toLowerCase();
+  let currentStepIndex = stepsList.findIndex(s => s.id === currentStatus);
+  if (currentStepIndex === -1) currentStepIndex = 0;
+
+  // --- CONDITIONAL RENDERS (safe — all hooks already called above) ---
+
   if (loadingActive) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -152,7 +293,6 @@ export default function TrackingView({
     );
   }
 
-  // If we don't have an order to track, show empty state
   if (!liveTx) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -171,52 +311,6 @@ export default function TrackingView({
         </button>
       </div>
     );
-  }
-
-  // Use realtime subscription for transaction updates
-  useEffect(() => {
-    const transactionId = liveTx?.id;
-    const receiptNum = liveTx?.receipt_number || liveTx?.receiptNumber;
-
-    if (!transactionId || !receiptNum) return;
-
-    const loadInitialData = async () => {
-      const tx = await fetchTransactionByOrderNumber(receiptNum as string);
-      if (tx) setLiveTx(tx);
-    };
-    
-    loadInitialData();
-
-    const unsubscribe = subscribeToTransactionUpdates(
-      transactionId as any,
-      (updatedTx: TransactionInfo) => setLiveTx(updatedTx)
-    );
-
-    return () => {
-      if (unsubscribe && typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
-  }, [finalOrderData?.transaction?.id, finalOrderData?.transaction?.receiptNumber, finalOrderData?.transaction?.receipt_number]);
-
-  const currentStatus = (liveTx?.kitchen_status || liveTx?.kitchenStatus || 'diproses').toLowerCase();
-
-  const stepsList: Step[] = [
-    { id: 'diproses', title: 'Pesanan Diterima', desc: 'Kasir telah menerima pesanan Anda', icon: ClipboardList },
-    { id: 'dimasak', title: 'Sedang Dimasak', desc: 'Koki kami sedang menyiapkan hidangan', icon: ChefHat },
-    { id: 'disiapkan', title: 'Sedang Disiapkan', desc: 'Pesanan sedang dikemas atau diplating', icon: PackageOpen },
-    { id: 'siap', title: 'Pesanan Siap', desc: 'Menunggu pelayan mengantar ke meja', icon: BellRing },
-    { id: 'diantarkan', title: 'Selesai', desc: 'Selamat menikmati pesanan Anda!', icon: CheckCircle2 },
-  ];
-
-  // Logic to find current active step
-  let currentStepIndex = stepsList.findIndex(s => s.id === currentStatus);
-  // Fallback if status doesn't match standard flow
-  if (currentStepIndex === -1) currentStepIndex = 0; 
-
-  if (liveTx?.status === 'lunas' && currentStatus !== 'diantarkan') {
-    // If somehow fully done but kitchen status isn't updated
-    // Depend on your exact business logic.
   }
 
   return (
@@ -285,7 +379,7 @@ export default function TrackingView({
 
             <div className="pt-2 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1.5 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-              <span>Status Pesanan: Bayar ke Kasir</span>
+              <span>Menunggu Konfirmasi Kasir...</span>
             </div>
           </div>
         ) : (
@@ -304,7 +398,6 @@ export default function TrackingView({
                 {stepsList.map((step, index) => {
                   const isDone = index < currentStepIndex || currentStatus === 'diantarkan';
                   const isActive = index === currentStepIndex && currentStatus !== 'diantarkan';
-                  const isPending = index > currentStepIndex;
 
                   return (
                     <div key={step.id} className="relative flex items-start gap-4 group">

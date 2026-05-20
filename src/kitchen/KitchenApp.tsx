@@ -43,7 +43,7 @@ export default function KitchenApp() {
         } />
       </Route>
       
-      <Route path="*" element={<Navigate to="/kitchen" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

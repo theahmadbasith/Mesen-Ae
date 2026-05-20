@@ -1,10 +1,9 @@
 import React, { JSX, useState, useEffect, useRef } from 'react';
 import { 
-import { 
   MapPin, Flame, Moon, Sun, Gift, Package, 
   Image as ImageIcon, ArrowRight, Store
 } from 'lucide-react';
-import PromoBanner from '@/customer/components/PromoBanner';
+import PromoBanner from '@/components/PromoBanner';
 
 import { FORMAT_IDR, cn } from '@/lib/utils';
 import { useDbQuery } from '@/hooks/db-hooks';

@@ -21,7 +21,6 @@ const StockInPage = lazy(() => import("./pages/StockIn"));
 const StockOutPage = lazy(() => import("./pages/StockOut"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const StockReport = lazy(() => import("./pages/StockReport"));
-const NotFound = lazy(() => import("./pages/NotFound"));
 const ActiveOrders = lazy(() => import("./pages/ActiveOrders"));
 const Kitchen = lazy(() => import("./pages/Kitchen"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
@@ -160,11 +159,7 @@ export default function AdminApp() {
           </AdminOnlyRoute>
         } />
       </Route>
-      <Route path="*" element={
-        <Suspense fallback={<PageSkeleton />}>
-          <NotFound />
-        </Suspense>
-      } />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
