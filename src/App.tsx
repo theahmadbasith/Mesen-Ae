@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import AdminApp from "./admin/AdminApp";
 import CustomerApp from "./customer/CustomerApp";
@@ -10,6 +10,7 @@ import KitchenApp from "./kitchen/KitchenApp";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { isDbConfigured } from "./lib/db";
 import { queryClient } from '@/lib/query-client';
+import Home from "./Home";
 
 const SharedLogin = lazy(() => import("./login/Login"));
 
@@ -22,6 +23,19 @@ function DatabaseWarning() {
       {isAdminPath ? ' Untuk admin, juga pastikan `GOOGLE_SERVICE_ACCOUNT_JSON` dan `ADMIN_API_KEY` sudah diset di environment server.' : ' Cek `.env.example` untuk contoh lengkap.'}
     </div>
   );
+}
+
+function IndexRoute() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  
+  // Jika path adalah / (root) dan tidak ada parameter table, tampilkan Home
+  if (location.pathname === '/' && !searchParams.has('table')) {
+    return <Home />;
+  }
+  
+  // Jika /order, atau root yang ada parameter table, jalankan CustomerApp
+  return <CustomerApp />;
 }
 
 const App = () => {
@@ -45,7 +59,7 @@ const App = () => {
               } />
               <Route path="/admin/*" element={<AdminApp />} />
               <Route path="/kitchen/*" element={<KitchenApp />} />
-              <Route path="/*" element={<CustomerApp />} />
+              <Route path="/*" element={<IndexRoute />} />
             </Routes>
           </BrowserRouter>
         </ErrorBoundary>

@@ -37,6 +37,12 @@ export default function QrCodeMenu() {
     }
     
     const newTableName = newTable.trim();
+    
+    if (newTableName.toLowerCase() === 'bawa pulang') {
+      toast.error('Bawa Pulang sudah tersedia secara default');
+      return;
+    }
+    
     // Case-insensitive duplicate check
     const isDuplicate = tables.some(t => t.toLowerCase() === newTableName.toLowerCase());
     
@@ -251,6 +257,7 @@ export default function QrCodeMenu() {
 
   const formatTableLabel = (t: string | number) => {
     const s = String(t).trim();
+    if (s.toLowerCase() === 'bawa pulang') return 'Bawa Pulang';
     return /^meja\s+/i.test(s) ? s : `Meja ${s}`;
   };
 
@@ -287,6 +294,28 @@ export default function QrCodeMenu() {
               </div>
 
               <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
+                
+                {/* Take Away (Bawa Pulang) QR Code - Fixed at top */}
+                <div 
+                  onClick={() => setActiveTable('Bawa Pulang')}
+                  className={`group flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    activeTable === 'Bawa Pulang' 
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm' 
+                      : 'border-border hover:border-primary/30 hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {activeTable === 'Bawa Pulang' ? (
+                      <CheckCircle2 className="w-5 h-5 text-primary" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 group-hover:border-primary/40 transition-colors" />
+                    )}
+                    <span className={`font-semibold ${activeTable === 'Bawa Pulang' ? 'text-primary' : 'text-foreground'}`}>
+                      Bawa Pulang (Take Away)
+                    </span>
+                  </div>
+                </div>
+
                 {tables.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-border/60 rounded-xl bg-muted/20">
                     <QrCode className="w-10 h-10 text-muted-foreground/40 mb-3" />
