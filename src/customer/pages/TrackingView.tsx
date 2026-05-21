@@ -10,7 +10,7 @@ import {
   fetchTransactionItems,
   dbSelect
 } from '@/lib/db';
-import { FORMAT_IDR } from '@/lib/utils';
+import { FORMAT_IDR, getLocalTransactionIds } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReceiptModal from '../../components/Receipt';
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -76,6 +76,8 @@ export default function TrackingView({
     } catch (_) {}
     return undefined;
   });
+  
+  const [activeTxs, setActiveTxs] = useState<TransactionInfo[]>([]);
   const [receiptOpen, setReceiptOpen] = useState<boolean>(false);
   const [activeItems, setActiveItems] = useState<any[]>(() => {
     if (finalOrderData?.items) return finalOrderData.items as any[];
@@ -173,23 +175,41 @@ export default function TrackingView({
     const lookupActiveTransaction = async () => {
       try {
         const txs = await fetchTransactionsByCustomerName(customerName);
-        const sorted = (txs || []).sort((a, b) => {
+        const localIds = getLocalTransactionIds();
+        
+        const sorted = (txs || []).filter(tx => {
+          if (localIds.length > 0) return localIds.includes(tx.id as string | number);
+          return true;
+        }).sort((a, b) => {
           const dateA = new Date(a.date || a.created_at || 0).getTime();
           const dateB = new Date(b.date || b.created_at || 0).getTime();
           return dateB - dateA;
         });
 
-        const active = sorted.find(tx => {
+        const actives = sorted.filter(tx => {
           const status = (tx.status || '').toLowerCase();
           const kitchen = (tx.kitchen_status || tx.kitchenStatus || 'pending').toLowerCase();
           return status !== 'cancelled' && (status === 'belum lunas' || kitchen !== 'diantarkan');
         });
 
-        if (active) {
-          setLiveTx(active);
-          const items = await fetchTransactionItems(active.id);
-          setActiveItems(items || []);
-          setPaymentMethodName(extractPaymentMethod(active));
+        if (actives.length > 0) {
+          setActiveTxs(actives);
+          
+          const currentLiveTx = liveTx || actives[0];
+          // If we have a liveTx but it's not in actives, default to actives[0]
+          const isLiveTxActive = actives.find(t => t.id === currentLiveTx.id);
+          const targetTx = isLiveTxActive || actives[0];
+          
+          if (!liveTx || !isLiveTxActive) {
+            setLiveTx(targetTx);
+            const items = await fetchTransactionItems(targetTx.id as number);
+            setActiveItems(items || []);
+            setPaymentMethodName(extractPaymentMethod(targetTx));
+          }
+        } else {
+          setActiveTxs([]);
+          setLiveTx(undefined);
+          setActiveItems([]);
         }
       } catch (err) {
         console.error('Error looking up active transaction:', err);
@@ -199,7 +219,7 @@ export default function TrackingView({
     };
 
     lookupActiveTransaction();
-  }, [customerName, liveTx, extractPaymentMethod]);
+  }, [customerName, extractPaymentMethod]); // remove liveTx from deps to prevent infinite loop
 
   // 2. TRUE REALTIME SIGNAL + AGGRESSIVE POLLING FALLBACK
   useEffect(() => {
@@ -301,6 +321,18 @@ export default function TrackingView({
   let currentStepIndex = stepsList.findIndex(s => s.id === currentStatus);
   if (currentStepIndex === -1) currentStepIndex = 0;
 
+  const handleTabClick = async (tx: TransactionInfo) => {
+    if (liveTx?.id === tx.id) return;
+    setLiveTx(tx);
+    setPaymentMethodName(extractPaymentMethod(tx));
+    setLoadingActive(true);
+    try {
+      const items = await fetchTransactionItems(tx.id as number);
+      setActiveItems(items || []);
+    } catch(e) {}
+    setLoadingActive(false);
+  };
+
   // --- CONDITIONAL RENDERS (safe — all hooks already called above) ---
 
   if (loadingActive) {
@@ -338,10 +370,34 @@ export default function TrackingView({
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 min-h-screen">
       
       {/* Sticky Header */}
-      <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-4 pt-6 pb-4 border-b border-slate-200/60 dark:border-slate-800/60 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-        <h1 className="text-center font-bold text-lg text-slate-900 dark:text-white">
-          Pelacakan Langsung
-        </h1>
+      <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+        <div className="px-4 pt-6 pb-4">
+          <h1 className="text-center font-bold text-lg text-slate-900 dark:text-white">
+            Pelacakan Langsung
+          </h1>
+        </div>
+        
+        {/* Tabs Pesanan Aktif */}
+        {activeTxs.length > 1 && (
+          <div className="flex overflow-x-auto gap-3 px-4 pb-4 custom-scrollbar-hide snap-x">
+            {activeTxs.map((tx, idx) => {
+              const isSelected = liveTx?.id === tx.id;
+              return (
+                <button
+                  key={tx.id}
+                  onClick={() => handleTabClick(tx)}
+                  className={`snap-center shrink-0 px-5 py-2.5 rounded-full font-bold text-sm transition-all border ${
+                    isSelected 
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20' 
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Order #{tx.receipt_number?.split('-').pop() || (idx + 1)}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 p-5 overflow-y-auto pb-[120px] custom-scrollbar-hide">
