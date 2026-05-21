@@ -189,6 +189,11 @@ export default function TrackingView({
         const actives = sorted.filter(tx => {
           const status = (tx.status || '').toLowerCase();
           const kitchen = (tx.kitchen_status || tx.kitchenStatus || 'pending').toLowerCase();
+          
+          if (tx.remarks && tx.remarks.includes('Split Bill') && status === 'belum lunas') {
+            return false;
+          }
+          
           return status !== 'cancelled' && (status === 'belum lunas' || kitchen !== 'diantarkan');
         });
 

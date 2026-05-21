@@ -105,12 +105,10 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
         notes: c.notes,
       }));
       
-      await createTransactionItems(itemRecords);
-
-      for (const item of cart) {
-        const newStock = (item.stock || 0) - item.qty;
-        await updateProductStock(item.id, newStock);
-      }
+      await Promise.all([
+        createTransactionItems(itemRecords),
+        ...cart.map(item => updateProductStock(item.id, (item.stock || 0) - item.qty))
+      ]);
       
       setFinalOrderData({
         transaction: { ...txData, id: createdId },
