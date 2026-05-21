@@ -56,15 +56,7 @@ const WALLETS: WalletOption[] = [
     snapKey: 'gopay',
     bg: 'bg-[#00AED6]/10 dark:bg-[#00AED6]/20',
     borderColor: 'hover:border-[#00AED6] focus:ring-[#00AED6]/20',
-    svg: (
-      <svg viewBox="0 0 140 35" className="h-5 w-auto">
-        <g fill="#00AED6">
-          <circle cx="15.5" cy="17.5" r="12.5" />
-          <circle cx="15.5" cy="17.5" r="5.5" fill="#fff" />
-        </g>
-        <text x="36" y="25" fontFamily="'Inter', 'Segoe UI', sans-serif" fontWeight="800" fontSize="24" fill="currentColor" className="text-slate-900 dark:text-white tracking-tight">go<tspan fill="#00AED6">pay</tspan></text>
-      </svg>
-    ),
+    svg: <img src="/ico/gopay.png" alt="GoPay" className="w-auto h-6 object-contain" />,
     desc: 'Bayar instan via aplikasi Gojek atau GoPay',
     tag: 'Populer',
   },
@@ -74,12 +66,7 @@ const WALLETS: WalletOption[] = [
     snapKey: 'shopeepay',
     bg: 'bg-[#EE4D2D]/10 dark:bg-[#EE4D2D]/20',
     borderColor: 'hover:border-[#EE4D2D] focus:ring-[#EE4D2D]/20',
-    svg: (
-      <svg viewBox="0 0 120 28" className="h-5 w-auto">
-        <path d="M14.5 2C7.6 2 2 7.6 2 14.5S7.6 27 14.5 27s12.5-5.6 12.5-12.5S21.4 2 14.5 2zm5.2 14.3c0 3.2-2.8 4.2-5.2 4.2-2.5 0-5.1-.9-5.1-3.2 0-2.1 2.2-2.7 4.2-3 2.1-.3 2.6-.7 2.6-1.3 0-.8-1-1.2-2-1.2-1.8 0-2.8.9-2.8 2.3H3.6c0-3.1 2.4-4.6 5.6-4.6 3.1 0 5.2 1.4 5.2 3.8 0 2-1.8 2.6-3.8 2.9-2.2.3-2.6.7-2.6 1.3 0 .8 1.1 1.2 2.2 1.2 1.7 0 2.9-.8 2.9-2.4h2.6z" fill="#EE4D2D"/>
-        <text x="34" y="21" fontFamily="'Inter', 'Segoe UI', sans-serif" fontWeight="800" fontSize="19" fill="currentColor" className="text-slate-900 dark:text-white tracking-tight">Shopee<tspan fill="#EE4D2D">Pay</tspan></text>
-      </svg>
-    ),
+    svg: <img src="/ico/shopeepay.png" alt="ShopeePay" className="w-auto h-6 object-contain" />,
     desc: 'Buka aplikasi Shopee untuk konfirmasi PIN',
   },
   {
@@ -88,13 +75,7 @@ const WALLETS: WalletOption[] = [
     snapKey: 'ovo',
     bg: 'bg-[#4C3493]/10 dark:bg-[#4C3493]/20',
     borderColor: 'hover:border-[#4C3493] focus:ring-[#4C3493]/20',
-    svg: (
-      <svg viewBox="0 0 100 30" className="h-5 w-auto">
-        <text x="5" y="23" fontFamily="'Inter', 'Segoe UI', sans-serif" fontWeight="900" fontSize="24" fontStyle="italic" fill="#4C3493" className="dark:fill-[#7C64C3] tracking-wider">OVO</text>
-        <circle cx="85" cy="15" r="8" fill="none" stroke="#4C3493" strokeWidth="3" className="dark:stroke-[#7C64C3]" />
-        <circle cx="85" cy="15" r="3" fill="#4C3493" className="dark:fill-[#7C64C3]" />
-      </svg>
-    ),
+    svg: <img src="/ico/ovo.png" alt="OVO" className="w-auto h-6 object-contain" />,
     desc: 'Masukkan nomor HP yang terdaftar di OVO',
   },
   {
@@ -103,14 +84,18 @@ const WALLETS: WalletOption[] = [
     snapKey: 'dana', // Dilempar ke QRIS otomatis oleh kode handler di bawah
     bg: 'bg-[#118EEA]/10 dark:bg-[#118EEA]/20',
     borderColor: 'hover:border-[#118EEA] focus:ring-[#118EEA]/20',
-    svg: (
-      <svg viewBox="0 0 100 26" className="h-5 w-auto">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.65 13.78c-.44.72-1.17 1.12-2.07 1.12H8.38c-.28 0-.5-.22-.5-.5V9.6c0-.28.22-.5.5-.5h5.05c.88 0 1.58.38 2.01 1.07.38.61.47 1.39.26 2.19-.21.78-.66 1.41-1.4 1.72v.06c.64.25 1.05.8 1.2 1.48.16.73.02 1.51-.2 2.16z" fill="#118EEA"/>
-        <text x="28" y="21" fontFamily="'Inter', 'Segoe UI', sans-serif" fontWeight="900" fontSize="23" fill="#118EEA" className="tracking-tight">DANA</text>
-      </svg>
-    ),
+    svg: <img src="/ico/dana.png" alt="DANA" className="w-auto h-6 object-contain" />,
     desc: 'Scan barcode via QRIS menggunakan aplikasi DANA',
     tag: 'QRIS',
+  },
+  {
+    id: 'linkaja',
+    name: 'LinkAja',
+    snapKey: 'linkaja',
+    bg: 'bg-[#E22B29]/10 dark:bg-[#E22B29]/20',
+    borderColor: 'hover:border-[#E22B29] focus:ring-[#E22B29]/20',
+    svg: <img src="/ico/linkaja.png" alt="LinkAja" className="w-auto h-6 object-contain" />,
+    desc: 'Bayar menggunakan saldo LinkAja',
   },
 ];
 

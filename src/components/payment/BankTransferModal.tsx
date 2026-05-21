@@ -31,6 +31,7 @@ const BANKS: BankOption[] = [
   { id: 'bni', name: 'BNI', snapKey: 'bni_va', color: '#F68F1E', abbr: 'BNI' },
   { id: 'bri', name: 'BRI', snapKey: 'bri_va', color: '#004B87', abbr: 'BRI' },
   { id: 'mandiri', name: 'Mandiri', snapKey: 'mandiri_bill', color: '#003087', abbr: 'MND' },
+  { id: 'seabank', name: 'SeaBank', snapKey: 'other_va', color: '#FF5722', abbr: 'SEA' },
   { id: 'permata', name: 'Permata', snapKey: 'permata_va', color: '#E30613', abbr: 'PRM' },
   { id: 'cimb', name: 'CIMB', snapKey: 'cimb_va', color: '#c0392b', abbr: 'CIMB' },
   { id: 'other', name: 'Bank Lain', snapKey: 'other_va', color: '#64748b', abbr: 'ATM' },
@@ -147,10 +148,14 @@ export function BankTransferModal({
                     className="flex flex-col items-center justify-center p-2 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all active:scale-95 gap-1"
                   >
                     <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-black text-white"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-black text-white bg-slate-100 overflow-hidden"
                       style={{ backgroundColor: bank.color }}
                     >
-                      {bank.abbr}
+                      {['bca', 'bni', 'bri', 'mandiri', 'seabank'].includes(bank.id) ? (
+                        <img src={`/ico/${bank.id}.png`} alt={bank.name} className="w-full h-full object-contain p-1 bg-white" />
+                      ) : (
+                        bank.abbr
+                      )}
                     </div>
                     <span className="text-[10px] font-semibold text-foreground leading-tight text-center">
                       {bank.name}

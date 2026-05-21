@@ -133,9 +133,7 @@ export function QrisPaymentModal({
         <div className="bg-gradient-to-br from-primary to-primary/80 p-5 text-white">
           <DialogHeader>
             <DialogTitle className="text-white text-lg font-bold flex items-center gap-2">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm7-2h7v7h-7V3zm2 2v3h3V5h-3zM3 13h7v7H3v-7zm2 2v3h3v-3H5zm11-2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-2h2v2h-2v-2z" />
-              </svg>
+              <img src="/ico/qris.jpg" alt="QRIS" className="w-auto h-5 object-contain rounded bg-white px-1" />
               Pembayaran QRIS
             </DialogTitle>
             <DialogDescription className="text-white/80 text-sm mt-1">
