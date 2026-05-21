@@ -34,6 +34,7 @@ export interface MenuViewProps {
   setSelectedCategory: (category: string) => void;
   setSelectedItem: (item: ProductItem) => void;
   addToCart?: (item: any, qty: number, notes: string, variants: any[]) => void;
+  cartLength?: number;
 }
 
 export default function MenuView({
@@ -44,6 +45,7 @@ export default function MenuView({
   setSelectedCategory,
   setSelectedItem,
   addToCart,
+  cartLength = 0,
 }: MenuViewProps): JSX.Element {
   
   // Mengambil data dengan menyematkan asersi tipe (Type Assertion) yang tepat
@@ -162,7 +164,7 @@ export default function MenuView({
         </div>
         
         {/* Grid/List Container */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 mt-2">
           {filteredMenu.map((item) => {
             const isOutOfStock = item.stock <= 0;
             
@@ -171,7 +173,9 @@ export default function MenuView({
                 key={item.id} 
                 onClick={() => {
                   if (isOutOfStock) return;
-                  if (item.variants && item.variants.length > 0) {
+                  if (cartLength === 0) {
+                    setSelectedItem(item);
+                  } else if (item.variants && item.variants.length > 0) {
                     setSelectedItem(item);
                   } else {
                     if (addToCart) {
@@ -182,14 +186,14 @@ export default function MenuView({
                     }
                   }
                 }}
-                className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 flex gap-4 border transition-all ${
+                className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 border transition-all flex flex-col ${
                   isOutOfStock 
                     ? 'border-slate-100 dark:border-slate-800 opacity-60 grayscale' 
-                    : 'border-slate-100 dark:border-slate-800 shadow-sm hover:border-blue-200 dark:hover:border-blue-900 hover:shadow-md cursor-pointer active:scale-[0.98]'
+                    : 'border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 cursor-pointer active:scale-[0.98]'
                 }`}
               >
                 {/* Product Image */}
-                <div className="w-28 h-28 rounded-xl overflow-hidden relative flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-50 dark:border-slate-800/50">
+                <div className="h-32 w-full rounded-xl overflow-hidden relative flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-50 dark:border-slate-800/50 mb-3">
                   {item.photo ? (
                     <img src={item.photo} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
@@ -205,9 +209,9 @@ export default function MenuView({
                 </div>
                 
                 {/* Product Info */}
-                <div className="flex-1 flex flex-col py-0.5 justify-between">
+                <div className="flex-1 flex flex-col justify-between px-1">
                   <div>
-                    <h4 className="font-bold text-base leading-snug text-slate-900 dark:text-white line-clamp-2 mb-1.5">
+                    <h4 className="font-bold text-sm leading-snug text-slate-900 dark:text-white line-clamp-2 mb-1.5">
                       {item.name}
                     </h4>
                     {/* Show stock quantity if low */}
@@ -218,8 +222,8 @@ export default function MenuView({
                     )}
                   </div>
                   
-                  <div className="flex justify-between items-end gap-3">
-                    <p className="font-extrabold text-blue-600 dark:text-blue-400 text-[15px]">
+                  <div className="flex justify-between items-center mt-2 gap-2">
+                    <p className="font-extrabold text-blue-600 dark:text-blue-400 text-[13px] sm:text-[14px]">
                       {FORMAT_IDR(item.price)}
                     </p>
                     <button 
@@ -227,7 +231,9 @@ export default function MenuView({
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         if (isOutOfStock) return;
-                        if (item.variants && item.variants.length > 0) {
+                        if (cartLength === 0) {
+                          setSelectedItem(item);
+                        } else if (item.variants && item.variants.length > 0) {
                           setSelectedItem(item);
                         } else {
                           if (addToCart) {
@@ -239,7 +245,7 @@ export default function MenuView({
                         }
                       }}
                       disabled={isOutOfStock}
-                      className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform ${
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform flex-shrink-0 ${
                         isOutOfStock 
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-400' 
                           : 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500'

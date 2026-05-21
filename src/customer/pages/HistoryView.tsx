@@ -4,7 +4,7 @@ import {
   ChevronRight, CheckCircle2, Package, XCircle, FileText,
   LucideIcon
 } from 'lucide-react';
-import { FORMAT_IDR } from '@/lib/utils';
+import { FORMAT_IDR, getLocalTransactionIds } from '@/lib/utils';
 import { fetchTransactionsByCustomerName, fetchTransactionItems } from '@/lib/db';
 import { toast } from 'sonner';
 import ReceiptModal from '../../components/Receipt';
@@ -49,11 +49,14 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
     const loadHistory = async () => {
       setLoading(true);
       try {
-        // Assertion as Transaction[] agar dikenali tipe objeknya
         const data = (await fetchTransactionsByCustomerName(customerName)) as Transaction[];
         
+        // Filter transactions only to those created on this device
+        const localTxIds = getLocalTransactionIds().map(String);
+        const deviceData = (data || []).filter(tx => localTxIds.includes(String(tx.id)));
+
         // Pastikan mengurutkan dari yang terbaru jika API belum mengurutkan
-        const sortedData = (data || []).sort((a, b) => {
+        const sortedData = deviceData.sort((a, b) => {
           // Menambahkan fallback new Date() jika undefined untuk menghindari error Invalid Date
           const dateA = new Date(a.date || a.created_at || new Date()).getTime();
           const dateB = new Date(b.date || b.created_at || new Date()).getTime();

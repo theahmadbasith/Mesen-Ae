@@ -54,6 +54,7 @@ export interface LandingViewProps {
   tableNumber: string | number | null;
   setSelectedItem: (item: ProductItem) => void;
   addToCart?: (item: any, qty: number, notes: string, variants: any[]) => void;
+  cartLength?: number;
 }
 
 export default function LandingView({
@@ -64,6 +65,7 @@ export default function LandingView({
   tableNumber,
   setSelectedItem,
   addToCart,
+  cartLength = 0,
 }: LandingViewProps): JSX.Element {
   
   // Mengambil data dengan asersi tipe (Type Assertion) yang aman
@@ -377,7 +379,9 @@ export default function LandingView({
                   key={item.id} 
                   onClick={() => {
                     if (isOutOfStock) return;
-                    if (item.variants && item.variants.length > 0) {
+                    if (cartLength === 0) {
+                      setSelectedItem(item);
+                    } else if (item.variants && item.variants.length > 0) {
                       setSelectedItem(item);
                     } else {
                       if (addToCart) {

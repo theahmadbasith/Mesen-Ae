@@ -256,7 +256,7 @@ export default function CustomerApp() {
 
   const directBuy = (item: MenuItem, qty: number, notes: string, selectedVariants: Variant[]) => {
     addToCart(item, qty, notes, selectedVariants);
-    setTimeout(() => setView('checkout'), 100);
+    setTimeout(() => setView('cart'), 100);
   };
 
   const handleCustomerInfoSubmit = (name: string, table: string) => {
@@ -266,13 +266,20 @@ export default function CustomerApp() {
   };
 
   const updateCartQty = (cartId: number, delta: number) => {
-    setCart(cart.map((item) => {
-      if (item.cartId === cartId) {
-        const newQty = Math.max(0, item.qty + delta);
-        return { ...item, qty: newQty };
+    setCart((prevCart) => {
+      const newCart = prevCart.map((item) => {
+        if (item.cartId === cartId) {
+          const newQty = Math.max(0, item.qty + delta);
+          return { ...item, qty: newQty };
+        }
+        return item;
+      }).filter((item) => item.qty > 0);
+
+      if (newCart.length === 0 && viewState === 'cart') {
+        setTimeout(() => setView('menu'), 0);
       }
-      return item;
-    }).filter((item) => item.qty > 0));
+      return newCart;
+    });
   };
 
   const cartTotal: CartTotals = useMemo(() => {
@@ -343,6 +350,7 @@ export default function CustomerApp() {
             tableNumber={tableNumber}
             setSelectedItem={setSelectedItem}
             addToCart={addToCart as any}
+            cartLength={cart.length}
           />
         )}
 
@@ -355,6 +363,7 @@ export default function CustomerApp() {
             setSelectedCategory={setSelectedCategory}
             setSelectedItem={setSelectedItem}
             addToCart={addToCart as any}
+            cartLength={cart.length}
           />
         )}
 

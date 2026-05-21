@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, Users, CreditCard, Banknote, CheckCircle2, ArrowRight } from 'lucide-react';
-import { FORMAT_IDR } from '@/lib/utils';
+import { FORMAT_IDR, saveLocalTransactionId } from '@/lib/utils';
 import { CartItem } from './CartView';
 import { toast } from 'sonner';
 import { MidtransPaymentModal, MidtransPaymentType } from '../../components/MidtransPaymentModal';
@@ -85,6 +85,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
       const createdId = await createTransaction(txData);
       if (!createdId) throw new Error('Gagal membuat transaksi');
       setTxId(createdId);
+      saveLocalTransactionId(createdId);
 
       const itemRecords = cart.map(c => ({
         transaction_id: createdId,

@@ -3,7 +3,7 @@ import {
   ChevronLeft, Clock, QrCode, CreditCard, Banknote, 
   ArrowRight, Smartphone, LayoutGrid, CheckCircle2, User, MapPin, LucideIcon
 } from 'lucide-react';
-import { FORMAT_IDR } from '@/lib/utils';
+import { FORMAT_IDR, saveLocalTransactionId } from '@/lib/utils';
 import { MidtransPaymentModal } from '../../components/MidtransPaymentModal';
 import { toast } from 'sonner';
 // Import yang tidak terpakai dibiarkan sesuai aslinya untuk menjaga struktur file Anda
@@ -238,6 +238,8 @@ export default function CheckoutView({
 
         const txId = await createTransaction(txData);
         if (!txId) throw new Error('Failed to create transaction');
+        
+        saveLocalTransactionId(txId);
 
         const itemRecords: TransactionItemRecord[] = cart.map(c => ({
           transaction_id: txId,
@@ -336,6 +338,8 @@ export default function CheckoutView({
       } else {
         const createdId = await createTransaction(txData);
         if (!createdId) throw new Error('Failed to create transaction');
+        
+        saveLocalTransactionId(createdId);
         txId = createdId;
 
         const itemRecords: TransactionItemRecord[] = cart.map(c => ({
