@@ -678,6 +678,7 @@ export default function Kasir() {
           timestamp: Date.now(),
         });
       }
+    }
     } catch (error) {
       console.error('[Cashier] Failed to process checkout:', error);
       toast.error('Gagal memproses transaksi. Coba lagi.');
