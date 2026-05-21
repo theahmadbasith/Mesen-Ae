@@ -282,14 +282,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
               </div>
             ))}
 
-            {splitMethod === 'cash' && (
-              <button
-                onClick={() => setView('tracking')}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl py-4 font-bold flex justify-center items-center transition-all mt-6"
-              >
-                Cek Status Pesanan
-              </button>
-            )}
+
           </div>
         )}
 
