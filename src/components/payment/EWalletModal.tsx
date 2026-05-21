@@ -66,7 +66,7 @@ const WALLETS: WalletOption[] = [
     snapKey: 'shopeepay',
     bg: 'bg-[#EE4D2D]/10 dark:bg-[#EE4D2D]/20',
     borderColor: 'hover:border-[#EE4D2D] focus:ring-[#EE4D2D]/20',
-    svg: <img src="/ico/shopeepay.png?v=2" alt="ShopeePay" className="w-auto h-6 object-contain" />,
+    svg: <img src="/ico/shopeepay.png" alt="ShopeePay" className="w-auto h-6 object-contain" />,
     desc: 'Buka aplikasi Shopee untuk konfirmasi PIN',
   },
   {
