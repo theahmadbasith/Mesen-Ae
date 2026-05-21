@@ -136,7 +136,7 @@ export function BankTransferModal({
         </div>
 
         {/* Body */}
-        <div className="p-5">
+        <div className="p-5 overflow-y-auto max-h-[60vh] custom-scrollbar-hide">
           {step === 'select' && (
             <>
               <p className="text-sm text-muted-foreground mb-3 font-medium">Pilih bank tujuan:</p>

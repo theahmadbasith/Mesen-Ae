@@ -150,7 +150,17 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push(`TOTAL:     ${rp(transaction.total)}\n`);
       lines.push('\x1B\x45\x00'); // Bold OFF
       
-      lines.push(`Bayar:     ${rp(txPaymentAmount)}\n`);
+      const paymentsList = (transaction.payments || []) as any[];
+      if (paymentsList.length > 0) {
+        lines.push('--------------------------------\n');
+        lines.push('Rincian Pembayaran:\n');
+        paymentsList.forEach(p => {
+          const methodName = p.method_name || p.methodName || 'Pembayaran';
+          lines.push(`${methodName}: ${rp(p.amount)}\n`);
+        });
+      } else {
+        lines.push(`Bayar:     ${rp(txPaymentAmount)}\n`);
+      }
       lines.push(`Kembali:   ${rp(transaction.change)}\n`);
       lines.push('--------------------------------\n');
       
@@ -290,11 +300,31 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <span>{rp(transaction.total)}</span>
               </div>
               
-              <div className="flex justify-between mt-2">
-                <span className="text-slate-600">Bayar</span>
-                <span>{rp(txPaymentAmount)}</span>
-              </div>
-              <div className="flex justify-between">
+              {(() => {
+                const paymentsList = (transaction.payments || []) as any[];
+                if (paymentsList.length > 0) {
+                  return (
+                    <div className="mt-2 pt-2 border-t border-slate-300">
+                      <span className="text-slate-600 mb-1 block">Rincian Pembayaran:</span>
+                      {paymentsList.map((p, idx) => (
+                        <div key={idx} className="flex justify-between pl-2 mb-0.5">
+                          <span className="text-slate-500 uppercase">{p.method_name || p.methodName || 'Pembayaran'}</span>
+                          <span>{rp(p.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="flex justify-between mt-2">
+                      <span className="text-slate-600">Bayar</span>
+                      <span>{rp(txPaymentAmount)}</span>
+                    </div>
+                  );
+                }
+              })()}
+              
+              <div className="flex justify-between mt-1">
                 <span className="text-slate-600">Kembali</span>
                 <span>{rp(transaction.change)}</span>
               </div>

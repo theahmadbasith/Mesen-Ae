@@ -1324,6 +1324,15 @@ export default function Kasir() {
                     {nom >= 1000 ? `${(nom / 1000)}K` : nom}
                   </button>
                 ))}
+                {[2, 3, 4].map(split => (
+                  <button
+                    key={`split-${split}`}
+                    onClick={() => { setPaymentAmount(Math.ceil(remainingToPay / split).toString()); setIsQuickAdding(false); }}
+                    className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs font-semibold text-amber-600 hover:bg-amber-500/10 active:scale-95 transition-all"
+                  >
+                    1/{split} Bill
+                  </button>
+                ))}
                 <button
                   onClick={() => { setPaymentAmount(remainingToPay.toString()); setIsQuickAdding(false); }}
                   className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"

@@ -360,7 +360,7 @@ export default function CustomerApp() {
         {viewState === 'others' && <OthersView setView={setView} storeSettings={storeSettings as any} tableNumber={tableNumber} customerName={customerName} />}
         {viewState === 'history' && <HistoryView setView={setView} customerName={customerName} storeSettings={storeSettings as any} />}
         {viewState === 'success' && <SuccessView setView={setView} finalOrderData={finalOrderData as any} />}
-        {viewState === 'split' && <SplitView setView={setView} cart={cart as any} totals={cartTotal} />}
+        {viewState === 'split' && <SplitView setView={setView} cart={cart as any} totals={cartTotal} customerName={customerName} setFinalOrderData={setFinalOrderData as any} setCart={setCart as any} tableNumber={tableNumber} />}
 
         {/* Modal / Sheet Component */}
         {selectedItem && (
