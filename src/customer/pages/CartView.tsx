@@ -268,7 +268,7 @@ export default function CartView({
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 z-30 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 z-30" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
         <button 
           onClick={() => setView('checkout')}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 font-bold text-base shadow-lg shadow-blue-600/20 flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
