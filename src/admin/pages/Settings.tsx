@@ -299,7 +299,13 @@ export default function Pengaturan() {
   const [isSavingBanner,  setIsSavingBanner]  = useState(false);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  const PRESET_BANNERS = ['/promo1.jpg', '/promo2.jpg', '/promo3.jpg'];
+  const PRESET_BANNERS = [
+    { id: 'preset:blue', class: 'from-blue-600 via-indigo-600 to-purple-600' },
+    { id: 'preset:green', class: 'from-emerald-600 via-teal-600 to-cyan-600' },
+    { id: 'preset:red', class: 'from-rose-600 via-red-600 to-orange-600' },
+    { id: 'preset:purple', class: 'from-fuchsia-600 via-purple-600 to-violet-600' },
+    { id: 'preset:orange', class: 'from-orange-500 via-amber-500 to-yellow-500' }
+  ];
 
   const openBannerAdd  = () => { setBannerEditId(null); setBannerTitle(''); setBannerDesc(''); setBannerLink(''); setBannerImage(null); setBannerIsActive(true); setBannerDialog(true); };
   const openBannerEdit = (b: Banner) => { setBannerEditId(b.id!); setBannerTitle(b.title); setBannerDesc(b.description || ''); setBannerLink(b.link || ''); setBannerImage(b.imageUrl); setBannerIsActive(b.isActive); setBannerDialog(true); };
@@ -779,7 +785,7 @@ export default function Pengaturan() {
             <SettingCard>
               <div className="flex items-center gap-4 p-5 border-b border-border/50">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
-                  <img src="/logo.png" alt="MesenAe" className="w-full h-full object-contain p-2" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  <img src="/icon-192.png" alt="MesenAe" className="w-full h-full object-contain p-2" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <div>
                   <p className="font-semibold text-sm">MesenAe</p>
@@ -1102,7 +1108,11 @@ export default function Pengaturan() {
               >
                 {bannerImage ? (
                   <>
-                    <img src={typeof bannerImage === 'string' ? bannerImage : URL.createObjectURL(bannerImage)} alt="Preview" className="w-full h-full object-cover" />
+                    {typeof bannerImage === 'string' && bannerImage.startsWith('preset:') ? (
+                      <div className={cn("w-full h-full bg-gradient-to-br", PRESET_BANNERS.find(p => p.id === bannerImage)?.class || 'from-blue-600 to-purple-600')} />
+                    ) : (
+                      <img src={typeof bannerImage === 'string' ? bannerImage : URL.createObjectURL(bannerImage)} alt="Preview" className="w-full h-full object-cover" />
+                    )}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
                       <Camera className="w-6 h-6" />
                     </div>
@@ -1121,15 +1131,15 @@ export default function Pengaturan() {
               <div className="flex items-center justify-between gap-2 mt-2">
                 {PRESET_BANNERS.map((preset, i) => (
                   <button 
-                    key={preset}
-                    onClick={() => setBannerImage(preset)}
+                    key={preset.id}
+                    onClick={() => setBannerImage(preset.id)}
                     className={cn(
-                      "flex-1 aspect-[21/9] rounded-lg overflow-hidden border-2 transition-all",
-                      bannerImage === preset ? "border-primary" : "border-transparent hover:border-border"
+                      "flex-1 aspect-[21/9] rounded-lg overflow-hidden border-2 transition-all bg-gradient-to-br",
+                      preset.class,
+                      bannerImage === preset.id ? "border-foreground shadow-md scale-105" : "border-transparent opacity-70 hover:opacity-100"
                     )}
-                  >
-                    <img src={preset} className="w-full h-full object-cover" alt={`Preset ${i+1}`} />
-                  </button>
+                    title={`Preset ${i+1}`}
+                  />
                 ))}
               </div>
             </div>

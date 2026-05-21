@@ -81,6 +81,7 @@ export default function Kasir() {
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherApplied, setVoucherApplied] = useState<Voucher | null>(null);
   const [voucherLoading, setVoucherLoading] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   // Variant selection state
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
@@ -513,10 +514,12 @@ export default function Kasir() {
   };
 
   const processCheckoutToDb = async () => {
-    const finalPayments = [...payments];
-    const currentMethod = paymentMethods?.find(m => m.id!.toString() === paymentMethodId);
+    setIsCheckingOut(true);
+    try {
+      const finalPayments = [...payments];
+      const currentMethod = paymentMethods?.find(m => m.id!.toString() === paymentMethodId);
 
-    if (currentPaidAmount > 0 && currentMethod) {
+      if (currentPaidAmount > 0 && currentMethod) {
       finalPayments.push({
         methodId: currentMethod.id!,
         methodName: currentMethod.name,
@@ -675,11 +678,15 @@ export default function Kasir() {
           timestamp: Date.now(),
         });
       }
+    } catch (error) {
+      console.error('[Cashier] Failed to process checkout:', error);
+      toast.error('Gagal memproses transaksi. Coba lagi.');
+    } finally {
+      setIsCheckingOut(false);
+      doFullReset();
+      setCheckoutOpen(false);
+      setCartOpen(false);
     }
-
-    doFullReset();
-    setCheckoutOpen(false);
-    setCartOpen(false);
   };
 
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
@@ -752,20 +759,6 @@ export default function Kasir() {
                 )}
               </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-1.5 text-xs relative border-blue-200 text-blue-600 bg-blue-50"
-                onClick={() => setProcessingBillsOpen(true)}
-              >
-                <UtensilsCrossed className="w-4 h-4" />
-                Diproses
-                {processingBillsCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 rounded-full flex items-center justify-center text-[10px] px-1 bg-blue-600 text-white shadow-md border border-white z-10">
-                    {processingBillsCount}
-                  </Badge>
-                )}
-              </Button>
             </div>
           </div>
 
@@ -1412,9 +1405,9 @@ export default function Kasir() {
               </div>
             )}
 
-            <Button className="w-full h-12 text-base font-semibold" onClick={handleCheckout} disabled={(!paymentMethodId && payments.length === 0) || totalPaidSoFar + currentPaidAmount < total}>
-              <Check className="w-5 h-5 mr-2" />
-              Selesaikan Transaksi
+            <Button className="w-full h-12 text-base font-semibold" onClick={handleCheckout} disabled={(!paymentMethodId && payments.length === 0) || totalPaidSoFar + currentPaidAmount < total || isCheckingOut}>
+              {isCheckingOut ? <span className="animate-spin mr-2 border-2 border-current border-t-transparent rounded-full w-5 h-5" /> : <Check className="w-5 h-5 mr-2" />}
+              {isCheckingOut ? 'Memproses...' : 'Selesaikan Transaksi'}
             </Button>
           </div>
         </DialogContent>

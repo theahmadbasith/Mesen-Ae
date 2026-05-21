@@ -12,14 +12,20 @@ interface PromoBannerProps {
 export default function PromoBanner({ banner, className, onAction }: PromoBannerProps) {
   return (
     <div className={cn("rounded-[1.5rem] p-6 text-white relative overflow-hidden flex flex-col justify-between shadow-md", className)}>
-      {banner.imageUrl ? (
+      {banner.imageUrl && !banner.imageUrl.startsWith('preset:') ? (
         <div className="absolute inset-0 z-0">
           <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
         </div>
       ) : (
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">
+        <div className={cn("absolute inset-0 z-0 bg-gradient-to-br", 
+          banner.imageUrl === 'preset:green' ? 'from-emerald-600 via-teal-600 to-cyan-600' :
+          banner.imageUrl === 'preset:red' ? 'from-rose-600 via-red-600 to-orange-600' :
+          banner.imageUrl === 'preset:purple' ? 'from-fuchsia-600 via-purple-600 to-violet-600' :
+          banner.imageUrl === 'preset:orange' ? 'from-orange-500 via-amber-500 to-yellow-500' :
+          'from-blue-600 via-indigo-600 to-purple-600' // default blue
+        )}>
           <Gift size={160} strokeWidth={1} className="absolute -right-4 -bottom-8 text-white/10 rotate-[-15deg] z-0" />
         </div>
       )}

@@ -370,14 +370,13 @@ export default function QrCodeMenu() {
                         level={"H"}
                         includeMargin={false}
                         className="w-full h-full"
+                        imageSettings={{
+                          src: "/icon-192.png",
+                          height: 56,
+                          width: 56,
+                          excavate: true,
+                        }}
                       />
-                      {activeTable && (
-                        <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1.5 shadow-md">
-                          <div className="bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center font-bold text-sm tracking-tighter">
-                            {activeTable.substring(0,4)}
-                          </div>
-                        </div>
-                      )}
                     </div>
                     
                     <div className="mt-6 text-center">
