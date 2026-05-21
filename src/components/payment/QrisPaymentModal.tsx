@@ -133,7 +133,7 @@ export function QrisPaymentModal({
         <div className="bg-gradient-to-br from-primary to-primary/80 p-5 text-white">
           <DialogHeader>
             <DialogTitle className="text-white text-lg font-bold flex items-center gap-2">
-              <img src="/ico/qris.jpg" alt="QRIS" className="w-auto h-5 object-contain rounded bg-white px-1" />
+              <img src="/ico/qris.png" alt="QRIS" className="w-auto h-5 object-contain rounded bg-white px-1" />
               Pembayaran QRIS
             </DialogTitle>
             <DialogDescription className="text-white/80 text-sm mt-1">
