@@ -342,15 +342,19 @@ export default function CustomerApp() {
             setIsDarkMode={setIsDarkMode}
             tableNumber={tableNumber}
             setSelectedItem={setSelectedItem}
+            addToCart={addToCart as any}
           />
         )}
 
         {viewState === 'menu' && (
           <MenuView
             setView={setView}
-            searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-            selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
             setSelectedItem={setSelectedItem}
+            addToCart={addToCart as any}
           />
         )}
 

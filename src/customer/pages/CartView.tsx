@@ -292,7 +292,7 @@ export default function CartView({
           <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
             <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => { setCart([]); setClearConfirmOpen(false); }} 
+              onClick={() => { setCart([]); setClearConfirmOpen(false); setView('menu'); }} 
               className="flex-1 rounded-xl h-11 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-md shadow-destructive/20"
             >
               Ya, Hapus

@@ -1,5 +1,6 @@
 import React, { ChangeEvent, JSX } from 'react';
 import { Search, ChevronLeft, Plus, PackageOpen, Image as ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { FORMAT_IDR } from '@/lib/utils';
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -32,6 +33,7 @@ export interface MenuViewProps {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   setSelectedItem: (item: ProductItem) => void;
+  addToCart?: (item: any, qty: number, notes: string, variants: any[]) => void;
 }
 
 export default function MenuView({
@@ -41,6 +43,7 @@ export default function MenuView({
   selectedCategory,
   setSelectedCategory,
   setSelectedItem,
+  addToCart,
 }: MenuViewProps): JSX.Element {
   
   // Mengambil data dengan menyematkan asersi tipe (Type Assertion) yang tepat
@@ -166,7 +169,19 @@ export default function MenuView({
             return (
               <div 
                 key={item.id} 
-                onClick={() => !isOutOfStock && setSelectedItem(item)}
+                onClick={() => {
+                  if (isOutOfStock) return;
+                  if (item.variants && item.variants.length > 0) {
+                    setSelectedItem(item);
+                  } else {
+                    if (addToCart) {
+                      addToCart(item, 1, '', []);
+                      toast.success(`${item.name} ditambahkan ke keranjang`);
+                    } else {
+                      setSelectedItem(item);
+                    }
+                  }
+                }}
                 className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 flex gap-4 border transition-all ${
                   isOutOfStock 
                     ? 'border-slate-100 dark:border-slate-800 opacity-60 grayscale' 
@@ -211,7 +226,17 @@ export default function MenuView({
                       type="button"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
-                        if (!isOutOfStock) setSelectedItem(item);
+                        if (isOutOfStock) return;
+                        if (item.variants && item.variants.length > 0) {
+                          setSelectedItem(item);
+                        } else {
+                          if (addToCart) {
+                            addToCart(item, 1, '', []);
+                            toast.success(`${item.name} ditambahkan ke keranjang`);
+                          } else {
+                            setSelectedItem(item);
+                          }
+                        }
                       }}
                       disabled={isOutOfStock}
                       className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform ${

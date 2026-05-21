@@ -3,6 +3,7 @@ import {
   MapPin, Flame, Moon, Sun, Gift, Package, 
   Image as ImageIcon, ArrowRight, Store
 } from 'lucide-react';
+import { toast } from 'sonner';
 import PromoBanner from '@/components/PromoBanner';
 
 import { FORMAT_IDR, cn } from '@/lib/utils';
@@ -52,6 +53,7 @@ export interface LandingViewProps {
   setIsDarkMode: (darkMode: boolean) => void;
   tableNumber: string | number | null;
   setSelectedItem: (item: ProductItem) => void;
+  addToCart?: (item: any, qty: number, notes: string, variants: any[]) => void;
 }
 
 export default function LandingView({
@@ -61,6 +63,7 @@ export default function LandingView({
   setIsDarkMode,
   tableNumber,
   setSelectedItem,
+  addToCart,
 }: LandingViewProps): JSX.Element {
   
   // Mengambil data dengan asersi tipe (Type Assertion) yang aman
@@ -366,13 +369,25 @@ export default function LandingView({
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 mt-2">
-            {products.slice(0, 8).map((item) => {
+            {products.slice(0, 10).map((item) => {
               const isOutOfStock = item.stock <= 0;
               
               return (
                 <div 
                   key={item.id} 
-                  onClick={() => !isOutOfStock && setSelectedItem(item)}
+                  onClick={() => {
+                    if (isOutOfStock) return;
+                    if (item.variants && item.variants.length > 0) {
+                      setSelectedItem(item);
+                    } else {
+                      if (addToCart) {
+                        addToCart(item, 1, '', []);
+                        toast.success(`${item.name} ditambahkan ke keranjang`);
+                      } else {
+                        setSelectedItem(item);
+                      }
+                    }
+                  }}
                   className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 border transition-all ${
                     isOutOfStock 
                       ? 'border-slate-100 dark:border-slate-800 opacity-60 grayscale' 
