@@ -186,7 +186,7 @@ export async function dbInsert(tableCamelCase: string, data: any): Promise<numbe
 }
 
 /** Update record berdasarkan ID */
-export async function dbUpdate(tableCamelCase: string, id: number, data: any): Promise<void> {
+export async function dbUpdate(tableCamelCase: string, id: number | string, data: any): Promise<void> {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
   const snakeData = mapCamelToSnake(data);
   const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
@@ -214,7 +214,7 @@ export async function dbUpdate(tableCamelCase: string, id: number, data: any): P
 }
 
 /** Hard delete record berdasarkan ID */
-export async function dbDelete(tableCamelCase: string, id: number): Promise<void> {
+export async function dbDelete(tableCamelCase: string, id: number | string): Promise<void> {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
   const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
 

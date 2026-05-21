@@ -78,11 +78,11 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
   // Helper untuk styling status pesanan
   const getStatusDisplay = (status?: string): StatusDisplay => {
     const s = (status || '').toLowerCase();
-    if (s === 'completed' || s === 'selesai') {
+    if (s === 'completed' || s === 'selesai' || s === 'lunas') {
       return { 
         bg: 'bg-emerald-50 dark:bg-emerald-500/10', 
         text: 'text-emerald-600 dark:text-emerald-400', 
-        label: 'Selesai', 
+        label: 'Lunas', 
         Icon: CheckCircle2 
       };
     }
@@ -102,11 +102,11 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
         Icon: XCircle 
       };
     }
-    if (s === 'open') {
+    if (s === 'open' || s === 'belum lunas') {
       return { 
         bg: 'bg-amber-50 dark:bg-amber-500/10', 
         text: 'text-amber-600 dark:text-amber-400', 
-        label: 'Bayar ke Kasir', 
+        label: 'Belum Lunas', 
         Icon: Clock 
       };
     }

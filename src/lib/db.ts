@@ -240,7 +240,7 @@ export async function dbUpsert(
   }
 }
 
-export async function dbDelete(table: string, id: number) {
+export async function dbDelete(table: string, id: number | string) {
   try {
     const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
     await fetch('/api/google-sheet?action=crud', {

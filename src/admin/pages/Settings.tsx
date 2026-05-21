@@ -174,7 +174,6 @@ export default function Pengaturan() {
   const [storePhone,  setStorePhone]    = useState('');
   const [storeLogo,   setStoreLogo]     = useState<string | undefined>();
   const [receiptFooter, setReceiptFooter] = useState('');
-  const [tablesInput, setTablesInput]   = useState('');
   const [isSavingStore, setIsSavingStore] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -184,18 +183,16 @@ export default function Pengaturan() {
     setStorePhone(storeSettings?.phone ?? '');
     setStoreLogo(storeSettings?.logo);
     setReceiptFooter(storeSettings?.receiptFooter ?? 'Terima kasih atas kunjungan Anda!');
-    setTablesInput((storeSettings?.tables ?? []).join(', '));
     setStoreDialog(true);
   };
 
   const saveStore = async () => {
     setIsSavingStore(true);
     try {
-      const parsedTables = tablesInput.split(',').map(t => t.trim()).filter(Boolean);
       const updates = {
         storeName: storeName.trim(), address: storeAddr.trim(),
         phone: storePhone.trim(), logo: storeLogo || undefined,
-        receiptFooter: receiptFooter.trim(), tables: parsedTables,
+        receiptFooter: receiptFooter.trim(), tables: storeSettings?.tables ?? [],
       };
       if (storeSettings?.id) {
         await dbUpdate('storeSettings', storeSettings.id, updates);
@@ -234,7 +231,7 @@ export default function Pengaturan() {
       setPmDialog(false); toast.success('Metode pembayaran disimpan');
     } finally { setIsSavingPm(false); }
   };
-  const deletePm = async (id: number) => { await dbDelete('paymentMethods', id); toast.success('Dihapus'); };
+  const deletePm = async (id: string | number) => { await dbDelete('paymentMethods', id); toast.success('Dihapus'); };
 
   /* ── Category ── */
   const [catDialog,   setCatDialog]   = useState(false);
@@ -255,7 +252,7 @@ export default function Pengaturan() {
       setCatDialog(false); toast.success('Kategori disimpan');
     } finally { setIsSavingCat(false); }
   };
-  const deleteCat = async (id: number) => { await dbDelete('categories', id); toast.success('Dihapus'); };
+  const deleteCat = async (id: string | number) => { await dbDelete('categories', id); toast.success('Dihapus'); };
 
   /* ── Users ── */
   const [userDialog,    setUserDialog]    = useState(false);
@@ -287,7 +284,7 @@ export default function Pengaturan() {
       setUserDialog(false); toast.success('Pengguna disimpan');
     } finally { setIsSavingUser(false); }
   };
-  const deleteUser = async (id: number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
+  const deleteUser = async (id: string | number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
 
   const [bannerDialog,    setBannerDialog]    = useState(false);
   const [bannerEditId,    setBannerEditId]    = useState<number | null>(null);
@@ -326,7 +323,7 @@ export default function Pengaturan() {
     } catch (err) { toast.error('Gagal menyimpan banner'); }
     finally { setIsSavingBanner(false); }
   };
-  const deleteBanner = async (id: number) => { await dbDelete('banners', id); toast.success('Banner dihapus'); };
+  const deleteBanner = async (id: string | number) => { await dbDelete('banners', id); toast.success('Banner dihapus'); };
 
   /* ── Storage ── */
   const [storageUsage, setStorageUsage] = useState<{ usage: number; quota: number } | null>(null);
@@ -450,14 +447,7 @@ export default function Pengaturan() {
                   <p className="text-xs text-muted-foreground">{storeSettings?.phone || 'Telepon belum diatur'}</p>
                 </div>
               </div>
-              <SettingRow label="Footer Struk" description={storeSettings?.receiptFooter || '–'} />
-              <SettingRow
-                last
-                label="Daftar Meja"
-                description={(storeSettings?.tables?.length ?? 0) > 0
-                  ? storeSettings!.tables!.join(', ')
-                  : 'Belum ada meja diatur'}
-              />
+              <SettingRow last label="Footer Struk" description={storeSettings?.receiptFooter || '–'} />
             </SettingCard>
 
 
@@ -897,11 +887,6 @@ export default function Pengaturan() {
               <p className="text-[10px] text-muted-foreground">Teks di bagian bawah struk belanja.</p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5"><Table2 className="w-3.5 h-3.5" />Daftar Meja</Label>
-              <Input value={tablesInput} onChange={e => setTablesInput(e.target.value)} placeholder="1, 2, 3, VIP, Outdoor" />
-              <p className="text-[10px] text-muted-foreground">Pisahkan dengan koma.</p>
-            </div>
 
             <Button className="w-full" onClick={saveStore} disabled={isSavingStore}>
               {isSavingStore ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Info Toko'}

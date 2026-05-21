@@ -34,7 +34,7 @@ export default function Laporan() {
   const allItems = txItems ?? [];
 
   const stats = useMemo(() => {
-    const completedTx = transactions?.filter(t => t.status !== 'open') ?? [];
+    const completedTx = transactions?.filter(t => t.status !== 'belum lunas') ?? [];
     const totalSales = completedTx.reduce((s, t) => s + t.total, 0);
     const totalProfit = completedTx.reduce((s, t) => s + t.profit, 0);
     const txCount = completedTx.length;

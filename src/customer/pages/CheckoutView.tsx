@@ -13,7 +13,7 @@ import {
   fetchTransactionByReceiptNumber, appendPaymentToTransactionByReceipt 
 } from '../../lib/db';
 import { toDatabaseTransaction, toDatabaseTransactionItem, mapVoucher } from '../../lib/sync';
-
+import { signalBus } from '@/lib/signal-bus';
 // --- DEFINISI INTERFACE & TIPE DATA ---
 
 interface Variant {
@@ -22,7 +22,7 @@ interface Variant {
 }
 
 interface CartItem {
-  id: number;
+  id: number | string;
   name: string;
   qty: number;
   price: number;
@@ -47,7 +47,7 @@ interface Voucher {
 }
 
 interface PaymentRecord {
-  method_id: number;
+  method_id: number | string;
   method_name: string;
   amount: number;
   date: string;
@@ -60,7 +60,7 @@ interface TransactionData {
   discount_value: number;
   discount_amount: number;
   total: number;
-  payment_method_id: number;
+  payment_method_id: number | string;
   payment_amount: number;
   payments: PaymentRecord[];
   change: number;
@@ -78,7 +78,7 @@ interface TransactionData {
 
 interface TransactionItemRecord {
   transaction_id: string | number;
-  product_id: number;
+  product_id: number | string;
   product_name: string;
   quantity: number;
   price: number;
@@ -109,7 +109,7 @@ interface CheckoutViewProps {
 }
 
 interface PaymentMethod {
-  id: number;
+  id: number | string;
   name: string;
   category: string;
   icon: LucideIcon;
@@ -225,7 +225,7 @@ export default function CheckoutView({
           profit: 0,
           date: new Date().toISOString(),
           receipt_number: receiptNumber,
-          status: 'open',
+          status: 'belum lunas',
           kitchen_status: 'pending',
           customer_name: (customerName || 'Tamu').trim(),
           table_number: (tableNumber?.toString() || '').trim(),
@@ -234,7 +234,7 @@ export default function CheckoutView({
 
         txData.payment_amount = 0;
         txData.payments = [];
-        txData.status = 'open';
+        txData.status = 'belum lunas';
 
         const txId = await createTransaction(txData);
         if (!txId) throw new Error('Failed to create transaction');
@@ -265,6 +265,15 @@ export default function CheckoutView({
           transaction: { ...txData, id: txId },
           items: itemRecords,
           paymentMethodName: 'Bayar di Kasir'
+        });
+
+        signalBus.broadcast({
+          type: 'TRANSACTION_STATUS_UPDATE',
+          transactionId: txId as number | string,
+          kitchenStatus: txData.kitchen_status,
+          status: txData.status,
+          receiptNumber,
+          timestamp: Date.now(),
         });
 
         setCart([]);
@@ -309,7 +318,7 @@ export default function CheckoutView({
         profit: totalProfit,
         date: new Date().toISOString(),
         receipt_number: receiptNumber,
-        status: isFullPayment ? 'processing' : 'open',
+        status: isFullPayment ? 'diproses' : 'belum lunas',
         kitchen_status: isFullPayment ? 'diproses' : 'pending',
         customer_name: (customerName || '').trim() || null,
         table_number: (tableNumber?.toString() || '').trim() || null,
@@ -354,6 +363,15 @@ export default function CheckoutView({
           transaction: { ...txData, id: txId },
           items: itemRecords,
           paymentMethodName: pm ? pm.name : method.toUpperCase()
+        });
+
+        signalBus.broadcast({
+          type: 'TRANSACTION_STATUS_UPDATE',
+          transactionId: txId as number | string,
+          kitchenStatus: txData.kitchen_status,
+          status: txData.status,
+          receiptNumber,
+          timestamp: Date.now(),
         });
 
         setCart([]);

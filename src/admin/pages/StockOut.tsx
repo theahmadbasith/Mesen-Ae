@@ -43,7 +43,7 @@ export default function StockOutPage() {
     (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const getProductName = (pid: number) => products.find((p: any) => p.id === pid)?.name ?? 'Produk Tidak Diketahui';
+  const getProductName = (pid: number | string) => products.find((p: any) => p.id === pid)?.name ?? 'Produk Tidak Diketahui';
   const selectedProduct = products.find((p: any) => p.id === Number(productId));
 
   const openAdd = () => {

@@ -29,7 +29,7 @@ export default function TransactionHistory() {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [restoreStock, setRestoreStock] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'open'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'lunas' | 'belum lunas'>('all');
 
   const transactions = (useDbQuery<any>('transactions') || []).sort((a:any, b:any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const products = useDbQuery<any>('products') || [];
@@ -171,8 +171,8 @@ export default function TransactionHistory() {
           <div className="flex p-1 bg-muted/40 border border-border/50 rounded-xl w-fit shrink-0">
             {([
               { value: 'all', label: 'Semua' },
-              { value: 'open', label: 'Open Bill' },
-              { value: 'completed', label: 'Lunas' },
+              { value: 'belum lunas', label: 'Belum Lunas' },
+              { value: 'lunas', label: 'Lunas' },
             ] as const).map(tab => (
               <button
                 key={tab.value}

@@ -18,6 +18,8 @@ type SignalListener = (signal: TransactionSignal) => void;
 class SignalBus {
   private channel: BroadcastChannel | null = null;
   private listeners: Map<string, Set<SignalListener>> = new Map();
+  private pollInterval: any = null;
+  private lastPollTime: number = Date.now() - 10000; // start looking back 10s
 
   constructor() {
     try {
@@ -29,9 +31,29 @@ class SignalBus {
         }
       };
     } catch (_) {
-      // BroadcastChannel not supported — fallback to polling only
       console.warn('[SignalBus] BroadcastChannel not available');
     }
+
+    // Start network polling for cross-device signaling
+    this.startPolling();
+  }
+
+  private startPolling() {
+    if (this.pollInterval) return;
+    this.pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/google-sheet?action=signal_poll&since=${this.lastPollTime}`);
+        if (res.ok) {
+          const { signals, timestamp } = await res.json();
+          if (timestamp) this.lastPollTime = timestamp;
+          if (signals && signals.length > 0) {
+            signals.forEach((sig: any) => this.notifyListeners(sig));
+          }
+        }
+      } catch (err) {
+        // ignore network errors in polling
+      }
+    }, 2000); // Check every 2 seconds
   }
 
   /** Called by admin/kitchen when they update a transaction */
@@ -44,9 +66,19 @@ class SignalBus {
       this.channel?.postMessage(signal);
     } catch (_) {}
 
-    // 3. Also store in sessionStorage for cross-tab fallback
+    // 3. Store in sessionStorage for cross-tab fallback
     try {
       localStorage.setItem('mesenae_last_signal', JSON.stringify(signal));
+    } catch (_) {}
+
+    // 4. Send to server for cross-device sync
+    try {
+      const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
+      fetch('/api/google-sheet?action=signal_send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ signal })
+      }).catch(() => {});
     } catch (_) {}
   }
 
@@ -98,6 +130,10 @@ class SignalBus {
     try {
       this.channel?.close();
     } catch (_) {}
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
     this.listeners.clear();
   }
 }

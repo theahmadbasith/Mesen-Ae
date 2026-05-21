@@ -113,7 +113,7 @@ export default function Kasir() {
         db.from('categories').select('*').then(({ data }) => data?.map(mapCategory) || []),
         db.from('payment_methods').select('*').then(({ data }) => data?.map(mapPaymentMethod) || []),
         db.from('store_settings').select('*').single().then(({ data }) => data ? mapStoreSettings(data) : undefined),
-        db.from('transactions').select('*').eq('status', 'open').order('date', { ascending: false }).then(({ data }) => data?.map(mapTransaction) || []),
+        db.from('transactions').select('*').eq('status', 'belum lunas').order('date', { ascending: false }).then(({ data }) => data?.map(mapTransaction) || []),
         db.from('transactions').select('*').order('date', { ascending: false }).then(({ data }) => data?.map(mapTransaction) || []),
         db.from('vouchers').select('*').eq('is_active', true).then(({ data }) => data || []),
       ]);
@@ -144,7 +144,7 @@ export default function Kasir() {
     const pollInterval = setInterval(async () => {
       try {
         const [{ data: openData }, { data: allData }, { data: prodData }] = await Promise.all([
-          db.from('transactions').select('*').eq('status', 'open').order('date', { ascending: false }),
+          db.from('transactions').select('*').eq('status', 'belum lunas').order('date', { ascending: false }),
           db.from('transactions').select('*').order('date', { ascending: false }),
           db.from('products').select('*'),
         ]);
@@ -381,7 +381,7 @@ export default function Kasir() {
       await db.from('transaction_items').insert(itemRecords);
 
       for (const cartItem of cart) {
-        const oldItem = oldItems?.find((oi: { product_id: number }) => oi.product_id === cartItem.product.id);
+        const oldItem = oldItems?.find((oi: { product_id: number | string }) => oi.product_id === cartItem.product.id);
         const oldQty = oldItem?.quantity ?? 0;
         const delta = cartItem.qty - oldQty;
         if (delta !== 0) {
@@ -398,13 +398,22 @@ export default function Kasir() {
       }
 
       toast.success(`Bill diperbarui!`);
+      const openBillObj = openBills?.find(b => b.id === editingTxId);
+      signalBus.broadcast({
+        type: 'TRANSACTION_STATUS_UPDATE',
+        transactionId: editingTxId,
+        kitchenStatus: openBillObj?.kitchen_status || 'pending',
+        status: openBillObj?.status || 'belum lunas',
+        receiptNumber: openBillObj?.receiptNumber || `TX${editingTxId}`,
+        timestamp: Date.now(),
+      });
     } else {
       const receiptNumber = `TX${Date.now()}`;
 
       const txData = {
         ...txPayload,
         receipt_number: receiptNumber,
-        status: 'open',
+        status: 'belum lunas',
         kitchen_status: 'pending',
         opened_at: now.toISOString(),
       };
@@ -420,6 +429,15 @@ export default function Kasir() {
         }
 
         toast.success(`Bill ${receiptNumber} disimpan!`);
+
+        signalBus.broadcast({
+          type: 'TRANSACTION_STATUS_UPDATE',
+          transactionId: newTx.id,
+          kitchenStatus: 'pending',
+          status: 'belum lunas',
+          receiptNumber,
+          timestamp: Date.now(),
+        });
       }
     }
 
@@ -570,14 +588,14 @@ export default function Kasir() {
         id: editingTxId,
         date: openBillObj ? openBillObj.date : new Date().toISOString(),
         receipt_number: openBillObj ? openBillObj.receiptNumber : `TX${editingTxId}`,
-        status: 'completed',
+        status: 'lunas',
         kitchen_status: 'diproses',
         closed_at: new Date().toISOString(),
       });
 
       await db.from('transactions').update({
         ...txPayload,
-        status: 'completed',
+        status: 'lunas',
         kitchen_status: 'diproses',
         closed_at: new Date().toISOString(),
       }).eq('id', editingTxId);
@@ -586,7 +604,7 @@ export default function Kasir() {
       await db.from('transaction_items').insert(itemRecords);
 
       for (const cartItem of cart) {
-        const oldItem = oldItems?.find((oi: { product_id: number }) => oi.product_id === cartItem.product.id);
+        const oldItem = oldItems?.find((oi: { product_id: number | string }) => oi.product_id === cartItem.product.id);
         const delta = cartItem.qty - (oldItem?.quantity ?? 0);
         if (delta !== 0) {
           const { data: prod } = await db.from('products').select('stock').eq('id', cartItem.product.id!).single();
@@ -619,7 +637,7 @@ export default function Kasir() {
         type: 'TRANSACTION_STATUS_UPDATE',
         transactionId: editingTxId,
         kitchenStatus: 'diproses',
-        status: 'completed',
+        status: 'lunas',
         receiptNumber: openBillObj ? openBillObj.receiptNumber : `TX${editingTxId}`,
         timestamp: Date.now(),
       });
@@ -630,7 +648,7 @@ export default function Kasir() {
         ...txPayload,
         date: new Date().toISOString(),
         receipt_number: receiptNumber,
-        status: 'completed',
+        status: 'lunas',
         kitchen_status: 'diproses',
       };
 
@@ -673,7 +691,7 @@ export default function Kasir() {
           type: 'TRANSACTION_STATUS_UPDATE',
           transactionId: newTx.id,
           kitchenStatus: 'diproses',
-          status: 'completed',
+          status: 'lunas',
           receiptNumber,
           timestamp: Date.now(),
         });
@@ -1217,7 +1235,7 @@ export default function Kasir() {
         onOpenChange={setProcessingBillsOpen}
         processingBills={processingBills}
         onCompleteBill={async (id) => {
-          await db.from('transactions').update({ status: 'completed' }).eq('id', id);
+          await db.from('transactions').update({ status: 'lunas' }).eq('id', id);
           toast.success('Pesanan telah diselesaikan!');
           if (processingBills.length <= 1) setProcessingBillsOpen(false);
         }}

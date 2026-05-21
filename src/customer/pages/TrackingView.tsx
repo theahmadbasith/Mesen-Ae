@@ -57,7 +57,7 @@ interface Step {
   icon: LucideIcon;
 }
 
-const POLL_INTERVAL = 3000; // 3 seconds for fast status sync
+const POLL_INTERVAL = 15000; // 15 seconds for fallback status sync, relies on fast SignalBus
 
 export default function TrackingView({ 
   setView, 
@@ -182,7 +182,7 @@ export default function TrackingView({
         const active = sorted.find(tx => {
           const status = (tx.status || '').toLowerCase();
           const kitchen = (tx.kitchen_status || tx.kitchenStatus || 'pending').toLowerCase();
-          return status !== 'cancelled' && (status === 'open' || kitchen !== 'diantarkan');
+          return status !== 'cancelled' && (status === 'belum lunas' || kitchen !== 'diantarkan');
         });
 
         if (active) {

@@ -166,7 +166,7 @@ export async function importProductsFromExcel(file: File): Promise<ImportResult>
 
   const VALID_UNITS = ['pcs', 'kg', 'gram', 'liter', 'ml', 'porsi', 'cup', 'botol', 'bungkus'];
   const toAdd: any[] = [];
-  const toUpdate: { id: number, changes: any }[] = [];
+  const toUpdate: { id: string | number, changes: any }[] = [];
   const skusSeen = new Set<string>();
 
   for (let i = 1; i < rows.length; i++) {
@@ -483,7 +483,7 @@ export async function importAllDataFromExcel(file: File): Promise<ImportAllResul
   (existingProductsData || []).forEach(p => existingMap.set(p.sku.toLowerCase(), p));
   
   const prodsToAdd: any[] = [];
-  const prodsToUpdate: { id: number, changes: any }[] = [];
+  const prodsToUpdate: { id: string | number, changes: any }[] = [];
 
   for (const p of newProducts) {
     const existing = existingMap.get(p.sku.toLowerCase());

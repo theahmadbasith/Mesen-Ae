@@ -2,6 +2,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import { getAccessToken } from './google-auth.js';
 
+// ─── IN-MEMORY SIGNAL CACHE ─────────────
+const MAX_SIGNALS = 100;
+let __signals: any[] = [];
+if (typeof global !== 'undefined') {
+  if (!(global as any).__signals) {
+    (global as any).__signals = [];
+  }
+  __signals = (global as any).__signals;
+}
 // ─── INTERFACES & TYPES ─────────────
 
 interface GoogleSheetProperties {
@@ -1327,17 +1336,40 @@ export async function insertRow(sheetName: string, data: Record<string, unknown>
     return Array.isArray(data) ? [record] : record;
   }
 
-  let nextId = 1;
-  if (rawRows.length > 1) {
-    const ids = rawRows.slice(1).map(r => parseInt(r[0])).filter(id => !isNaN(id));
-    nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+function generateUniqueId(sheetName: string): string {
+  const prefixMap: Record<string, string> = {
+    products: 'PRD',
+    categories: 'CAT',
+    transactions: 'TRX',
+    transaction_items: 'ITM',
+    users: 'USR',
+    banners: 'BNR',
+    vouchers: 'VCH',
+    payment_methods: 'PAY',
+    stock_ins: 'STI',
+    stock_outs: 'STO',
+    hpp_history: 'HPP',
+    suppliers: 'SUP',
+  };
+  
+  let prefix = prefixMap[sheetName] || sheetName.substring(0, 3).toUpperCase();
+  if (prefix.length < 3) prefix = (prefix + 'XXX').substring(0, 3);
+
+  const nums = '0123456789';
+  let numStr = '';
+  for (let i = 0; i < 7; i++) {
+    numStr += nums.charAt(Math.floor(Math.random() * nums.length));
   }
+  return prefix + numStr;
+}
 
   const rowsToAppend: string[][] = [];
   const recordsInserted: SheetDataRow[] = [];
 
   for (const item of dataArray) {
-    const record: SheetDataRow = { ...item, id: nextId++ };
+    const shouldGenerateId = !item.id || (typeof item.id === 'number' && item.id < 0);
+    const finalId = shouldGenerateId ? generateUniqueId(sheetName) : item.id;
+    const record: SheetDataRow = { ...item, id: finalId };
     if (!record.created_at && expectedKeys.includes('created_at')) {
       record.created_at = new Date().toISOString();
     }
@@ -1367,7 +1399,7 @@ export async function insertRow(sheetName: string, data: Record<string, unknown>
   return Array.isArray(data) ? recordsInserted : recordsInserted[0];
 }
 
-export async function updateRow(sheetName: string, id: number, data: Record<string, unknown>): Promise<SheetDataRow> {
+export async function updateRow(sheetName: string, id: number | string, data: Record<string, unknown>): Promise<SheetDataRow> {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   if (!spreadsheetId) throw new Error('SPREADSHEET_ID missing.');
 
@@ -1388,7 +1420,7 @@ export async function updateRow(sheetName: string, id: number, data: Record<stri
   let rowIndex = -1;
 
   for (let i = 1; i < rawRows.length; i++) {
-    if (parseInt(rawRows[i][0]) === id) {
+    if (String(rawRows[i][0]) === String(id)) {
       rowIndex = i + 1;
       break;
     }
@@ -1443,7 +1475,7 @@ export async function updateRow(sheetName: string, id: number, data: Record<stri
   return updatedRecord;
 }
 
-export async function deleteRow(sheetName: string, id?: number, filters?: Record<string, unknown>): Promise<void> {
+export async function deleteRow(sheetName: string, id?: number | string, filters?: Record<string, unknown>): Promise<void> {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   if (!spreadsheetId) throw new Error('SPREADSHEET_ID missing.');
 
@@ -1455,7 +1487,7 @@ export async function deleteRow(sheetName: string, id?: number, filters?: Record
 
   for (let i = 1; i < rawRows.length; i++) {
     const row = rawRows[i];
-    if (id !== undefined && parseInt(row[0]) === id) {
+    if (id !== undefined && String(row[0]) === String(id)) {
       rowIndicesToDelete.push(i);
     } else if (filters && Object.keys(filters).length > 0) {
       let matches = true;
@@ -1601,6 +1633,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } else {
           return res.status(400).json({ message: `Unsupported CRUD type: ${crudType}` });
         }
+      }
+
+      // ───────────── ACTION: SIGNAL BUS ─────────────
+      case 'signal_send': {
+        if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+        const signal = body?.signal;
+        if (!signal) return res.status(400).json({ message: 'Missing signal data' });
+        
+        __signals.push(signal);
+        if (__signals.length > MAX_SIGNALS) {
+          __signals.shift();
+        }
+        return res.status(200).json({ success: true });
+      }
+
+      case 'signal_poll': {
+        if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
+        const sinceStr = req.query?.since as string;
+        const since = sinceStr ? parseInt(sinceStr, 10) : 0;
+        
+        const newSignals = __signals.filter((s: any) => s.timestamp > since);
+        return res.status(200).json({ signals: newSignals, timestamp: Date.now() });
       }
 
       // ───────────── ACTION: ADMIN LOGIN ─────────────
