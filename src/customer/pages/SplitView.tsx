@@ -27,7 +27,6 @@ interface SplitViewProps {
 
 export default function SplitView({ setView, cart, totals, customerName, setFinalOrderData, setCart, tableNumber }: SplitViewProps) {
   const [step, setStep] = useState<'setup' | 'pay'>('setup');
-  const [splitMethod, setSplitMethod] = useState<'cash' | 'non-cash'>('non-cash');
   const [splitCount, setSplitCount] = useState<number>(2);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -35,17 +34,21 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
   const [txId, setTxId] = useState<string | number | null>(null);
   const [paidSplits, setPaidSplits] = useState<boolean[]>([]);
   
+  // Simpan total ke state agar tidak jadi 0 saat cart dikosongkan
+  const [fixedTotal, setFixedTotal] = useState<number>(totals.total);
+  
   const [midtransOpen, setMidtransOpen] = useState(false);
   const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
 
-  // Jika mengubah metode, reset jumlah split
+  // Update fixedTotal if totals.total changes while in setup
   useEffect(() => {
-    if (splitMethod === 'non-cash') setSplitCount(2);
-    else setSplitCount(Math.min(splitCount, 4));
-  }, [splitMethod]);
+    if (step === 'setup' && totals.total > 0) {
+      setFixedTotal(totals.total);
+    }
+  }, [totals.total, step]);
 
-  const maxSplit = splitMethod === 'cash' ? 4 : 2;
-  const splitAmount = totals.total / splitCount;
+  const maxSplit = 2; // Hanya Non-Tunai yang diizinkan di Customer App
+  const splitAmount = fixedTotal / splitCount;
 
   const handleCreateSplit = async () => {
     if (cart.length === 0) {
@@ -62,11 +65,11 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
       const totalProfit = cart.reduce((sum, item) => sum + ((item.price - (item.hpp || 0)) * item.qty), 0);
       
       const txData: any = {
-        subtotal: totals.subtotal,
+        subtotal: totals.subtotal > 0 ? totals.subtotal : fixedTotal,
         discount_type: null,
         discount_value: 0,
         discount_amount: 0,
-        total: totals.total,
+        total: fixedTotal,
         payment_method_id: 0,
         payment_amount: 0,
         payments: [],
@@ -79,7 +82,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
         customer_name: (customerName || 'Tamu').trim(),
         table_number: (tableNumber?.toString() || '').trim(),
         opened_at: new Date().toISOString(),
-        remarks: `Split Bill (${splitCount}x) - ${splitMethod === 'cash' ? 'Tunai' : 'Non-Tunai'}`
+        remarks: `Split Bill (${splitCount}x) - Non-Tunai`
       };
 
       const createdId = await createTransaction(txData);
@@ -137,12 +140,8 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
   };
 
   const handlePayClick = (index: number) => {
-    if (splitMethod === 'cash') {
-      toast.info('Silakan sampaikan ke kasir bahwa Anda membayar bagian ini dengan Tunai.');
-    } else {
-      setActiveSplitIndex(index);
-      setMidtransOpen(true);
-    }
+    setActiveSplitIndex(index);
+    setMidtransOpen(true);
   };
 
   const onMidtransSuccess = async () => {
@@ -185,12 +184,8 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
   };
 
   const checkStatus = () => {
-    if (splitMethod === 'cash') {
-      setView('tracking');
-    } else {
-      if (paidSplits.every(Boolean)) setView('success');
-      else setView('tracking');
-    }
+    if (paidSplits.every(Boolean)) setView('success');
+    else setView('tracking');
   };
 
   return (
@@ -213,29 +208,13 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
           <>
             <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[1.5rem] p-6 text-white text-center shadow-lg">
               <p className="text-indigo-100 text-sm mb-1">Total Tagihan Keseluruhan</p>
-              <h2 className="text-4xl font-black tracking-tight">{FORMAT_IDR(totals.total)}</h2>
+              <h2 className="text-4xl font-black tracking-tight">{FORMAT_IDR(fixedTotal)}</h2>
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-5 border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
               
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 block">Metode Pembayaran</label>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setSplitMethod('non-cash')}
-                    className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${splitMethod === 'non-cash' ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-100 dark:border-slate-800 hover:border-blue-200'}`}
-                  >
-                    <CreditCard size={24} className="mb-2" />
-                    <span className="text-sm font-bold">Non-Tunai</span>
-                  </button>
-                  <button 
-                    onClick={() => setSplitMethod('cash')}
-                    className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${splitMethod === 'cash' ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-100 dark:border-slate-800 hover:border-blue-200'}`}
-                  >
-                    <Banknote size={24} className="mb-2" />
-                    <span className="text-sm font-bold">Tunai</span>
-                  </button>
-                </div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 p-4 rounded-xl text-sm border border-blue-100 dark:border-blue-800">
+                <p><strong>Catatan:</strong> Fitur Split Bill pada menu ini khusus untuk pembayaran <strong>Non-Tunai</strong> (maksimal 2 orang). Pembayaran otomatis akan ditagihkan ke masing-masing melalui Qris/E-Wallet.</p>
               </div>
 
               <div>
@@ -252,7 +231,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
                     disabled={splitCount >= maxSplit}
                   >+</button>
                 </div>
-                <p className="text-center text-[10px] text-slate-400 mt-2">Maksimal {maxSplit} orang untuk metode {splitMethod === 'cash' ? 'Tunai' : 'Non-Tunai'}</p>
+                <p className="text-center text-[10px] text-slate-400 mt-2">Maksimal {maxSplit} orang untuk metode Non-Tunai</p>
               </div>
               
               <div className="h-[1px] bg-slate-100 dark:bg-slate-800" />
@@ -264,7 +243,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
 
               <button
                 onClick={handleCreateSplit}
-                disabled={isProcessing || totals.total <= 0}
+                disabled={isProcessing || fixedTotal <= 0}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl py-4 font-bold flex justify-center items-center gap-2 active:scale-95 transition-all"
               >
                 {isProcessing ? 'Memproses...' : 'Buat Transaksi Split Bill'}
