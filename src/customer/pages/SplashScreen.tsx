@@ -1,5 +1,4 @@
 import React from 'react';
-import { ShoppingBag } from 'lucide-react';
 
 export default function SplashScreen(): React.JSX.Element {
   return (
@@ -21,7 +20,7 @@ export default function SplashScreen(): React.JSX.Element {
             className="absolute inset-0 bg-blue-100 rounded-[2rem] scale-110 animate-ping opacity-20" 
             style={{ animationDuration: '3s' }}
           />
-          <ShoppingBag size={64} strokeWidth={2} className="text-blue-600 relative z-10" />
+          <img src="/icon-192.png" alt="MesenAe Logo" className="w-16 h-16 object-contain relative z-10" />
         </div>
         
         {/* Nama Brand dengan Animasi Fade-In-Up */}
