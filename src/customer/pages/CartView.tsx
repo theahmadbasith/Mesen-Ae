@@ -102,7 +102,7 @@ export default function CartView({
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-4 pt-6 pb-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
         <button 
-          onClick={() => setView('landing')} 
+          onClick={() => setView('menu')} 
           className="w-11 h-11 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full active:scale-95 transition-all shrink-0"
         >
           <ChevronLeft size={22} className="text-slate-700 dark:text-slate-300" />
@@ -211,7 +211,7 @@ export default function CartView({
           </button>
         </div>
 
-        {/* Action List (Split Bill & Promo) */}
+        {/* Action List (Split Bill) */}
         <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
           <button 
             onClick={() => setView('split')} 
@@ -222,25 +222,8 @@ export default function CartView({
                 <Share2 size={20} strokeWidth={2} />
               </div>
               <div className="text-left">
-                <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Bagi Tagihan</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Split bill pesanan</p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </button>
-
-          <div className="h-[1px] bg-slate-100 dark:bg-slate-800 mx-4" />
-
-          <button 
-            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 active:bg-slate-100 transition-colors"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="bg-orange-50 dark:bg-orange-500/10 p-2.5 rounded-xl text-orange-600 dark:text-orange-400">
-                <Ticket size={20} strokeWidth={2} />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Gunakan Promo</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Masukkan kode voucher</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Split Bill</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Pisahkan tagihan pesanan Anda</p>
               </div>
             </div>
             <ChevronRight size={18} className="text-slate-400" />

@@ -17,6 +17,7 @@ import TrackingView from './pages/TrackingView';
 import OthersView from './pages/OthersView';
 import HistoryView from './pages/HistoryView';
 import SuccessView from './pages/SuccessView';
+import SplitView from './pages/SplitView';
 
 // Components
 import BottomNav from './components/BottomNav';
@@ -359,6 +360,7 @@ export default function CustomerApp() {
         {viewState === 'others' && <OthersView setView={setView} storeSettings={storeSettings as any} tableNumber={tableNumber} customerName={customerName} />}
         {viewState === 'history' && <HistoryView setView={setView} customerName={customerName} storeSettings={storeSettings as any} />}
         {viewState === 'success' && <SuccessView setView={setView} finalOrderData={finalOrderData as any} />}
+        {viewState === 'split' && <SplitView setView={setView} cart={cart as any} totals={cartTotal} />}
 
         {/* Modal / Sheet Component */}
         {selectedItem && (
