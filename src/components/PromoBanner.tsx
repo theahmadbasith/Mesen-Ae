@@ -57,28 +57,32 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
         </h4>
       </div>
 
-      {/* LAYER 4: DESCRIPTION & BUTTON BOX */}
-      <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[75%] max-w-[280px]">
-        {banner.description && (
-          <p className="text-[11px] sm:text-xs text-slate-100 font-medium line-clamp-3 leading-relaxed drop-shadow-sm mb-3">
+      {/* LAYER 4: DESCRIPTION BOX */}
+      {banner.description && (
+        <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[75%] max-w-[280px] pointer-events-none">
+          <p className="text-[11px] sm:text-xs text-slate-100 font-medium line-clamp-3 leading-relaxed drop-shadow-sm m-0">
             {banner.description}
           </p>
-        )}
-        
-        {(onAction || banner.link) && (
+        </div>
+      )}
+
+      {/* LAYER 5: BUTTON BOX */}
+      {(onAction || banner.link) && (
+        <div style={{ position: 'absolute', left: `${banner.buttonPos?.x ?? 8}%`, top: `${banner.buttonPos?.y ?? 80}%`, transform: 'translate(0%, -50%)', zIndex: 11 }} className="w-auto">
           <button 
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               if (banner.link) {
                 if (banner.link.startsWith('http')) window.open(banner.link, '_blank');
                 else window.location.href = banner.link;
               } else if (onAction) onAction();
             }}
-            className="bg-white text-slate-900 text-[10px] sm:text-xs font-bold px-4 py-2 sm:py-2.5 rounded-xl shadow-lg hover:bg-slate-100 active:scale-95 transition-all inline-flex items-center gap-1.5"
+            className="bg-white text-slate-900 text-[10px] sm:text-xs font-bold px-4 py-2 sm:py-2.5 rounded-xl shadow-lg hover:bg-slate-100 active:scale-95 transition-all inline-flex items-center gap-1.5 whitespace-nowrap pointer-events-auto"
           >
-            Lihat Sekarang <ArrowRight size={14} />
+            {banner.buttonText || 'Lihat Sekarang'} <ArrowRight size={14} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

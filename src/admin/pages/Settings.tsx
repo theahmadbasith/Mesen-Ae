@@ -11,6 +11,7 @@ import {
   ChevronRight, Image as ImageIcon, UploadCloud
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
+import BannerSettingsTab from '@/admin/components/BannerSettingsTab';
 import PromoBanner from '@/components/PromoBanner';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
@@ -617,50 +618,7 @@ export default function Pengaturan() {
 
         {/* ══════════════ BANNER ══════════════ */}
         {activeTab === 'banner' && (
-          <Section
-            title="Kelola Banner Promo"
-            description="Atur gambar banner yang tampil di halaman pelanggan."
-            action={
-              <Button size="sm" onClick={openBannerAdd} className="h-8 gap-1.5 text-xs shadow-sm">
-                <Plus className="w-3.5 h-3.5" /> Tambah Banner
-              </Button>
-            }
-          >
-            {!banners?.length ? (
-              <SettingCard>
-                <div className="flex flex-col items-center py-10 text-center text-muted-foreground gap-2">
-                  <ImageIcon className="w-8 h-8 opacity-25" />
-                  <p className="text-sm">Belum ada banner diatur</p>
-                  <Button size="sm" variant="outline" className="mt-1 gap-1.5 text-xs h-8" onClick={openBannerAdd}>
-                    <Plus className="w-3.5 h-3.5" /> Tambah Banner Pertama
-                  </Button>
-                </div>
-              </SettingCard>
-            ) : (
-              <SettingCard>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
-                  {banners.map((b) => (
-                    <div key={b.id} className="relative group">
-                      <PromoBanner banner={b} className="h-full min-h-[160px]" />
-                      <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                        <Button size="icon" className="h-8 w-8 bg-black/50 hover:bg-black text-white rounded-full backdrop-blur-md border border-white/10 shadow-sm" onClick={() => openBannerEdit(b)}>
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button size="icon" className="h-8 w-8 bg-destructive/80 hover:bg-destructive text-white rounded-full backdrop-blur-md border border-white/10 shadow-sm" onClick={() => deleteBanner(b.id!)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                      {!b.isActive && (
-                        <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px] rounded-[1.5rem] flex items-center justify-center z-10">
-                          <span className="bg-background/80 text-foreground font-bold px-3 py-1.5 rounded-lg shadow-sm text-xs">Nonaktif</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </SettingCard>
-            )}
-          </Section>
+          <BannerSettingsTab vouchers={vouchers} products={products} />
         )}
 
         {/* ══════════════ TAMPILAN ══════════════ */}

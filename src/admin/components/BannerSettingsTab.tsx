@@ -30,6 +30,9 @@ export interface PromoBanner {
   titlePos?: { x: number, y: number };
   descPos?: { x: number, y: number };
   overlayPos?: { x: number, y: number };
+  buttonPos?: { x: number, y: number };
+  buttonText?: string;
+  link?: string;
   isActive: boolean;
 }
 
@@ -62,6 +65,8 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
   const [bannerVoucherId, setBannerVoucherId] = useState<string>('');
   const [bannerProductId, setBannerProductId] = useState<string>('');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [bannerLink, setBannerLink] = useState('');
+  const [bannerButtonText, setBannerButtonText] = useState('');
   const [bannerIsActive, setBannerIsActive] = useState(true);
 
   // Drag and drop states
@@ -69,7 +74,8 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
   const [titlePos, setTitlePos] = useState({ x: 8, y: 30 });
   const [descPos, setDescPos] = useState({ x: 8, y: 70 });
   const [overlayPos, setOverlayPos] = useState({ x: 85, y: 50 });
-  const [dragTarget, setDragTarget] = useState<'title' | 'desc' | 'overlay' | null>(null);
+  const [buttonPos, setButtonPos] = useState({ x: 8, y: 80 });
+  const [dragTarget, setDragTarget] = useState<'title' | 'desc' | 'overlay' | 'button' | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlayInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +104,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     if (dragTarget === 'title') setTitlePos({ x, y });
     else if (dragTarget === 'desc') setDescPos({ x, y });
     else if (dragTarget === 'overlay') setOverlayPos({ x, y });
+    else if (dragTarget === 'button') setButtonPos({ x, y });
   };
 
   const handlePointerUp = () => setDragTarget(null);
@@ -109,12 +116,15 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     setBannerDesc('');
     setBannerVoucherId('');
     setBannerProductId('');
+    setBannerLink('');
+    setBannerButtonText('');
+    setBannerIsActive(true);
     setBannerImage(null);
     setOverlayImage(null);
     setTitlePos({ x: 8, y: 30 });
-    setDescPos({ x: 8, y: 70 });
+    setDescPos({ x: 8, y: 60 });
     setOverlayPos({ x: 85, y: 50 });
-    setBannerIsActive(true);
+    setButtonPos({ x: 8, y: 80 });
     setBannerDialogOpen(true);
   };
 
@@ -123,13 +133,16 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     setBannerType(b.type);
     setBannerTitle(b.title);
     setBannerDesc(b.description);
-    setBannerVoucherId(b.voucherId?.toString() || '');
-    setBannerProductId(b.productId?.toString() || '');
+    setBannerVoucherId(String(b.voucherId || ''));
+    setBannerProductId(String(b.productId || ''));
+    setBannerLink(b.link || '');
+    setBannerButtonText(b.buttonText || '');
     setBannerImage(b.imageUrl || null);
     setOverlayImage(b.overlayImageUrl || null);
-    setTitlePos(b.titlePos ?? { x: 8, y: 30 });
-    setDescPos(b.descPos ?? { x: 8, y: 70 });
-    setOverlayPos(b.overlayPos ?? { x: 85, y: 50 });
+    setTitlePos(b.titlePos || { x: 8, y: 30 });
+    setDescPos(b.descPos || { x: 8, y: 60 });
+    setOverlayPos(b.overlayPos || { x: 85, y: 50 });
+    setButtonPos(b.buttonPos || { x: 8, y: 80 });
     setBannerIsActive(b.isActive);
     setBannerDialogOpen(true);
   };
@@ -234,6 +247,9 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
       titlePos,
       descPos,
       overlayPos,
+      buttonPos,
+      buttonText: bannerButtonText.trim(),
+      link: bannerLink.trim(),
       isActive: bannerIsActive
     };
 
@@ -360,7 +376,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
                   <div style={{ position: 'absolute', left: `${b.descPos?.x ?? 8}%`, top: `${b.descPos?.y ?? 70}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[80%] max-w-[200px]">
                      <p className="text-[10px] text-blue-50/90 line-clamp-2 leading-relaxed font-medium">{b.description}</p>
                      <div className="mt-1 text-[9px] bg-white text-blue-600 font-bold px-2 py-0.5 rounded self-start inline-block">
-                        Lihat
+                        {b.buttonText || 'Lihat'}
                      </div>
                   </div>
                 </div>
@@ -554,6 +570,17 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Deskripsi <span className="text-destructive">*</span></Label>
                     <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={2} maxLength={120} className="w-full p-3 bg-background rounded-xl border border-input focus:outline-none focus:ring-1 focus:ring-primary text-sm font-medium resize-none" />
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Teks Tombol (Opsional)</Label>
+                    <Input value={bannerButtonText} onChange={e => setBannerButtonText(e.target.value)} placeholder="Contoh: Pesan Sekarang, Buka IG" className="h-10 bg-background rounded-xl font-semibold text-sm" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Link Tujuan (Opsional)</Label>
+                    <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="Contoh: https://instagram.com/..." className="h-10 bg-background rounded-xl font-semibold text-sm" />
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-1">Jika dikosongkan, tombol akan mengarahkan pelanggan ke Menu.</p>
                   </div>
                </div>
 
