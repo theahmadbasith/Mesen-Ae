@@ -35,6 +35,26 @@ export default function SharedLogin() {
       const user = users.length > 0 ? users[0] : null;
 
       if (!user) {
+        // Fallback for first-time setup
+        if (username.toLowerCase() === 'admin' && password === 'admin123') {
+           const { dbInsert } = await import('@/hooks/db-hooks');
+           const bcrypt = (await import('bcryptjs')).default;
+           const password_hash = await bcrypt.hash('admin123', 10);
+           await dbInsert('users', {
+             username: 'admin',
+             password_hash,
+             role: 'admin',
+             name: 'Admin Utama',
+             createdAt: new Date()
+           });
+           
+           const authData = JSON.stringify({ role: 'admin', username: 'admin', name: 'Admin Utama' });
+           localStorage.setItem('admin_auth', authData);
+           toast.success('Selamat datang, Admin! (Sistem telah membuat akun default)');
+           navigate('/admin/');
+           return;
+        }
+
         toast.error('Pengguna tidak ditemukan!');
         return;
       }
