@@ -11,8 +11,8 @@ interface PromoBannerProps {
 
 export default function PromoBanner({ banner, className, onAction }: PromoBannerProps) {
   // Koordinat Default Jika Belum Di-set
-  const titleP = banner.titlePos ?? { x: 8, y: 30 };
-  const descP = banner.descPos ?? { x: 8, y: 70 };
+  const titleP = banner.titlePos ?? { x: 8, y: 25 };
+  const descP = banner.descPos ?? { x: 8, y: 55 };
   const overP = banner.overlayPos ?? { x: 85, y: 50 };
 
   return (
@@ -45,7 +45,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
       )}
 
       {/* LAYER 3: TITLE BOX */}
-      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[75%] max-w-[280px]">
+      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[65%] max-w-[280px]">
         <span className={cn(
           "text-[9px] sm:text-[10px] px-2.5 py-1 rounded-md backdrop-blur-md font-bold mb-2 inline-block uppercase tracking-wider border shadow-sm",
           banner.imageUrl ? "bg-white/10 border-white/20 text-white" : "bg-white/20 border-white/10"
@@ -59,7 +59,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
 
       {/* LAYER 4: DESCRIPTION BOX */}
       {banner.description && (
-        <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[75%] max-w-[280px] pointer-events-none">
+        <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[65%] max-w-[280px] pointer-events-none">
           <p className="text-[11px] sm:text-xs text-slate-100 font-medium line-clamp-3 leading-relaxed drop-shadow-sm m-0">
             {banner.description}
           </p>
@@ -68,7 +68,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
 
       {/* LAYER 5: BUTTON BOX */}
       {(onAction || banner.link) && (
-        <div style={{ position: 'absolute', left: `${banner.buttonPos?.x ?? 8}%`, top: `${banner.buttonPos?.y ?? 80}%`, transform: 'translate(0%, -50%)', zIndex: 11 }} className="w-auto">
+        <div style={{ position: 'absolute', left: `${banner.buttonPos?.x ?? 8}%`, top: `${banner.buttonPos?.y ?? 85}%`, transform: 'translate(0%, -50%)', zIndex: 11 }} className="w-auto">
           <button 
             onClick={(e) => {
               e.stopPropagation();

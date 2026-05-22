@@ -17,7 +17,7 @@ import { useDbQuery, dbDelete, Transaction } from '@/hooks/db-hooks';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import KitchenReceipt from '@/components/KitchenReceipt';
+import Receipt from '@/components/Receipt';
 import { FORMAT_IDR } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -199,9 +199,9 @@ export default function ActiveOrders() {
         </div>
       )}
 
-      {/* Modal / Dialog Struk Dapur */}
+      {/* Modal / Dialog Struk Pembayaran */}
       {receiptTx && (
-        <KitchenReceipt
+        <Receipt
           open={!!receiptTx}
           onClose={() => setReceiptTx(null)}
           transaction={receiptTx}

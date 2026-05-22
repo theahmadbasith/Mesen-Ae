@@ -718,7 +718,7 @@ export default function Kasir() {
                 <ClipboardList className="w-4 h-4" />
                 Open Bill
                 {openBillsCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 rounded-full flex items-center justify-center text-[10px] px-1 bg-destructive text-destructive-foreground shadow-md border border-white z-10">
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 rounded-full flex items-center justify-center text-[10px] px-1 bg-primary text-primary-foreground shadow-md border border-white z-10">
                     {openBillsCount}
                   </Badge>
                 )}

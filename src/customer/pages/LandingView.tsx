@@ -277,7 +277,7 @@ export default function LandingView({
                     <PromoBanner 
                       key={`${promo.id}-${index}`}
                       banner={promo}
-                      className="snap-start shrink-0 w-full min-h-[180px]"
+                      className="snap-start shrink-0 w-full min-h-[220px]"
                       onAction={() => setView('menu')}
                     />
                   ))}
@@ -305,7 +305,7 @@ export default function LandingView({
               // Jika cuma 1 promo aktif, tampilkan full width banner
               <PromoBanner 
                 banner={displayOffers[0]}
-                className="w-full min-h-[160px]"
+                className="w-full min-h-[220px] shadow-lg shadow-blue-600/20"
                 onAction={() => setView('menu')}
               />
             )}

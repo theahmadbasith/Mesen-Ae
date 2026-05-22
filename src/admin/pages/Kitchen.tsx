@@ -34,10 +34,10 @@ function KitchenItemsList({ transactionId }: { transactionId: number }) {
           
           {/* Item Details */}
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="font-extrabold text-foreground text-base leading-snug">{item.productName}</span>
+            <span className="font-extrabold text-foreground text-base leading-snug break-words">{item.productName}</span>
             
             {item.selectedVariants && item.selectedVariants.length > 0 && (
-              <span className="text-xs font-semibold text-muted-foreground mt-1">
+              <span className="text-xs font-semibold text-muted-foreground mt-1 break-words">
                 + {item.selectedVariants.map((v: any) => v.optionName).join(', ')}
               </span>
             )}
@@ -157,7 +157,7 @@ export default function Kitchen() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
           {processingBills.map(bill => {
             const config = getStatusConfig(bill.kitchenStatus || 'diproses');
             
