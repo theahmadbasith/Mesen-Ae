@@ -31,9 +31,14 @@ export default function TransactionHistory() {
   const [restoreStock, setRestoreStock] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'lunas' | 'belum lunas'>('all');
 
-  const transactions = (useDbQuery<any>('transactions') || []).sort((a:any, b:any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const products = useDbQuery<any>('products') || [];
-  const allTxItems = useDbQuery<any>('transactionItems') || [];
+  const txResult = useDbQuery<any>('transactions');
+  const transactions = useMemo(() => (txResult || []).sort((a:any, b:any) => new Date(b.date).getTime() - new Date(a.date).getTime()), [txResult]);
+  
+  const productsResult = useDbQuery<any>('products');
+  const products = useMemo(() => productsResult || [], [productsResult]);
+
+  const allTxItemsResult = useDbQuery<any>('transactionItems');
+  const allTxItems = useMemo(() => allTxItemsResult || [], [allTxItemsResult]);
 
   const txItemsMap = useMemo(() => {
     const map: Record<number, TransactionItemRecord[]> = {};

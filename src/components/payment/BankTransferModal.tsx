@@ -78,10 +78,10 @@ export function BankTransferModal({
         enabled_payments: [bank.snapKey],
       });
 
-      // @ts-ignore
+      // @ts-expect-error - window.snap injected globally
       if (!window.snap) throw new Error('Midtrans Snap belum siap.');
 
-      // @ts-ignore
+      // @ts-expect-error - window.snap injected globally
       window.snap.pay(token, {
         onSuccess: () => {
           setStep('success');

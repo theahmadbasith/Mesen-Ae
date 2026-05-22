@@ -9,8 +9,9 @@
   <img src="https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge" alt="Production Ready" />
   <img src="https://img.shields.io/badge/Platform-Web%20%7C%20PWA-orange?style=for-the-badge" alt="PWA Platform" />
   <img src="https://img.shields.io/badge/Database-Firebase%20Firestore-blue?style=for-the-badge" alt="Firebase Firestore" />
-  <img src="https://img.shields.io/badge/Storage-Firebase%20Storage-yellow?style=for-the-badge" alt="Firebase Storage" />
+  <img src="https://img.shields.io/badge/Storage-Cloudinary%20API-yellow?style=for-the-badge" alt="Cloudinary Storage" />
   <img src="https://img.shields.io/badge/Performance-React%20Query%20Cache-purple?style=for-the-badge" alt="React Query Cache" />
+  <img src="https://img.shields.io/badge/Optimized-Zero%20Deadcode-success?style=for-the-badge" alt="Zero Deadcode" />
 </p>
 
 ---
@@ -29,9 +30,7 @@
 
 **MesenAe** adalah platform Point of Sale (POS) kelas atas yang dirancang khusus untuk memenuhi kebutuhan operasional dan digitalisasi kafe, restoran, dan UMKM modern di Indonesia. 
 
-MesenAe telah beralih **100% menggunakan infrastruktur Firebase (Cloud Firestore & Firebase Storage)** sebagai basis datanya, memastikan sinkronisasi data yang sangat cepat dan handal. Dengan mengimplementasikan sistem sinkronisasi *real-time* dan **Caching lokal yang super cepat**, aplikasi ini memberikan performa setara *native-app* tanpa lag sama sekali.
-
-Semua data otomatis tersinkronisasi secara *real-time* menggunakan Firestore, dan semua foto produk tersimpan rapi langsung di dalam Firebase Storage!
+MesenAe menggunakan **100% infrastruktur Firebase (Cloud Firestore)** sebagai basis data utama, memastikan sinkronisasi transaksi secara seketika (*real-time*). Untuk penyimpanan media, aplikasi ini menggunakan integrasi cerdas **Cloudinary** yang didukung *Web Worker Compression*, menjaga ukuran foto tetap mini dan sangat jernih tanpa membebani server Firebase Anda.
 
 ---
 
@@ -62,14 +61,16 @@ MesenAe menerapkan strategi pengelolaan data modern menggunakan `@tanstack/react
 *   **Cetak Struk Thermal:** Hubungkan perangkat POS (HP/Tablet/PC) ke printer *thermal* bluetooth atau USB, cetak struk rapi dengan Header & Footer *custom* dari pengaturan.
 *   **Cetak Invoice PDF & Bagikan ke WA:** Sediakan struk digital profesional dalam bentuk file PDF atau pesan teks rapi yang langsung dibagikan ke WhatsApp pelanggan.
 
-### 📦 4. Manajemen Database & Cloud Storage
+### 📦 4. Manajemen Database & Cloudinary Storage
 *   **Firebase Firestore Database:** Manajemen tabel produk, stok, transaksi, dan data pengguna secara terstruktur menggunakan NoSQL.
-*   **Firebase Storage:** Upload foto produk dari galeri / kamera langsung terkompresi dan tersimpan secara aman di Cloud Storage.
+*   **Web Worker Compression:** Gambar dikompresi di latar belakang peramban (*browser*) secara otomatis menjadi di bawah 300KB (max resolusi 1920px) tanpa pembekuan antarmuka (*UI freeze*).
+*   **Cloudinary Auto-Delete:** Integrasi pintar di mana sistem akan otomatis memusnahkan gambar lama di server Cloudinary ketika Anda menghapus/mengganti foto produk atau *banner* toko!
 
 ### 📱 5. UI/UX Interaktif & Pro Progressive Web App (PWA)
+*   **Interactive Drag & Drop Banner:** Bangun *banner* promosi toko Anda secara bebas! Pindahkan gambar, teks, dan tombol promo ke mana saja menggunakan kursor secara presisi langsung dari panel Admin.
+*   **Store Logo Cropper:** Alat pemotong otomatis (*cropper*) untuk merapikan logo toko Anda agar presisi di struk dan aplikasi pelanggan.
+*   **Premium Edge-to-Edge UI:** Foto produk ditampilkan tanpa jarak (*borderless*) di beranda pelanggan. Ditambah dukungan mode layar Dapur (*Kitchen View*) dan *Horizontal Carousel* untuk pengalaman sekelas aplikasi *Native*.
 *   **Indikator Animasi & Loading Mulus:** Memberikan respons visual (seperti Spinner & "Menyimpan...") di semua aksi simpan.
-*   **QR Code Self-Ordering & Kitchen View:** Menyediakan halaman menu pemesanan mandiri untuk pelanggan (*scan* QR di meja) dan layar Dapur terpusat dengan sinkronisasi otomatis.
-*   **Tema Warna Global:** Skema warna utama (branding theme) yang diatur di menu Pengaturan Kasir secara instan memengaruhi semua layar aplikasi.
 *   **Premium Built-In Modals:** Semua komponen dialog, checkout, variasi, dan hapus bill dibuat menggunakan komponen bawaan (`Dialog` & `AlertDialog` shadcn). Aplikasi ini **100% bebas dari dialog native browser**.
 
 ---
@@ -137,6 +138,11 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# CLOUDINARY MEDIA STORAGE
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+VITE_CLOUDINARY_API_KEY=your_api_key
+VITE_CLOUDINARY_API_SECRET=your_api_secret
 
 # MIDTRANS PAYMENT GATEWAY
 VITE_MIDTRANS_CLIENT_KEY=SB-Mid-client-your_client_key_here

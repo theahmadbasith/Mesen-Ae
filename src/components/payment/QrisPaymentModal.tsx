@@ -78,7 +78,7 @@ export function QrisPaymentModal({
       setSnapActive(true);
       setStatus('snap_open');
 
-      // @ts-ignore
+      // @ts-expect-error - window.snap injected globally
       window.snap.pay(token, {
         onSuccess: () => {
           setSnapActive(false);
@@ -108,7 +108,7 @@ export function QrisPaymentModal({
       setStatus('error');
       setErrorMsg(err.message || 'Gagal memproses pembayaran. Coba lagi.');
     }
-  }, [amount, customerName]);
+  }, [amount, customerName, orderId]);
 
   useEffect(() => {
     if (isOpen) {

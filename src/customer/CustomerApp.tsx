@@ -207,7 +207,7 @@ export default function CustomerApp() {
         document.documentElement.classList.remove('dark');
       }
       localStorage.setItem('mesenae_darkMode', String(isDarkMode));
-    } catch (_) { }
+    } catch (e) { console.warn('Storage write error', e); }
   }, [isDarkMode]);
 
   // Handle URL Query Params for direct table scan

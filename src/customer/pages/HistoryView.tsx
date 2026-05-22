@@ -214,7 +214,7 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
                           if (Array.isArray(parsed) && parsed.length > 0) {
                             pmName = parsed[0].method_name || 'Pembayaran';
                           }
-                        } catch (_) {}
+                        } catch (e) { console.warn('Parse payment error', e); }
                       }
                       if ((tx as any).payment_method_id === 0) {
                         pmName = 'Bayar di Kasir';

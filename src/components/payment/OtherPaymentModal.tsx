@@ -67,7 +67,7 @@ export function OtherPaymentModal({
       setSnapActive(true);
       setStatus('snap_open');
 
-      // @ts-ignore
+      // @ts-expect-error - window.snap injected globally
       window.snap.pay(token, {
         onSuccess: () => {
           setSnapActive(false);

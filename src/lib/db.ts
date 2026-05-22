@@ -185,8 +185,8 @@ export const db = {
     return new FirestoreQueryBuilder(tableName);
   },
   channel: (name: string) => ({
-    on: (...args: any[]) => ({ subscribe: (cb?: Function) => { if (cb) setTimeout(() => cb('SUBSCRIBED'), 100); return { on: (...a: any[]) => ({ subscribe: (c?: Function) => { if (c) setTimeout(() => c('SUBSCRIBED'), 100); } }) }; } }),
-    subscribe: (cb?: Function) => { if (cb) setTimeout(() => cb('SUBSCRIBED'), 100); },
+    on: (...args: any[]) => ({ subscribe: (cb?: (...args: any[]) => void) => { if (cb) setTimeout(() => cb('SUBSCRIBED'), 100); return { on: (...a: any[]) => ({ subscribe: (c?: (...args: any[]) => void) => { if (c) setTimeout(() => c('SUBSCRIBED'), 100); } }) }; } }),
+    subscribe: (cb?: (...args: any[]) => void) => { if (cb) setTimeout(() => cb('SUBSCRIBED'), 100); },
     send: () => Promise.resolve('ok'),
   }),
   removeChannel: (_channel: any) => { /* no-op */ }

@@ -17,21 +17,22 @@ export default function Laporan() {
 
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
 
-  const allTransactions = useDbQuery<any>('transactions') || [];
-  const allTxItems = useDbQuery<any>('transactionItems') || [];
+  const allTransactionsResult = useDbQuery<any>('transactions');
+  const allTxItemsResult = useDbQuery<any>('transactionItems');
+
+  const allTransactions = useMemo(() => allTransactionsResult || [], [allTransactionsResult]);
+  const allTxItems = useMemo(() => allTxItemsResult || [], [allTxItemsResult]);
 
   const transactions = useMemo(() => {
     const since = startOfDay(subDays(new Date(), days));
     return allTransactions.filter(t => new Date(t.date) >= since);
   }, [allTransactions, days]);
 
-  const txItems = useMemo(() => {
+  const allItems = useMemo(() => {
     if (!transactions || transactions.length === 0) return [];
     const txIds = transactions.map(t => t.id!).filter(Boolean);
     return allTxItems.filter(i => txIds.includes(i.transactionId));
   }, [transactions, allTxItems]);
-
-  const allItems = txItems ?? [];
 
   const stats = useMemo(() => {
     const completedTx = transactions?.filter(t => t.status !== 'belum lunas') ?? [];

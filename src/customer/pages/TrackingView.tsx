@@ -73,7 +73,7 @@ export default function TrackingView({
     try {
       const cached = sessionStorage.getItem('mesenae_tracking_tx');
       if (cached) return JSON.parse(cached);
-    } catch (_) {}
+    } catch (e) { console.warn('Storage read error', e); }
     return undefined;
   });
   
@@ -84,7 +84,7 @@ export default function TrackingView({
     try {
       const cached = sessionStorage.getItem('mesenae_tracking_items');
       if (cached) return JSON.parse(cached);
-    } catch (_) {}
+    } catch (e) { console.warn('Storage read error', e); }
     return [];
   });
   const [paymentMethodName, setPaymentMethodName] = useState<string>(() => {
@@ -92,14 +92,15 @@ export default function TrackingView({
     try {
       const cached = sessionStorage.getItem('mesenae_tracking_pm');
       if (cached) return cached;
-    } catch (_) {}
+    } catch (e) { console.warn('Storage read error', e); }
     return 'Pembayaran';
   });
   const [loadingActive, setLoadingActive] = useState<boolean>(!finalOrderData && !liveTx);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- All hooks MUST be called before any conditional returns ---
-  const users = (useDbQuery('users') as any[]) ?? [];
+  const usersResult = useDbQuery('users') as any[];
+  const users = React.useMemo(() => usersResult ?? [], [usersResult]);
   const activeKasirWa = React.useMemo(() => {
     const kasir = users.find(u => u.whatsapp);
     return kasir?.whatsapp || storeSettings?.phone;
@@ -124,7 +125,7 @@ export default function TrackingView({
     if (liveTx) {
       try {
         sessionStorage.setItem('mesenae_tracking_tx', JSON.stringify(liveTx));
-      } catch (_) {}
+      } catch (e) { console.warn('Storage write error', e); }
     }
   }, [liveTx]);
 
@@ -132,7 +133,7 @@ export default function TrackingView({
     if (activeItems.length > 0) {
       try {
         sessionStorage.setItem('mesenae_tracking_items', JSON.stringify(activeItems));
-      } catch (_) {}
+      } catch (e) { console.warn('Storage write error', e); }
     }
   }, [activeItems]);
 
@@ -140,7 +141,7 @@ export default function TrackingView({
     if (paymentMethodName) {
       try {
         sessionStorage.setItem('mesenae_tracking_pm', paymentMethodName);
-      } catch (_) {}
+      } catch (e) { console.warn('Storage write error', e); }
     }
   }, [paymentMethodName]);
 
@@ -153,7 +154,7 @@ export default function TrackingView({
         if (Array.isArray(parsed) && parsed.length > 0) {
           pmName = parsed[0].method_name || 'Pembayaran';
         }
-      } catch (_) {}
+      } catch (e) { console.warn('Parse payment error', e); }
     }
     if (tx.payment_method_id === 0) {
       pmName = 'Bayar di Kasir';

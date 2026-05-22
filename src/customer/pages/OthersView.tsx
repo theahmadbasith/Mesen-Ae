@@ -40,8 +40,11 @@ export default function OthersView({
   const [showCS, setShowCS] = useState<boolean>(false);
   const [showVouchers, setShowVouchers] = useState<boolean>(false);
 
-  const vouchers = (useDbQuery('vouchers') as Voucher[]) ?? [];
-  const users = (useDbQuery('users') as any[]) ?? [];
+  const vouchersResult = useDbQuery('vouchers') as Voucher[];
+  const vouchers = useMemo(() => vouchersResult ?? [], [vouchersResult]);
+
+  const usersResult = useDbQuery('users') as any[];
+  const users = useMemo(() => usersResult ?? [], [usersResult]);
   
   const activeVouchers = useMemo(() => {
     return vouchers.filter((v: Voucher) => v.isActive || v.is_active);

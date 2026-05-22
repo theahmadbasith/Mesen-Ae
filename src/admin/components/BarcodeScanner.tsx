@@ -141,6 +141,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
     return () => {
       stopScanner();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const switchCamera = async () => {
