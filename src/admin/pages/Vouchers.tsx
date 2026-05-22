@@ -80,8 +80,8 @@ export default function Vouchers() {
         toast.success('Voucher baru berhasil dibuat');
       }
       setDialogOpen(false);
-    } catch (err) {
-      toast.error('Gagal menyimpan voucher');
+    } catch (err: any) {
+      toast.error('Gagal menyimpan voucher: ' + (err.message || err));
     }
   };
 
@@ -90,8 +90,8 @@ export default function Vouchers() {
       try {
         await dbDelete('vouchers', deleteId);
         toast.success('Voucher berhasil dihapus');
-      } catch (err) {
-        toast.error('Gagal menghapus voucher');
+      } catch (err: any) {
+        toast.error('Gagal menghapus voucher: ' + (err.message || err));
       } finally {
         setDeleteId(null);
       }

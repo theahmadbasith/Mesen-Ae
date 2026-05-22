@@ -198,6 +198,8 @@ export default function Pengaturan() {
       }
       toast.success('Info toko disimpan');
       setStoreDialog(false);
+    } catch (error: any) {
+      toast.error('Gagal menyimpan info toko: ' + (error.message || error));
     } finally { setIsSavingStore(false); }
   };
 
@@ -226,6 +228,8 @@ export default function Pengaturan() {
       if (pmEditId) await dbUpdate('paymentMethods', pmEditId, { name: pmName.trim(), category: pmCategory });
       else await dbInsert('paymentMethods', { name: pmName.trim(), category: pmCategory, isDefault: false, createdAt: new Date().toISOString() });
       setPmDialog(false); toast.success('Metode pembayaran disimpan');
+    } catch (error: any) {
+      toast.error('Gagal menyimpan metode pembayaran: ' + (error.message || error));
     } finally { setIsSavingPm(false); }
   };
   const deletePm = async (id: string | number) => { await dbDelete('paymentMethods', id); toast.success('Dihapus'); };
@@ -247,6 +251,8 @@ export default function Pengaturan() {
       if (catEditId) await dbUpdate('categories', catEditId, { name: catName.trim(), icon: catIcon, color: catColor });
       else await dbInsert('categories', { name: catName.trim(), icon: catIcon, color: catColor, createdAt: new Date().toISOString() });
       setCatDialog(false); toast.success('Kategori disimpan');
+    } catch (error: any) {
+      toast.error('Gagal menyimpan kategori: ' + (error.message || error));
     } finally { setIsSavingCat(false); }
   };
   const deleteCat = async (id: string | number) => { await dbDelete('categories', id); toast.success('Dihapus'); };
@@ -279,6 +285,8 @@ export default function Pengaturan() {
         await dbInsert('users', { username: userUsername.trim(), password_hash, role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim(), createdAt: new Date().toISOString() });
       }
       setUserDialog(false); toast.success('Pengguna disimpan');
+    } catch (error: any) {
+      toast.error('Gagal menyimpan pengguna: ' + (error.message || error));
     } finally { setIsSavingUser(false); }
   };
   const deleteUser = async (id: string | number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
@@ -317,7 +325,7 @@ export default function Pengaturan() {
       if (bannerEditId) await dbUpdate('banners', bannerEditId, payload);
       else await dbInsert('banners', payload);
       setBannerDialog(false); toast.success('Banner disimpan');
-    } catch (err) { toast.error('Gagal menyimpan banner'); }
+    } catch (err: any) { toast.error('Gagal menyimpan banner: ' + (err.message || err)); }
     finally { setIsSavingBanner(false); }
   };
   const deleteBanner = async (id: string | number) => { await dbDelete('banners', id); toast.success('Banner dihapus'); };

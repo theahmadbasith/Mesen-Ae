@@ -114,9 +114,9 @@ export default function StockInPage() {
 
       toast.success(`Stok ${product.name} bertambah ${qty}. HPP diperbarui menjadi Rp ${Math.round(newHpp).toLocaleString('id-ID')}`);
       setDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Gagal menyimpan data stock in');
+      toast.error('Gagal menyimpan data stock in: ' + (error.message || error));
     } finally {
       setIsSubmitting(false);
     }

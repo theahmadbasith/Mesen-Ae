@@ -43,23 +43,29 @@ const TABLE_MAP: Record<string, string> = {
 
 // ── Converters ────────────────────────────────────────────────
 const mapSnakeToCamel = (obj: any): any => {
-  if (!obj || typeof obj !== 'object') return obj;
+  if (obj === undefined || obj === null) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj;
   if (Array.isArray(obj)) return obj.map(mapSnakeToCamel);
   const out: any = {};
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = key.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
-    out[camelKey] = value;
+    out[camelKey] = mapSnakeToCamel(value);
   }
   return out;
 };
 
 const mapCamelToSnake = (obj: any): any => {
-  if (!obj || typeof obj !== 'object') return obj;
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj.toISOString();
   if (Array.isArray(obj)) return obj.map(mapCamelToSnake);
   const out: any = {};
   for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
     const snakeKey = key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`);
-    out[snakeKey] = value;
+    out[snakeKey] = mapCamelToSnake(value);
   }
   return out;
 };

@@ -94,9 +94,9 @@ export default function SupplierPage() {
         toast.success(`Supplier "${data.name}" berhasil ditambahkan`);
       }
       setDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Gagal menyimpan data supplier');
+      toast.error('Gagal menyimpan data supplier: ' + (error.message || error));
     } finally {
       setIsSubmitting(false);
     }
@@ -108,9 +108,9 @@ export default function SupplierPage() {
     try {
       await dbDelete('suppliers', deleteId);
       toast.success('Supplier berhasil dihapus dari sistem');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Gagal menghapus data supplier');
+      toast.error('Gagal menghapus data supplier: ' + (error.message || error));
     } finally {
       setDeleteId(null);
     }

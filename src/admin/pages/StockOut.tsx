@@ -93,9 +93,9 @@ export default function StockOutPage() {
 
       toast.success(`Stok ${product.name} berhasil dikurangi sebanyak ${qty}`);
       setDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Gagal memproses penyesuaian stok');
+      toast.error('Gagal memproses penyesuaian stok: ' + (error.message || error));
     } finally {
       setIsSubmitting(false);
     }

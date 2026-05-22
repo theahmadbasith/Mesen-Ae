@@ -133,8 +133,8 @@ export default function Produk() {
         toast.success('Produk berhasil ditambahkan');
       }
       setDialogOpen(false);
-    } catch (error) {
-      toast.error('Terjadi kesalahan saat menyimpan produk');
+    } catch (error: any) {
+      toast.error('Terjadi kesalahan saat menyimpan produk: ' + (error.message || error));
     } finally {
       setIsSaving(false);
     }

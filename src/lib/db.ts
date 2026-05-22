@@ -7,6 +7,24 @@ export const isDbConfigured = true;
 // Caching mechanism removed as per user request to rely purely on Firestore.
 
 // ============================================================
+// CLEAN UNDEFINED VALUES FOR FIRESTORE
+// ============================================================
+const cleanUndefined = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map(cleanUndefined);
+  const out: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      out[key] = cleanUndefined(value);
+    }
+  }
+  return out;
+};
+
+// ============================================================
 // FIRESTORE QUERY BUILDER
 // ============================================================
 
@@ -98,37 +116,39 @@ class FirestoreQueryBuilder {
       } 
       else if (this.actionType === 'insert') {
         const colRef = collection(firestoreDb, this.tableName);
-        if (Array.isArray(this.actionData)) {
+        const cleanedData = cleanUndefined(this.actionData);
+        if (Array.isArray(cleanedData)) {
            const results = [];
-           for (const item of this.actionData) {
-             const docId = item.id ? String(item.id) : String(Date.now() + Math.floor(Math.random() * 1000));
-             const docRef = doc(firestoreDb, this.tableName, docId);
-             await setDoc(docRef, { ...item, id: docId });
-             results.push({ id: docId, ...item });
+           for (const item of cleanedData) {
+              const docId = item.id ? String(item.id) : String(Date.now() + Math.floor(Math.random() * 1000));
+              const docRef = doc(firestoreDb, this.tableName, docId);
+              await setDoc(docRef, { ...item, id: docId });
+              results.push({ id: docId, ...item });
            }
            return { data: results, error: null };
         } else {
-           const docId = this.actionData.id ? String(this.actionData.id) : String(Date.now() + Math.floor(Math.random() * 1000));
+           const docId = cleanedData.id ? String(cleanedData.id) : String(Date.now() + Math.floor(Math.random() * 1000));
            const docRef = doc(firestoreDb, this.tableName, docId);
-           await setDoc(docRef, { ...this.actionData, id: docId });
-           return { data: { id: docId, ...this.actionData }, error: null };
+           await setDoc(docRef, { ...cleanedData, id: docId });
+           return { data: { id: docId, ...cleanedData }, error: null };
         }
       } 
       else if (this.actionType === 'update') {
+        const cleanedData = cleanUndefined(this.actionData);
         const idFilter = this.filters.find(f => f.field === 'id');
         if (idFilter) {
-           const docRef = doc(firestoreDb, this.tableName, String(idFilter.value));
-           await updateDoc(docRef, this.actionData);
-           return { data: null, error: null };
+            const docRef = doc(firestoreDb, this.tableName, String(idFilter.value));
+            await updateDoc(docRef, cleanedData);
+            return { data: null, error: null };
         } else {
-           const colRef = collection(firestoreDb, this.tableName);
-           let q: any = colRef;
-           for (const f of this.filters) { q = query(q, where(f.field, f.op, f.value)); }
-           const snapshot = await getDocs(q);
-           for (const d of snapshot.docs) {
-              await updateDoc(d.ref, this.actionData);
-           }
-           return { data: null, error: null };
+            const colRef = collection(firestoreDb, this.tableName);
+            let q: any = colRef;
+            for (const f of this.filters) { q = query(q, where(f.field, f.op, f.value)); }
+            const snapshot = await getDocs(q);
+            for (const d of snapshot.docs) {
+               await updateDoc(d.ref, cleanedData);
+            }
+            return { data: null, error: null };
         }
       }
       else if (this.actionType === 'delete') {
@@ -184,16 +204,17 @@ export async function dbUpsert(
   onConflict = 'id'
 ) {
   try {
-    if (Array.isArray(data)) {
-      for (const item of data) {
+    const cleaned = cleanUndefined(data);
+    if (Array.isArray(cleaned)) {
+      for (const item of cleaned) {
         const docId = item[onConflict] ? String(item[onConflict]) : String(Date.now());
         const docRef = doc(firestoreDb, table, docId);
         await setDoc(docRef, { ...item, id: docId }, { merge: true });
       }
     } else {
-      const docId = data[onConflict] ? String(data[onConflict]) : String(Date.now());
+      const docId = cleaned[onConflict] ? String(cleaned[onConflict]) : String(Date.now());
       const docRef = doc(firestoreDb, table, docId);
-      await setDoc(docRef, { ...data, id: docId }, { merge: true });
+      await setDoc(docRef, { ...cleaned, id: docId }, { merge: true });
     }
   } catch (err) {
     console.error(`[FirestoreDB] dbUpsert error in table ${table}:`, err);

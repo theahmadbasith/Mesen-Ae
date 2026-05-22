@@ -72,8 +72,8 @@ export default function QrCodeMenu() {
       setNewTable('');
       setActiveTable(newTableName);
       toast.success('Meja berhasil ditambahkan');
-    } catch (error) {
-      toast.error('Gagal menyimpan meja ke database');
+    } catch (error: any) {
+      toast.error('Gagal menyimpan meja ke database: ' + (error.message || error));
     }
   };
 
@@ -94,8 +94,8 @@ export default function QrCodeMenu() {
           setActiveTable(updatedTables.length > 0 ? updatedTables[0] : '');
         }
       }
-    } catch (error) {
-      toast.error('Gagal menghapus meja');
+    } catch (error: any) {
+      toast.error('Gagal menghapus meja: ' + (error.message || error));
     } finally {
       setDeleteConfirmOpen(false);
       setTableToDelete(null);
@@ -373,7 +373,7 @@ export default function QrCodeMenu() {
             </div>
             
             <CardContent className="p-8 flex-1 flex flex-col items-center justify-center relative">
-              {tables.length === 0 ? (
+              {!activeTable ? (
                 <div className="text-center space-y-3 opacity-50">
                   <LayoutGrid className="w-16 h-16 mx-auto text-muted-foreground" />
                   <p className="text-sm font-medium">Pilih atau tambah meja terlebih dahulu</p>
