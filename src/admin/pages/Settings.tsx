@@ -13,11 +13,13 @@ import {
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 import PromoBanner from '@/components/PromoBanner';
 import { setThemeColor } from '@/hooks/use-theme-color';
+import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import PhotoCropModal from '@/admin/components/PhotoCropModal';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/image-utils';
@@ -182,6 +184,8 @@ export default function Pengaturan() {
   const [storeLogo,   setStoreLogo]     = useState<string | undefined>();
   const [receiptFooter, setReceiptFooter] = useState('');
   const [isSavingStore, setIsSavingStore] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const openStoreEdit = () => {
@@ -234,9 +238,9 @@ export default function Pengaturan() {
     if (!file.type.startsWith('image/')) { toast.error('File harus berupa gambar'); return; }
     toast.loading('Mengompres logo...', { id: 'compress-logo' });
     try { 
-      setStoreLogo(await compressImage(file)); 
+      const compressed = await compressImage(file);
+      setCropFile(new File([compressed], file.name, { type: file.type }));
       toast.dismiss('compress-logo');
-      toast.success('Logo berhasil dikompres');
     }
     catch { 
       toast.dismiss('compress-logo');
@@ -1146,6 +1150,15 @@ export default function Pengaturan() {
         </DialogContent>
       </Dialog>
 
+      <PhotoCropModal
+        open={!!cropFile}
+        onOpenChange={(open) => { if (!open) setCropFile(null); }}
+        file={cropFile}
+        onCrop={(dataUrl) => {
+          setStoreLogo(dataUrl);
+          setCropFile(null);
+        }}
+      />
     </div>
   );
 }

@@ -370,7 +370,7 @@ export default function LandingView({
             </button>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 mt-2">
+          <div className="flex space-x-3.5 mt-2 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {products.slice(0, 10).map((item) => {
               const isOutOfStock = item.stock <= 0;
               
@@ -392,7 +392,7 @@ export default function LandingView({
                       }
                     }
                   }}
-                  className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 border transition-all ${
+                  className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 border transition-all shrink-0 snap-start w-[150px] sm:w-[180px] ${
                     isOutOfStock 
                       ? 'border-slate-100 dark:border-slate-800 opacity-60 grayscale' 
                       : 'border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 cursor-pointer active:scale-[0.98]'

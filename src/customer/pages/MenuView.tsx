@@ -186,14 +186,14 @@ export default function MenuView({
                     }
                   }
                 }}
-                className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 border transition-all flex flex-col ${
+                className={`bg-white dark:bg-slate-900 rounded-[1.5rem] overflow-hidden border transition-all flex flex-col ${
                   isOutOfStock 
                     ? 'border-slate-100 dark:border-slate-800 opacity-60 grayscale' 
                     : 'border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 cursor-pointer active:scale-[0.98]'
                 }`}
               >
                 {/* Product Image */}
-                <div className="h-32 w-full rounded-xl overflow-hidden relative flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-50 dark:border-slate-800/50 mb-3">
+                <div className="aspect-square w-full relative flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-b border-slate-100 dark:border-slate-800/50">
                   {item.photo ? (
                     <img src={item.photo} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
@@ -209,7 +209,7 @@ export default function MenuView({
                 </div>
                 
                 {/* Product Info */}
-                <div className="flex-1 flex flex-col justify-between px-1">
+                <div className="flex-1 flex flex-col justify-between p-3">
                   <div>
                     <h4 className="font-bold text-sm leading-snug text-slate-900 dark:text-white line-clamp-2 mb-1.5">
                       {item.name}
