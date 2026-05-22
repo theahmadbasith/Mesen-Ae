@@ -313,7 +313,7 @@ export default function CheckoutView({
         profit: totalProfit,
         date: new Date().toISOString(),
         receipt_number: receiptNumber,
-        status: isFullPayment ? 'diproses' : 'belum lunas',
+        status: isFullPayment ? 'lunas' : 'belum lunas',
         kitchen_status: isFullPayment ? 'diproses' : 'pending',
         customer_name: (customerName || '').trim() || null,
         table_number: (tableNumber?.toString() || '').trim() || null,

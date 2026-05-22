@@ -31,8 +31,12 @@ export default function ActiveOrders() {
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
   const allTxItems = useDbQuery<any>('transactionItems') || [];
   const openBills = (useDbQuery<Transaction>('transactions') || []).filter(
-    (t) => t.status === 'open'
-  );
+    (t) => {
+      const isUnpaid = t.status === 'belum lunas' || t.status === 'open';
+      const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+      return isUnpaid || isPaidButCooking;
+    }
+  ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const receiptItems = allTxItems.filter(
     (i: any) => receiptTx && i.transactionId === receiptTx.id
@@ -91,10 +95,17 @@ export default function ActiveOrders() {
               {/* Card Top / Header */}
               <CardHeader className="p-5 pb-0">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1.5">
-                    <Badge variant="default" className="font-mono text-xs px-2.5 py-0.5 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-                      {bill.receiptNumber}
-                    </Badge>
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="default" className="font-mono text-xs px-2.5 py-0.5 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                        {bill.receiptNumber}
+                      </Badge>
+                      {bill.status === 'lunas' ? (
+                        <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">Lunas (Dapur)</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">Belum Lunas</Badge>
+                      )}
+                    </div>
                     {bill.date && (
                       <div className="flex items-center text-xs font-medium text-muted-foreground">
                         <Clock className="w-3.5 h-3.5 mr-1.5" />
