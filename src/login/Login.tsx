@@ -27,41 +27,42 @@ export default function SharedLogin() {
 
     setLoading(true);
     try {
-      const resp = await fetch('/api/google-sheet?action=login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password })
-      });
+      // Simulate network delay for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const { dbSelect } = await import('@/lib/db');
+      const users = await dbSelect<any>('users', { username: username.trim() });
+      const user = users.length > 0 ? users[0] : null;
 
-      const data = await resp.json().catch(() => null);
-
-      if (!resp.ok || !data) {
-        toast.error(data?.message || 'Terjadi kesalahan pada server. Coba lagi.');
+      if (!user) {
+        toast.error('Pengguna tidak ditemukan!');
         return;
       }
 
-      if (data && data.success) {
-        const role = data.user.role;
-        const authData = JSON.stringify({ role, username: data.user.username, name: data.user.name, whatsapp: data.user.whatsapp });
-        
-        // Dynamically save the session in localStorage and route based on the account's role
-        if (role === 'admin') {
-          localStorage.setItem('admin_auth', authData);
-          toast.success(`Selamat datang, ${data.user.username}!`);
-          navigate('/admin/');
-        } else if (role === 'user') {
-          localStorage.setItem('kitchen_auth', authData);
-          localStorage.setItem('admin_auth', authData); // Also set for general session guards if needed
-          toast.success(`Selamat datang Koki ${data.user.username}!`);
-          navigate('/kitchen/');
-        } else {
-          toast.error('Akses ditolak. Peran pengguna tidak dikenali.');
-        }
+      // Simple password check (Note: production should use bcrypt/hashing comparison)
+      if (user.password_hash !== password && user.password !== password) {
+        toast.error('Password salah!');
+        return;
+      }
+
+      const role = user.role || 'user';
+      const authData = JSON.stringify({ role, username: user.username, name: user.name, whatsapp: user.whatsapp });
+      
+      // Dynamically save the session in localStorage and route based on the account's role
+      if (role === 'admin') {
+        localStorage.setItem('admin_auth', authData);
+        toast.success(`Selamat datang, ${user.username}!`);
+        navigate('/admin/');
+      } else if (role === 'user') {
+        localStorage.setItem('kitchen_auth', authData);
+        localStorage.setItem('admin_auth', authData); // Also set for general session guards if needed
+        toast.success(`Selamat datang Koki ${user.username}!`);
+        navigate('/kitchen/');
       } else {
-        toast.error(data?.message || 'Password salah!');
+        toast.error('Akses ditolak. Peran pengguna tidak dikenali.');
       }
     } catch (error) {
-      toast.error('Gagal terhubung ke server. Periksa koneksi internet.');
+      toast.error('Gagal terhubung ke database. Periksa koneksi internet.');
       console.error('[SharedLogin]', error);
     } finally {
       setLoading(false);

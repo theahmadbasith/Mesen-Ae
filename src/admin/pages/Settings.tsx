@@ -21,10 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/image-utils';
-import {
-  downloadProductTemplate, importProductsFromExcel,
-  exportAllDataToExcel, importAllDataFromExcel,
-} from '@/lib/excel-utils';
+// Removed excel-utils dependency
 import { isDbConfigured } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { cn } from '@/lib/utils';
@@ -334,58 +331,9 @@ export default function Pengaturan() {
   }, []);
   const formatBytes = (b: number) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : b < 1073741824 ? `${(b/1048576).toFixed(1)} MB` : `${(b/1073741824).toFixed(1)} GB`;
 
-  /* ── Excel ── */
-  const [importingExcel,    setImportingExcel]    = useState(false);
-  const [importingAllExcel, setImportingAllExcel] = useState(false);
 
-  const handleImportProductExcel = () => {
-    const input = Object.assign(document.createElement('input'), { type: 'file', accept: '.xlsx,.xls,.csv' });
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      setImportingExcel(true);
-      try {
-        const result = await importProductsFromExcel(file);
-        if (result.imported > 0) toast.success(`${result.imported} produk diimport${result.skipped > 0 ? `, ${result.skipped} dilewati` : ''}`);
-        else toast.warning(`Tidak ada produk diimport. ${result.skipped} baris dilewati.`);
-        result.errors.slice(0, 3).forEach(err => toast.error(err, { duration: 5000 }));
-        if (result.errors.length > 3) toast.info(`...dan ${result.errors.length - 3} pesan lainnya`);
-      } catch { toast.error('Gagal membaca file Excel'); }
-      finally { setImportingExcel(false); }
-    };
-    input.click();
-  };
 
-  const handleImportAllExcel = () => {
-    const input = Object.assign(document.createElement('input'), { type: 'file', accept: '.xlsx,.xls' });
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      setImportingAllExcel(true);
-      try {
-        const result = await importAllDataFromExcel(file);
-        result.errors.slice(0, 3).forEach(err => toast.warning(err, { duration: 5000 }));
-        if (result.errors.length > 3) toast.info(`...dan ${result.errors.length - 3} pesan lainnya`);
-      } catch { toast.error('Gagal membaca file Excel'); }
-      finally { setImportingAllExcel(false); }
-    };
-    input.click();
-  };
 
-  /* ── DB Setup ── */
-  const [settingUpSheets, setSettingUpSheets] = useState(false);
-  const [setupResult,     setSetupResult]     = useState<{ status: string; message?: string; data?: { sheet: string; detail: string }[] } | null>(null);
-
-  const setupSheets = async () => {
-    setSettingUpSheets(true); setSetupResult(null);
-    try {
-      const resp = await fetch('/api/google-sheet?action=setup-sheet', { method: 'POST' });
-      const data = await resp.json();
-      setSetupResult(data);
-      data.status === 'success' ? toast.success('Semua sheet berhasil di-setup!') : toast.error(data.message || 'Gagal setup sheet');
-    } catch { toast.error('Gagal terhubung ke server'); setSetupResult({ status: 'error', message: 'Gagal terhubung ke server' }); }
-    finally { setSettingUpSheets(false); }
-  };
 
   /* ── PM category display map ── */
   const PM_CAT_ICONS: Record<string, string> = {
@@ -690,79 +638,20 @@ export default function Pengaturan() {
 
         {/* ══════════════ DATA & BACKUP ══════════════ */}
         {activeTab === 'data' && (
-          <Section title="Data & Backup" description="Import/export Excel dan manajemen database Google Sheets.">
-
-            {/* Excel */}
+          <Section title="Database" description="Status koneksi database utama.">
+            {/* Firebase Database */}
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Import Produk</p>
-              <SettingCard>
-                <div className="p-4 space-y-2">
-                  <Button variant="outline" className="w-full h-10 text-sm gap-2 justify-start" onClick={downloadProductTemplate}>
-                    <FileDown className="w-4 h-4 text-muted-foreground" /> Download Template (.xlsx)
-                  </Button>
-                  <Button variant="outline" className="w-full h-10 text-sm gap-2 justify-start" onClick={handleImportProductExcel} disabled={importingExcel}>
-                    {importingExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4 text-muted-foreground" />}
-                    {importingExcel ? 'Mengimport...' : 'Import Produk dari Excel'}
-                  </Button>
-                </div>
-              </SettingCard>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Backup / Migrasi Semua Data</p>
-              <SettingCard>
-                <div className="p-4 space-y-2">
-                  <Button variant="outline" className="w-full h-10 text-sm gap-2 justify-start" onClick={exportAllDataToExcel}>
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Export ke Excel (.xlsx)
-                  </Button>
-                  <Button variant="outline" className="w-full h-10 text-sm gap-2 justify-start" onClick={handleImportAllExcel} disabled={importingAllExcel}>
-                    {importingAllExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4 text-muted-foreground" />}
-                    {importingAllExcel ? 'Mengimport...' : 'Import Semua Data dari Excel'}
-                  </Button>
-                </div>
-              </SettingCard>
-            </div>
-
-            {/* Google Sheets */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Database Google Sheets</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Database Firebase</p>
               <SettingCard>
                 <div className="p-4 space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    Semua data toko disimpan di Google Sheets. Pastikan semua sheet sudah ter-setup dengan benar.
+                    Semua data toko disimpan terpusat di Google Firebase (Firestore & Storage). Sinkronisasi berjalan secara real-time dan koleksi akan terbuat secara otomatis.
                   </p>
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 text-sm gap-2 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-900/20"
-                    disabled={settingUpSheets}
-                    onClick={setupSheets}
-                  >
-                    {settingUpSheets
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Menyiapkan Sheet...</>
-                      : <><RefreshCw className="w-4 h-4" /> Setup Semua Sheet</>}
-                  </Button>
-                  {setupResult && (
-                    <div className={cn(
-                      'p-3 rounded-lg text-xs space-y-1.5',
-                      setupResult.status === 'success'
-                        ? 'bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800'
-                        : 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                    )}>
-                      <div className="flex items-center gap-1.5 font-semibold">
-                        {setupResult.status === 'success'
-                          ? <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Setup Berhasil!</>
-                          : <><AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Gagal</>}
-                      </div>
-                      {setupResult.data?.map((r, i) => (
-                        <p key={i} className="text-muted-foreground">
-                          <span className="font-medium text-foreground">{r.sheet}</span>: {r.detail}
-                        </p>
-                      ))}
-                      {setupResult.status === 'error' && (
-                        <p className="text-red-600 dark:text-red-400">{setupResult.message}</p>
-                      )}
+                  <div className="p-3 rounded-lg text-xs space-y-1.5 bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Firebase Terhubung & Aktif
                     </div>
-                  )}
+                  </div>
                 </div>
               </SettingCard>
             </div>

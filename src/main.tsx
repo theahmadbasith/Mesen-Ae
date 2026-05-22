@@ -2,8 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Pemicu inisialisasi database Database otomatis di latar belakang
-fetch('/api/google-sheet?action=init').catch(() => {});
+// Backend database is now Firebase and does not require explicit Vercel API initialization
 
 // Apply saved theme on initial load
 const savedTheme = localStorage.getItem('mesenae-theme');

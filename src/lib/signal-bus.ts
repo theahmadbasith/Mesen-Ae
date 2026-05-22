@@ -1,12 +1,13 @@
+import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, limit } from 'firebase/firestore';
+import { db as firestoreDb } from './firebase';
+
 // ============================================================
-// REAL-TIME SIGNAL BUS — Cross-tab & Cross-device sync
+// REAL-TIME SIGNAL BUS — Cross-tab & Cross-device sync via Firestore
 // ============================================================
-// Uses BroadcastChannel for same-browser instant sync,
-// plus a lightweight polling mechanism as fallback for cross-device.
 
 export interface TransactionSignal {
   type: 'TRANSACTION_STATUS_UPDATE';
-  transactionId: number;
+  transactionId: number | string;
   kitchenStatus?: string;
   status?: string;
   receiptNumber?: string;
@@ -18,8 +19,8 @@ type SignalListener = (signal: TransactionSignal) => void;
 class SignalBus {
   private channel: BroadcastChannel | null = null;
   private listeners: Map<string, Set<SignalListener>> = new Map();
-  private pollInterval: any = null;
-  private lastPollTime: number = Date.now() - 10000; // start looking back 10s
+  private unsubscribeFirestore: (() => void) | null = null;
+  private instanceId: string = Math.random().toString(36).substring(2, 9); // Prevent self-echo loops
 
   constructor() {
     try {
@@ -34,26 +35,32 @@ class SignalBus {
       console.warn('[SignalBus] BroadcastChannel not available');
     }
 
-    // Start network polling for cross-device signaling
-    this.startPolling();
+    this.startFirestoreListener();
   }
 
-  private startPolling() {
-    if (this.pollInterval) return;
-    this.pollInterval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/google-sheet?action=signal_poll&since=${this.lastPollTime}`);
-        if (res.ok) {
-          const { signals, timestamp } = await res.json();
-          if (timestamp) this.lastPollTime = timestamp;
-          if (signals && signals.length > 0) {
-            signals.forEach((sig: any) => this.notifyListeners(sig));
+  private startFirestoreListener() {
+    try {
+      const signalsRef = collection(firestoreDb, '_signals');
+      // Listen to new signals created after the app started
+      const startTime = Date.now();
+      const q = query(signalsRef, where('timestamp', '>=', startTime), orderBy('timestamp', 'asc'));
+
+      this.unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const data = change.doc.data();
+            // Ignore signals sent by this very instance
+            if (data.senderId !== this.instanceId) {
+              this.notifyListeners(data.signal as TransactionSignal);
+            }
           }
-        }
-      } catch (err) {
-        // ignore network errors in polling
-      }
-    }, 2000); // Check every 2 seconds
+        });
+      }, (error) => {
+        console.warn('[SignalBus] Firestore listener error:', error);
+      });
+    } catch (e) {
+      console.warn('[SignalBus] Error starting Firestore listener:', e);
+    }
   }
 
   /** Called by admin/kitchen when they update a transaction */
@@ -71,13 +78,14 @@ class SignalBus {
       localStorage.setItem('mesenae_last_signal', JSON.stringify(signal));
     } catch (_) {}
 
-    // 4. Send to server for cross-device sync
+    // 4. Send to Firestore for cross-device sync
     try {
-      const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-      fetch('/api/google-sheet?action=signal_send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-        body: JSON.stringify({ signal })
+      const signalsRef = collection(firestoreDb, '_signals');
+      addDoc(signalsRef, {
+        signal,
+        senderId: this.instanceId,
+        timestamp: Date.now(),
+        createdAt: serverTimestamp()
       }).catch(() => {});
     } catch (_) {}
   }
@@ -130,9 +138,9 @@ class SignalBus {
     try {
       this.channel?.close();
     } catch (_) {}
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
+    if (this.unsubscribeFirestore) {
+      this.unsubscribeFirestore();
+      this.unsubscribeFirestore = null;
     }
     this.listeners.clear();
   }

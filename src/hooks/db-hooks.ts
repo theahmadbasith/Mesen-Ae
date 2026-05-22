@@ -1,26 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { getCacheData, setCacheData } from '../lib/db';
 import { queryClient } from '@/lib/query-client';
+import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { db as firestoreDb, storage } from '@/lib/firebase';
 
 // ══════════════════════════════════════════════════════════
 //  Types
 // ══════════════════════════════════════════════════════════
 export interface ProductVariantOption { name: string; price: number; }
 export interface ProductVariantGroup { name: string; type: 'single' | 'multiple'; required: boolean; options: ProductVariantOption[]; }
-export interface Category { id?: number; name: string; color: string; icon: string; }
-export interface Product { id?: number; name: string; sku: string; categoryId: number; price: number; hpp: number; stock: number; unit: string; variants?: ProductVariantGroup[]; photo?: string; barcode?: string; }
-export interface Supplier { id?: number; name: string; phone: string; address: string; notes: string; }
-export interface StockIn { id?: number; productId: number; supplierId: number; quantity: number; buyPrice: number; totalPrice: number; date: Date; notes: string; }
-export interface StockOut { id?: number; productId: number; quantity: number; reason: string; date: Date; notes: string; }
-export interface HppHistory { id?: number; productId: number; oldHpp: number; newHpp: number; source: string; date: Date; }
-export interface PaymentMethod { id?: number; name: string; category: string; isDefault: boolean; }
-export interface Transaction { id?: number; subtotal: number; discountType: string | null; discountValue: number; discountAmount: number; total: number; paymentMethodId: number; paymentAmount: number; payments?: any[]; change: number; profit: number; date: Date; receiptNumber: string; status: string; kitchenStatus?: string; orderNumber?: string; customerName?: string; tableNumber?: string; remarks?: string; }
-export interface TransactionItemRecord { id?: number; transactionId: number; productId: number; productName: string; quantity: number; price: number; hpp: number; discountType: string | null; discountValue: number; discountAmount: number; subtotal: number; selectedVariants?: any[]; notes?: string; }
-export interface StoreSettings { id?: number; storeName: string; address: string; phone: string; receiptFooter: string; onboardingDone: boolean; themeColor?: string; logo?: string; tables?: string[]; promoBanners?: any[]; }
-export interface User { id?: number; username: string; password_hash: string; role: string; name?: string; whatsapp?: string; }
-export interface Voucher { id?: number; code: string; type: string; value: number; isActive: boolean; applicableProductIds?: number[]; validUntil: Date | null; }
-export interface Banner { id?: number; title: string; description?: string; imageUrl: string; isActive: boolean; link?: string; }
+export interface Category { id?: string | number; name: string; color: string; icon: string; }
+export interface Product { id?: string | number; name: string; sku: string; categoryId: string | number; price: number; hpp: number; stock: number; unit: string; variants?: ProductVariantGroup[]; photo?: string; barcode?: string; }
+export interface Supplier { id?: string | number; name: string; phone: string; address: string; notes: string; }
+export interface StockIn { id?: string | number; productId: string | number; supplierId: string | number; quantity: number; buyPrice: number; totalPrice: number; date: Date | string; notes: string; }
+export interface StockOut { id?: string | number; productId: string | number; quantity: number; reason: string; date: Date | string; notes: string; }
+export interface HppHistory { id?: string | number; productId: string | number; oldHpp: number; newHpp: number; source: string; date: Date | string; }
+export interface PaymentMethod { id?: string | number; name: string; category: string; isDefault: boolean; }
+export interface Transaction { id?: string | number; subtotal: number; discountType: string | null; discountValue: number; discountAmount: number; total: number; paymentMethodId: string | number; paymentAmount: number; payments?: any[]; change: number; profit: number; date: Date | string; receiptNumber: string; status: string; kitchenStatus?: string; orderNumber?: string; customerName?: string; tableNumber?: string; remarks?: string; }
+export interface TransactionItemRecord { id?: string | number; transactionId: string | number; productId: string | number; productName: string; quantity: number; price: number; hpp: number; discountType: string | null; discountValue: number; discountAmount: number; subtotal: number; selectedVariants?: any[]; notes?: string; }
+export interface StoreSettings { id?: string | number; storeName: string; address: string; phone: string; receiptFooter: string; onboardingDone: boolean; themeColor?: string; logo?: string; tables?: string[]; promoBanners?: any[]; }
+export interface User { id?: string | number; username: string; password_hash: string; role: string; name?: string; whatsapp?: string; }
+export interface Voucher { id?: string | number; code: string; type: string; value: number; isActive: boolean; applicableProductIds?: (string | number)[]; validUntil: Date | string | null; }
+export interface Banner { id?: string | number; title: string; description?: string; imageUrl: string; isActive: boolean; link?: string; }
 
 // ── Table name mapping (camelCase → snake_case) ──────────────
 const TABLE_MAP: Record<string, string> = {
@@ -62,184 +64,96 @@ const mapCamelToSnake = (obj: any): any => {
   return out;
 };
 
-const getQueryCacheKey = (tableName: string) => `useDbQuery_${tableName}`;
-
-function hydrateQueryFromCache<T>(tableName: string) {
-  const queryKey = [tableName];
-  const currentData = queryClient.getQueryData<T[]>(queryKey);
-  if (currentData && currentData.length > 0) return;
-  getCacheData(getQueryCacheKey(tableName)).then((cachedData) => {
-    if (cachedData) {
-      queryClient.setQueryData(queryKey, cachedData as T[]);
-    }
-  }).catch(() => {});
-}
-
-function updateLocalQueryCache<T>(tableName: string, updater: (current: T[]) => T[]) {
-  const queryKey = [tableName];
-  const currentData = queryClient.getQueryData<T[]>(queryKey) ?? [];
-  const nextData = updater(currentData);
-  queryClient.setQueryData(queryKey, nextData);
-  setCacheData(getQueryCacheKey(tableName), nextData).catch(() => {});
-}
-
 // ══════════════════════════════════════════════════════════
-//  useDbQuery — React Query + Periodic Polling (5s)
+//  useDbQuery — React Query with Firestore Real-time support
 // ══════════════════════════════════════════════════════════
 export function useDbQuery<T = any>(tableCamelCase: string): T[] {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
   const queryKey = [tableName];
 
   useEffect(() => {
-    hydrateQueryFromCache<T>(tableName);
+    // Firestore real-time snapshot subscription (No offline caching)
+    const colRef = collection(firestoreDb, tableName);
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const camelData = mapSnakeToCamel(data) as T[];
+      
+      queryClient.setQueryData(queryKey, camelData);
+    }, (error) => {
+      console.warn(`[useDbQuery] Snapshot error for ${tableName}:`, error);
+    });
+
+    return () => unsubscribe();
   }, [tableName]);
 
   const { data } = useQuery<T[]>({
     queryKey,
     queryFn: async () => {
-      const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-      const cacheKey = getQueryCacheKey(tableName);
-      
+      // Fetch initial data directly from Firestore without any caching fallback
       try {
-        const response = await fetch('/api/google-sheet?action=crud', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify({
-            action: 'select',
-            table: tableName
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error fetching ${tableName}: ${response.statusText}`);
-        }
-
-        const resData = await response.json();
-        const data = mapSnakeToCamel(resData.data || []) as T[];
-        
-        // Simpan data terbaru ke IndexedDB Cache
-        setCacheData(cacheKey, data).catch(() => {});
-        
-        return data;
+        const colRef = collection(firestoreDb, tableName);
+        const snapshot = await getDocs(colRef);
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return mapSnakeToCamel(data) as T[];
       } catch (error) {
-        console.warn(`[useDbQuery] Network fail for ${tableName}, fallback to IndexedDB cache.`);
-        const cachedData = await getCacheData(cacheKey);
-        if (cachedData) {
-          return cachedData as T[];
-        }
+        console.warn(`[useDbQuery] Fetch fail for ${tableName}.`);
         return [] as T[];
       }
     },
-    staleTime: 0,
+    staleTime: Infinity, // Rely on real-time snapshot instead of polling
     gcTime: 1000 * 60,
     initialData: undefined,
     refetchOnWindowFocus: false,
-    refetchInterval: 1000 * 10,
-    refetchIntervalInBackground: true,
   });
 
-  // Tambahkan polling local untuk waiter calls (agar OthersView kasir tahu jika ada panggilan meja baru)
   return Array.isArray(data) ? (data as T[]) : ([] as T[]);
 }
 
 // ══════════════════════════════════════════════════════════
-//  CRUD helpers — langsung memanggil Vercel API
+//  CRUD helpers — Firestore Implementation
 // ══════════════════════════════════════════════════════════
 
 /** Insert satu record, kembalikan ID record baru */
-export async function dbInsert(tableCamelCase: string, data: any): Promise<number> {
+export async function dbInsert(tableCamelCase: string, data: any): Promise<string> {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
   const snakeData = mapCamelToSnake(data);
-  const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-  const tempId = data?.id ?? Date.now() * -1;
+  const docId = data?.id ? String(data.id) : String(Date.now() + Math.floor(Math.random() * 1000));
 
-  updateLocalQueryCache<any>(tableName, current => [...current, { ...data, id: tempId }]);
-
-  const response = await fetch('/api/google-sheet?action=crud', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-admin-key': adminKey
-    },
-    body: JSON.stringify({
-      action: 'insert',
-      table: tableName,
-      data: snakeData
-    })
-  });
-
-  if (!response.ok) {
-    const resText = await response.text();
-    throw new Error(`[dbInsert] Failed to insert into ${tableName}: ${resText}`);
+  try {
+    const docRef = doc(firestoreDb, tableName, docId);
+    await setDoc(docRef, { ...snakeData, id: docId });
+    return docId;
+  } catch (error: any) {
+    throw new Error(`[dbInsert] Failed to insert into ${tableName}: ${error.message}`);
   }
-
-  const resData = await response.json();
-  const newId = resData.data?.id ?? tempId;
-  if (newId !== tempId) {
-    updateLocalQueryCache<any>(tableName, current => current.map(item => item.id === tempId ? { ...item, id: newId } : item));
-  }
-
-  return newId;
 }
 
 /** Update record berdasarkan ID */
 export async function dbUpdate(tableCamelCase: string, id: number | string, data: any): Promise<void> {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
   const snakeData = mapCamelToSnake(data);
-  const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
 
-  updateLocalQueryCache<any>(tableName, current => current.map(item => item.id === id ? { ...item, ...data } : item));
-
-  const response = await fetch('/api/google-sheet?action=crud', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-admin-key': adminKey
-    },
-    body: JSON.stringify({
-      action: 'update',
-      table: tableName,
-      id,
-      data: snakeData
-    })
-  });
-
-  if (!response.ok) {
-    const resText = await response.text();
-    throw new Error(`[dbUpdate] Failed to update ${tableName}#${id}: ${resText}`);
+  try {
+    const docRef = doc(firestoreDb, tableName, String(id));
+    await updateDoc(docRef, snakeData);
+  } catch (error: any) {
+    throw new Error(`[dbUpdate] Failed to update ${tableName}#${id}: ${error.message}`);
   }
 }
 
 /** Hard delete record berdasarkan ID */
 export async function dbDelete(tableCamelCase: string, id: number | string): Promise<void> {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
-  const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
 
-  updateLocalQueryCache<any>(tableName, current => current.filter(item => item.id !== id));
-
-  const response = await fetch('/api/google-sheet?action=crud', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-admin-key': adminKey
-    },
-    body: JSON.stringify({
-      action: 'delete',
-      table: tableName,
-      id
-    })
-  });
-
-  if (!response.ok) {
-    const resText = await response.text();
-    throw new Error(`[dbDelete] Failed to delete from ${tableName}#${id}: ${resText}`);
+  try {
+    const docRef = doc(firestoreDb, tableName, String(id));
+    await deleteDoc(docRef);
+  } catch (error: any) {
+    throw new Error(`[dbDelete] Failed to delete from ${tableName}#${id}: ${error.message}`);
   }
 }
 
-/** Upload file ke Google Drive, kembalikan URL thumbnail Drive */
+/** Upload file ke Firebase Storage, kembalikan URL public */
 export async function dbUploadFile(
   bucket: string,
   fileName: string,
@@ -258,27 +172,14 @@ export async function dbUploadFile(
       });
     }
 
-    const response = await fetch('/api/google-drive', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fileName,
-        dataUrl
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[dbUploadFile] Upload failed:', errText);
-      return null;
-    }
-
-    const resData = await response.json();
-    return resData.publicUrl || null;
+    const storageRef = ref(storage, `${bucket}/${Date.now()}_${fileName}`);
+    // uploadString assumes data_url format
+    await uploadString(storageRef, dataUrl, 'data_url');
+    
+    const downloadUrl = await getDownloadURL(storageRef);
+    return downloadUrl;
   } catch (err) {
-    console.error('[dbUploadFile] Exception during Google Drive upload:', err);
+    console.error('[dbUploadFile] Exception during Firebase Storage upload:', err);
     return null;
   }
 }

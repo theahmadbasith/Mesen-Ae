@@ -1,64 +1,20 @@
+import { collection, query, where, orderBy, limit as fLimit, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { db as firestoreDb } from './firebase';
 import { mapCategory, mapProduct, mapStoreSettings } from './sync';
 
 export const isDbConfigured = true;
 
-// ============================================================
-// INDEXEDDB CACHE HELPER
-// ============================================================
-const DB_NAME = 'MesenAeCache';
-const DB_VERSION = 1;
-
-export async function openCacheDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = (e) => {
-      const db = (e.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains('sheet_cache')) {
-        db.createObjectStore('sheet_cache', { keyPath: 'cacheKey' });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-export async function getCacheData(cacheKey: string): Promise<any> {
-  try {
-    const db = await openCacheDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('sheet_cache', 'readonly');
-      const store = tx.objectStore('sheet_cache');
-      const req = store.get(cacheKey);
-      req.onsuccess = () => resolve(req.result ? req.result.data : null);
-      req.onerror = () => reject(req.error);
-    });
-  } catch (err) {
-    return null;
-  }
-}
-
-export async function setCacheData(cacheKey: string, data: any): Promise<void> {
-  try {
-    const db = await openCacheDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('sheet_cache', 'readwrite');
-      const store = tx.objectStore('sheet_cache');
-      const req = store.put({ cacheKey, data, timestamp: Date.now() });
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
-  } catch (err) {
-    // ignore
-  }
-}
+// Caching mechanism removed as per user request to rely purely on Firestore.
 
 // ============================================================
-// GOOGLE SHEETS QUERY BUILDER (Client-side → /api/google-sheet)
+// FIRESTORE QUERY BUILDER
 // ============================================================
 
-class GoogleSheetQueryBuilder {
+class FirestoreQueryBuilder {
   private tableName: string;
-  private filters: Record<string, any> = {};
+  private filters: { field: string; op: any; value: any }[] = [];
+  private orderClauses: { field: string; dir: 'asc' | 'desc' }[] = [];
+  private limitCount?: number;
   private actionType: 'select' | 'insert' | 'update' | 'delete' = 'select';
   private actionData: any = null;
 
@@ -72,19 +28,23 @@ class GoogleSheetQueryBuilder {
 
   eq(column: string, value: any) {
     const snakeColumn = column.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`);
-    this.filters[snakeColumn] = value;
+    this.filters.push({ field: snakeColumn, op: '==', value });
     return this;
   }
 
   order(column: string, options?: { ascending?: boolean }) {
+    const snakeColumn = column.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`);
+    this.orderClauses.push({ field: snakeColumn, dir: options?.ascending === false ? 'desc' : 'asc' });
     return this;
   }
 
   limit(num: number) {
+    this.limitCount = num;
     return this;
   }
 
   async single() {
+    this.limitCount = 1;
     const res = await this.execute();
     if (res.error) return { data: null, error: res.error };
     return { data: res.data ? res.data[0] || null : null, error: null };
@@ -113,94 +73,97 @@ class GoogleSheetQueryBuilder {
 
   async execute() {
     try {
-      const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-
-      const bodyPayload: any = {
-        action: this.actionType,
-        table: this.tableName
-      };
-
       if (this.actionType === 'select') {
-        bodyPayload.filters = this.filters;
-      } else if (this.actionType === 'update') {
-        bodyPayload.id = this.filters.id;
-        bodyPayload.data = this.actionData;
-      } else if (this.actionType === 'delete') {
-        if (this.filters.id !== undefined) {
-          bodyPayload.id = this.filters.id;
-        } else {
-          bodyPayload.filters = this.filters;
+        const colRef = collection(firestoreDb, this.tableName);
+        let q: any = colRef;
+        
+        for (const f of this.filters) {
+          q = query(q, where(f.field, f.op, f.value));
         }
-      } else if (this.actionType === 'insert') {
-        bodyPayload.data = this.actionData;
-      }
-
-      if (this.actionType === 'select') {
-        const cacheKey = `${this.tableName}_${JSON.stringify(this.filters)}`;
-
+        for (const o of this.orderClauses) {
+          q = query(q, orderBy(o.field, o.dir));
+        }
+        if (this.limitCount) {
+          q = query(q, fLimit(this.limitCount));
+        }
+        
         try {
-          const response = await fetch('/api/google-sheet?action=crud', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-key': adminKey
-            },
-            body: JSON.stringify(bodyPayload)
-          });
-
-          if (!response.ok) {
-            throw new Error(`Server error: ${response.statusText}`);
-          }
-
-          const resData = await response.json();
-          const outputData = Array.isArray(resData.data) ? resData.data : (resData.data ? [resData.data] : []);
-          
-          // Save to IndexedDB
-          setCacheData(cacheKey, outputData);
-          return { data: outputData, error: null };
+          const snapshot = await getDocs(q);
+          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          return { data, error: null };
         } catch (err: any) {
-          console.warn(`[GoogleSheetDB] Network fetch failed for ${this.tableName}, fallback to cache.`);
-          const cachedData = await getCacheData(cacheKey);
-          if (cachedData) {
-            return { data: cachedData, error: null };
-          }
+          console.warn(`[FirestoreDB] Network fetch failed for ${this.tableName}.`);
           return { data: null, error: err };
         }
-      } else {
-        const response = await fetch('/api/google-sheet?action=crud', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify(bodyPayload)
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          return { data: null, error: new Error(errText) };
+      } 
+      else if (this.actionType === 'insert') {
+        const colRef = collection(firestoreDb, this.tableName);
+        if (Array.isArray(this.actionData)) {
+           const results = [];
+           for (const item of this.actionData) {
+             const docId = item.id ? String(item.id) : String(Date.now() + Math.floor(Math.random() * 1000));
+             const docRef = doc(firestoreDb, this.tableName, docId);
+             await setDoc(docRef, { ...item, id: docId });
+             results.push({ id: docId, ...item });
+           }
+           return { data: results, error: null };
+        } else {
+           const docId = this.actionData.id ? String(this.actionData.id) : String(Date.now() + Math.floor(Math.random() * 1000));
+           const docRef = doc(firestoreDb, this.tableName, docId);
+           await setDoc(docRef, { ...this.actionData, id: docId });
+           return { data: { id: docId, ...this.actionData }, error: null };
         }
-
-        const resData = await response.json();
-        const outputData = Array.isArray(resData.data) ? resData.data : (resData.data ? [resData.data] : []);
-        return { data: outputData, error: null };
+      } 
+      else if (this.actionType === 'update') {
+        const idFilter = this.filters.find(f => f.field === 'id');
+        if (idFilter) {
+           const docRef = doc(firestoreDb, this.tableName, String(idFilter.value));
+           await updateDoc(docRef, this.actionData);
+           return { data: null, error: null };
+        } else {
+           const colRef = collection(firestoreDb, this.tableName);
+           let q: any = colRef;
+           for (const f of this.filters) { q = query(q, where(f.field, f.op, f.value)); }
+           const snapshot = await getDocs(q);
+           for (const d of snapshot.docs) {
+              await updateDoc(d.ref, this.actionData);
+           }
+           return { data: null, error: null };
+        }
+      }
+      else if (this.actionType === 'delete') {
+        const idFilter = this.filters.find(f => f.field === 'id');
+        if (idFilter) {
+           const docRef = doc(firestoreDb, this.tableName, String(idFilter.value));
+           await deleteDoc(docRef);
+           return { data: null, error: null };
+        } else {
+           const colRef = collection(firestoreDb, this.tableName);
+           let q: any = colRef;
+           for (const f of this.filters) { q = query(q, where(f.field, f.op, f.value)); }
+           const snapshot = await getDocs(q);
+           for (const d of snapshot.docs) {
+              await deleteDoc(d.ref);
+           }
+           return { data: null, error: null };
+        }
       }
     } catch (err: any) {
-      console.error(`[GoogleSheetDB] Error executing ${this.actionType} on ${this.tableName}:`, err);
+      console.error(`[FirestoreDB] Error executing ${this.actionType} on ${this.tableName}:`, err);
       return { data: null, error: err };
     }
+    return { data: null, error: new Error('Unknown action type') };
   }
 }
 
 // ============================================================
-// DATABASE CLIENT — Semua operasi lewat Google Sheets API
+// DATABASE CLIENT
 // ============================================================
 
 export const db = {
   from: (tableName: string) => {
-    return new GoogleSheetQueryBuilder(tableName);
+    return new FirestoreQueryBuilder(tableName);
   },
-  // Channel stubs — realtime diganti polling di masing-masing komponen
   channel: (name: string) => ({
     on: (...args: any[]) => ({ subscribe: (cb?: Function) => { if (cb) setTimeout(() => cb('SUBSCRIBED'), 100); return { on: (...a: any[]) => ({ subscribe: (c?: Function) => { if (c) setTimeout(() => c('SUBSCRIBED'), 100); } }) }; } }),
     subscribe: (cb?: Function) => { if (cb) setTimeout(() => cb('SUBSCRIBED'), 100); },
@@ -212,7 +175,7 @@ export const db = {
 export const dbAdmin = db;
 
 // ============================================================
-// HELPER METHODS — Direct API calls ke Google Sheets
+// HELPER METHODS
 // ============================================================
 
 export async function dbUpsert(
@@ -221,42 +184,28 @@ export async function dbUpsert(
   onConflict = 'id'
 ) {
   try {
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'upsert',
-        table,
-        data,
-        onConflict
-      })
-    });
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        const docId = item[onConflict] ? String(item[onConflict]) : String(Date.now());
+        const docRef = doc(firestoreDb, table, docId);
+        await setDoc(docRef, { ...item, id: docId }, { merge: true });
+      }
+    } else {
+      const docId = data[onConflict] ? String(data[onConflict]) : String(Date.now());
+      const docRef = doc(firestoreDb, table, docId);
+      await setDoc(docRef, { ...data, id: docId }, { merge: true });
+    }
   } catch (err) {
-    console.error(`[Google Sheets] dbUpsert error in table ${table}:`, err);
+    console.error(`[FirestoreDB] dbUpsert error in table ${table}:`, err);
   }
 }
 
 export async function dbDelete(table: string, id: number | string) {
   try {
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'delete',
-        table,
-        id
-      })
-    });
+    const docRef = doc(firestoreDb, table, String(id));
+    await deleteDoc(docRef);
   } catch (err) {
-    console.error(`[Google Sheets] dbDelete error in table ${table}#${id}:`, err);
+    console.error(`[FirestoreDB] dbDelete error in table ${table}#${id}:`, err);
   }
 }
 
@@ -265,34 +214,26 @@ export async function dbSelect<T = unknown>(
   filter?: Record<string, unknown>
 ): Promise<T[]> {
   try {
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    const response = await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'select',
-        table,
-        filters: filter
-      })
-    });
-    if (!response.ok) return [];
-    const resData = await response.json();
-    return (resData.data || []) as T[];
+    const colRef = collection(firestoreDb, table);
+    let q: any = colRef;
+    if (filter) {
+      for (const [key, value] of Object.entries(filter)) {
+        q = query(q, where(key, '==', value));
+      }
+    }
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as T[];
   } catch (err) {
-    console.error(`[Google Sheets] dbSelect error in table ${table}:`, err);
+    console.error(`[FirestoreDB] dbSelect error in table ${table}:`, err);
     return [];
   }
 }
 
 export async function testDbConnection(): Promise<{ ok: boolean; error?: string }> {
   try {
-    const response = await fetch('/api/google-sheet?action=diagnostics');
-    if (!response.ok) return { ok: false, error: `HTTP ${response.status}` };
-    const data = await response.json();
-    return { ok: data.status === 'healthy', error: data.message };
+    // Just a simple read to check connection
+    await getDocs(query(collection(firestoreDb, 'store_settings'), fLimit(1)));
+    return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message };
   }
@@ -317,71 +258,39 @@ export async function fetchStoreSettings(): Promise<any | null> {
   return rows.length > 0 ? mapStoreSettings(rows[0]) : null;
 }
 
-export async function createTransaction(transactionData: any): Promise<number | null> {
+export async function createTransaction(transactionData: any): Promise<string | null> {
   try {
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    const response = await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'insert',
-        table: 'transactions',
-        data: transactionData
-      })
-    });
-    if (!response.ok) return null;
-    const resData = await response.json();
-    return resData.data?.id || null;
+    const docId = String(Date.now() + Math.floor(Math.random() * 1000));
+    const docRef = doc(firestoreDb, 'transactions', docId);
+    await setDoc(docRef, { ...transactionData, id: docId });
+    return docId;
   } catch (err) {
-    console.error('[Google Sheets] createTransaction:', err);
+    console.error('[FirestoreDB] createTransaction:', err);
     return null;
   }
 }
 
 export async function createTransactionItems(items: any[]): Promise<boolean> {
   try {
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    const response = await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'insert',
-        table: 'transaction_items',
-        data: items
-      })
-    });
-    return response.ok;
+    for (const item of items) {
+      const docId = String(Date.now() + Math.floor(Math.random() * 10000));
+      const docRef = doc(firestoreDb, 'transaction_items', docId);
+      await setDoc(docRef, { ...item, id: docId });
+    }
+    return true;
   } catch (err) {
-    console.error('[Google Sheets] createTransactionItems:', err);
+    console.error('[FirestoreDB] createTransactionItems:', err);
     return false;
   }
 }
 
-export async function updateProductStock(productId: number, newStock: number): Promise<boolean> {
+export async function updateProductStock(productId: number | string, newStock: number): Promise<boolean> {
   try {
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    const response = await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'update',
-        table: 'products',
-        id: productId,
-        data: { stock: newStock }
-      })
-    });
-    return response.ok;
+    const docRef = doc(firestoreDb, 'products', String(productId));
+    await updateDoc(docRef, { stock: newStock });
+    return true;
   } catch (err) {
-    console.error('[Google Sheets] updateProductStock:', err);
+    console.error('[FirestoreDB] updateProductStock:', err);
     return false;
   }
 }
@@ -400,8 +309,8 @@ export async function fetchTransactionsByCustomerName(customerName: string): Pro
   return dbSelect<any>('transactions', { customer_name: customerName });
 }
 
-export async function fetchTransactionItems(transactionId: number): Promise<any[]> {
-  return dbSelect<any>('transaction_items', { transaction_id: transactionId });
+export async function fetchTransactionItems(transactionId: string | number): Promise<any[]> {
+  return dbSelect<any>('transaction_items', { transaction_id: String(transactionId) });
 }
 
 export async function appendPaymentToTransactionByReceipt(receiptNumber: string, payment: any): Promise<boolean> {
@@ -413,34 +322,22 @@ export async function appendPaymentToTransactionByReceipt(receiptNumber: string,
     }
 
     let payments: any[] = [];
-    try { payments = existing.payments ? JSON.parse(String(existing.payments)) : []; } catch (_) { payments = []; }
+    try { payments = existing.payments ? (typeof existing.payments === 'string' ? JSON.parse(existing.payments) : existing.payments) : []; } catch (_) { payments = []; }
     payments.push(payment);
 
     const totalPaid = payments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
     const totalDue = Number(existing.total) || Number(existing.grand_total) || 0;
     const newStatus = totalPaid >= totalDue ? 'lunas' : (totalPaid > 0 ? 'partial' : existing.status || 'open');
 
-    const adminKey = import.meta.env.VITE_ADMIN_API_KEY || 'mesenae-admin-secret-key-2026';
-    const response = await fetch('/api/google-sheet?action=crud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({
-        action: 'update',
-        table: 'transactions',
-        id: existing.id,
-        data: {
-          payments: JSON.stringify(payments),
-          payment_amount: totalPaid,
-          status: newStatus,
-          closed_at: newStatus === 'lunas' ? new Date().toISOString() : existing.closed_at || null
-        }
-      })
+    const docRef = doc(firestoreDb, 'transactions', String(existing.id));
+    await updateDoc(docRef, {
+      payments: JSON.stringify(payments),
+      payment_amount: totalPaid,
+      status: newStatus,
+      closed_at: newStatus === 'lunas' ? new Date().toISOString() : existing.closed_at || null
     });
 
-    return response.ok;
+    return true;
   } catch (err) {
     console.error('[db] appendPaymentToTransactionByReceipt error', err);
     return false;
@@ -448,29 +345,27 @@ export async function appendPaymentToTransactionByReceipt(receiptNumber: string,
 }
 
 // ============================================================
-// REALTIME POLLING ENGINES
+// REALTIME POLLING ENGINES -> ON_SNAPSHOT (Firestore Native)
 // ============================================================
 
 export function subscribeToTransactionUpdates(
-  transactionId: number,
+  transactionId: string | number,
   onUpdate: (transaction: any) => void
 ): () => void {
-  // Poll every 3s for fast status updates (e.g. when admin confirms payment)
-  const interval = setInterval(async () => {
-    const rows = await dbSelect<any>('transactions', { id: transactionId });
-    if (rows && rows.length > 0) {
-      onUpdate(rows[0]);
+  const docRef = doc(firestoreDb, 'transactions', String(transactionId));
+  const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      onUpdate({ id: docSnap.id, ...docSnap.data() });
     }
-  }, 3000);
-
-  return () => clearInterval(interval);
+  });
+  return unsubscribe;
 }
 
 export function subscribeToProductUpdates(onUpdate: (products: any[]) => void): () => void {
-  const interval = setInterval(async () => {
-    const products = await fetchProducts();
-    onUpdate(products);
-  }, 5000);
-
-  return () => clearInterval(interval);
+  const colRef = collection(firestoreDb, 'products');
+  const unsubscribe = onSnapshot(colRef, (snapshot) => {
+    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    onUpdate(products.map(mapProduct));
+  });
+  return unsubscribe;
 }
