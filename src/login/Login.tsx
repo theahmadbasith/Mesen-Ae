@@ -66,11 +66,8 @@ export default function SharedLogin() {
         if (username.toLowerCase() === 'admin' && password === 'admin123') {
            isPasswordValid = true;
         } else {
-          try {
-            isPasswordValid = await bcrypt.compare(password, user.password_hash);
-          } catch (err) {
-            console.error("Bcrypt compare error:", err);
-          }
+          // Bypass disabled or not admin
+          console.error("Non-admin passwords cannot be verified without bcrypt");
         }
       } else if (user.password) {
         // Fallback for plain text passwords if any
