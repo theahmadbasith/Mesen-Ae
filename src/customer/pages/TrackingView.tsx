@@ -161,135 +161,80 @@ export default function TrackingView({
     return pmName;
   }, []);
 
-  // 1. Initial lookup — find the active transaction if we don't already have one
+  // 1. Dapatkan semua data dari firebase onSnapshot
+  const allTxs = (useDbQuery<any>('transactions') || []) as TransactionInfo[];
+  const allItems = useDbQuery<any>('transactionItems') || [];
+
+  // 2. TRUE REALTIME SYNC (No more polling!)
   useEffect(() => {
-    if (liveTx) {
+    if (!customerName && getLocalTransactionIds().length === 0) {
       setLoadingActive(false);
       return;
     }
-    if (!customerName) {
-      setLoadingActive(false);
-      return;
-    }
 
-    const lookupActiveTransaction = async () => {
-      try {
-        const txs = await fetchTransactionsByCustomerName(customerName);
-        const localIds = getLocalTransactionIds();
-        
-        const sorted = (txs || []).filter(tx => {
-          if (localIds.length > 0) return localIds.includes(tx.id as string | number);
-          return true;
-        }).sort((a, b) => {
-          const dateA = new Date(a.date || a.created_at || 0).getTime();
-          const dateB = new Date(b.date || b.created_at || 0).getTime();
-          return dateB - dateA;
-        });
+    const localIds = getLocalTransactionIds();
+    const sorted = allTxs.filter(tx => {
+      // Allow if it matches customer name OR is in local browser history
+      const matchName = tx.customer_name === customerName || tx.customerName === customerName;
+      const matchId = localIds.includes(tx.id as string | number);
+      return matchName || matchId;
+    }).sort((a, b) => {
+      const dateA = new Date(a.date || a.created_at || 0).getTime();
+      const dateB = new Date(b.date || b.created_at || 0).getTime();
+      return dateB - dateA;
+    });
 
-        const actives = sorted.filter(tx => {
-          const status = (tx.status || '').toLowerCase();
-          const kitchen = (tx.kitchen_status || tx.kitchenStatus || 'pending').toLowerCase();
-          
-          if (tx.remarks && tx.remarks.includes('Split Bill') && status === 'belum lunas') {
-            return false;
-          }
-          
-          return status !== 'cancelled' && (status === 'belum lunas' || kitchen !== 'diantarkan');
-        });
-
-        if (actives.length > 0) {
-          setActiveTxs(actives);
-          
-          const currentLiveTx = liveTx || actives[0];
-          // If we have a liveTx but it's not in actives, default to actives[0]
-          const isLiveTxActive = actives.find(t => t.id === currentLiveTx.id);
-          const targetTx = isLiveTxActive || actives[0];
-          
-          if (!liveTx || !isLiveTxActive) {
-            setLiveTx(targetTx);
-            const items = await fetchTransactionItems(targetTx.id as number);
-            setActiveItems(items || []);
-            setPaymentMethodName(extractPaymentMethod(targetTx));
-          }
-        } else {
-          setActiveTxs([]);
-          setLiveTx(undefined);
-          setActiveItems([]);
-        }
-      } catch (err) {
-        console.error('Error looking up active transaction:', err);
-      } finally {
-        setLoadingActive(false);
+    const actives = sorted.filter(tx => {
+      const status = (tx.status || '').toLowerCase();
+      const kitchen = (tx.kitchen_status || tx.kitchenStatus || 'pending').toLowerCase();
+      
+      if (tx.remarks && tx.remarks.includes('Split Bill') && status === 'belum lunas') {
+        return false;
       }
-    };
+      
+      return status !== 'cancelled' && status !== 'batal' && (status === 'belum lunas' || (kitchen !== 'diantarkan' && kitchen !== 'selesai'));
+    });
 
-    lookupActiveTransaction();
-  }, [customerName, extractPaymentMethod]); // remove liveTx from deps to prevent infinite loop
-
-  // 2. TRUE REALTIME SIGNAL + AGGRESSIVE POLLING FALLBACK
-  useEffect(() => {
-    const txId = liveTx?.id;
-    if (!txId) return;
-
-    // Fast sync function
-    const fetchLatest = async () => {
-      try {
-        const rows = await dbSelect<any>('transactions', { id: txId });
-        if (rows && rows.length > 0) {
-          const updated = rows[0];
-          setLiveTx(prev => {
-            if (
-              prev?.status !== updated.status ||
-              prev?.kitchen_status !== updated.kitchen_status ||
-              prev?.kitchenStatus !== updated.kitchenStatus
-            ) {
-              const wasPaid = prev?.status === 'lunas' || prev?.status === 'completed';
-              const nowPaid = updated.status === 'lunas' || updated.status === 'completed';
-              if (!wasPaid && nowPaid) {
-                toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
-              }
-              return updated;
-            }
-            return { ...prev, ...updated };
-          });
-          setPaymentMethodName(extractPaymentMethod(updated));
-        }
-      } catch (err) {}
-    };
-
-    // Immediate fetch
-    fetchLatest();
-
-
-
-    // 2b. Set up fast polling as a fallback
-    pollRef.current = setInterval(fetchLatest, POLL_INTERVAL);
-
-    return () => {
-
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
+    if (actives.length > 0) {
+      // Hanya perbarui state jika array benar-benar berubah (menghindari render berlebih)
+      if (JSON.stringify(activeTxs) !== JSON.stringify(actives)) {
+        setActiveTxs(actives);
       }
-    };
-  }, [liveTx?.id, extractPaymentMethod]);
-
-  // 3. Also fetch initial data from receiptNumber if available
-  useEffect(() => {
-    const receiptNum = liveTx?.receipt_number || liveTx?.receiptNumber;
-    if (!receiptNum || !liveTx?.id) return;
-
-    // If we have a receipt number but no items loaded, fetch them
-    if (activeItems.length === 0) {
-      const loadItems = async () => {
-        const items = await fetchTransactionItems(liveTx.id as number);
-        if (items && items.length > 0) {
-          setActiveItems(items);
+      
+      const currentLiveTx = liveTx || actives[0];
+      const isLiveTxActive = actives.find(t => t.id === currentLiveTx.id);
+      const targetTx = isLiveTxActive || actives[0];
+      
+      if (!liveTx || !isLiveTxActive) {
+        setLiveTx(targetTx);
+        setPaymentMethodName(extractPaymentMethod(targetTx));
+      } else {
+        // If liveTx exists, detect changes to trigger toast
+        if (liveTx.status !== targetTx.status || liveTx.kitchenStatus !== targetTx.kitchenStatus || liveTx.kitchen_status !== targetTx.kitchen_status) {
+           const wasPaid = liveTx?.status === 'lunas' || liveTx?.status === 'completed';
+           const nowPaid = targetTx.status === 'lunas' || targetTx.status === 'completed';
+           if (!wasPaid && nowPaid) {
+             toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
+           }
+           setLiveTx(targetTx);
+           setPaymentMethodName(extractPaymentMethod(targetTx));
         }
-      };
-      loadItems();
+      }
+
+      // Update Active Items instantly from Firebase memory
+      const items = allItems.filter(i => i.transactionId === targetTx.id || i.transaction_id === targetTx.id);
+      if (items.length > 0 && JSON.stringify(activeItems) !== JSON.stringify(items)) {
+        setActiveItems(items);
+      }
+    } else {
+      if (activeTxs.length > 0) setActiveTxs([]);
+      if (liveTx) setLiveTx(undefined);
+      if (activeItems.length > 0) setActiveItems([]);
     }
-  }, [liveTx?.id, liveTx?.receipt_number, liveTx?.receiptNumber, activeItems.length]);
+    setLoadingActive(false);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTxs, allItems, customerName]);
 
   // Steps definition
   const stepsList: Step[] = [
@@ -304,16 +249,12 @@ export default function TrackingView({
   let currentStepIndex = stepsList.findIndex(s => s.id === currentStatus);
   if (currentStepIndex === -1) currentStepIndex = 0;
 
-  const handleTabClick = async (tx: TransactionInfo) => {
+  const handleTabClick = (tx: TransactionInfo) => {
     if (liveTx?.id === tx.id) return;
     setLiveTx(tx);
     setPaymentMethodName(extractPaymentMethod(tx));
-    setLoadingActive(true);
-    try {
-      const items = await fetchTransactionItems(tx.id as number);
-      setActiveItems(items || []);
-    } catch(e) {}
-    setLoadingActive(false);
+    const items = allItems.filter((i: any) => i.transactionId === tx.id || i.transaction_id === tx.id);
+    setActiveItems(items);
   };
 
   // --- CONDITIONAL RENDERS (safe — all hooks already called above) ---
