@@ -53,7 +53,8 @@ export default function SharedLogin() {
             created_at: new Date().toISOString()
           });
 
-          const authData = JSON.stringify({ role: 'admin', username: 'admin', name: 'Admin Utama' });
+          const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+          const authData = JSON.stringify({ role: 'admin', username: 'admin', name: 'Admin Utama', expiresAt });
           localStorage.setItem('admin_auth', authData);
           toast.success('Selamat datang, Admin! (Sistem telah membuat akun default)');
           navigate('/admin/');
@@ -83,7 +84,8 @@ export default function SharedLogin() {
 
       // Step 3: Route based on role
       const role = user.role || 'user';
-      const authData = JSON.stringify({ role, username: user.username, name: user.name, whatsapp: user.whatsapp });
+      const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+      const authData = JSON.stringify({ role, username: user.username, name: user.name, whatsapp: user.whatsapp, expiresAt });
 
       if (role === 'admin') {
         localStorage.setItem('admin_auth', authData);

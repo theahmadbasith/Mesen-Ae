@@ -57,13 +57,13 @@ export default function Produk() {
   }, [products, search, filterCategory]);
 
   const categoryMap = useMemo(() => {
-    const map = new Map<number, Category>();
-    categories?.forEach(c => map.set(c.id!, c));
+    const map = new Map<string, Category>();
+    categories?.forEach(c => map.set(String(c.id!), c));
     return map;
   }, [categories]);
 
-  const getCategoryName = useCallback((catId: number) => categoryMap.get(catId)?.name ?? '-', [categoryMap]);
-  const getCategoryColor = useCallback((catId: number) => categoryMap.get(catId)?.color ?? '#999', [categoryMap]);
+  const getCategoryName = useCallback((catId: string | number) => categoryMap.get(String(catId))?.name ?? '-', [categoryMap]);
+  const getCategoryColor = useCallback((catId: string | number) => categoryMap.get(String(catId))?.color ?? '#999', [categoryMap]);
 
   const openAdd = () => {
     setEditProduct(null);
@@ -225,7 +225,7 @@ export default function Produk() {
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(p => (
             <Card key={p.id} className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden bg-card">
               <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -264,7 +264,7 @@ export default function Produk() {
                 </div>
 
                 {/* 3. Pricing & Stock */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1 mt-2 sm:mt-0 sm:pr-4 sm:border-r border-border/50 shrink-0">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1 mt-2 sm:mt-0 shrink-0 ml-auto">
                   <div className="text-left sm:text-right">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hidden sm:block mb-0.5">Harga Jual</p>
                     <p className="text-base sm:text-lg font-black text-primary">Rp {p.price.toLocaleString('id-ID')}</p>

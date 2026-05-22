@@ -37,6 +37,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   try {
     const auth = JSON.parse(authString);
     if (!auth || !auth.role) return <Navigate to="/login" replace />;
+    
+    // Check if session has expired
+    if (auth.expiresAt && Date.now() > auth.expiresAt) {
+      localStorage.removeItem('admin_auth');
+      return <Navigate to="/login" replace />;
+    }
   } catch (e) {
     // If it's a legacy 'true', let it pass
     if (authString !== 'true') {
@@ -52,6 +58,13 @@ const AdminOnlyRoute = ({ children, allowedForUser = false }: { children: React.
   const authString = localStorage.getItem('admin_auth');
   try {
     const auth = JSON.parse(authString || '{}');
+    
+    // Check expiration even in Role Guard just to be safe
+    if (auth.expiresAt && Date.now() > auth.expiresAt) {
+      localStorage.removeItem('admin_auth');
+      return <Navigate to="/login" replace />;
+    }
+
     if (auth.role === 'user' && !allowedForUser) return <Navigate to="/admin/kitchen" replace />;
   } catch (e) {
     // legacy

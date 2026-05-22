@@ -17,6 +17,13 @@ const KitchenProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!auth || (auth.role !== 'user' && auth.role !== 'admin')) {
       return <Navigate to="/login" replace />;
     }
+    
+    // Check if session has expired
+    if (auth.expiresAt && Date.now() > auth.expiresAt) {
+      localStorage.removeItem('kitchen_auth');
+      localStorage.removeItem('admin_auth');
+      return <Navigate to="/login" replace />;
+    }
   } catch (e) {
     return <Navigate to="/login" replace />;
   }
