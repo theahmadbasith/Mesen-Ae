@@ -225,59 +225,50 @@ export default function Produk() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="flex flex-col gap-3">
           {filtered.map(p => (
-            <Card key={p.id} className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden flex flex-col bg-card">
-              <CardContent className="p-4 flex flex-col h-full">
+            <Card key={p.id} className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden bg-card">
+              <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                 
-                {/* Upper Section: Image & Basic Info */}
-                <div className="flex gap-4">
-                  <div
-                    className={cn(
-                      'w-20 h-20 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden relative border border-border/50',
-                      p.photo && 'cursor-pointer hover:opacity-90 transition-opacity group/img'
-                    )}
-                    onClick={() => p.photo && setLightboxSrc(p.photo)}
-                  >
-                    {p.photo ? (
-                      <>
-                        <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                          <ZoomIn className="w-5 h-5 text-white" />
-                        </div>
-                      </>
-                    ) : (
-                      <PackageIcon className="w-8 h-8 text-muted-foreground/30" strokeWidth={1.5} />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0 pt-1">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="text-sm font-extrabold text-foreground truncate">{p.name}</h3>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-bold tracking-wide uppercase px-2 py-0 border-border/60 bg-muted/30" style={{ color: getCategoryColor(p.categoryId) }}>
+                {/* 1. Image Section */}
+                <div
+                  className={cn(
+                    'w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden relative border border-border/50',
+                    p.photo && 'cursor-pointer hover:opacity-90 transition-opacity group/img'
+                  )}
+                  onClick={() => p.photo && setLightboxSrc(p.photo)}
+                >
+                  {p.photo ? (
+                    <>
+                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                        <ZoomIn className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <PackageIcon className="w-8 h-8 text-muted-foreground/30" strokeWidth={1.5} />
+                  )}
+                </div>
+                
+                {/* 2. Product Identity */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-extrabold text-foreground truncate mb-1.5">{p.name}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-[10px] sm:text-xs font-bold tracking-wide uppercase px-2.5 py-0.5 border-border/60 bg-muted/30" style={{ color: getCategoryColor(p.categoryId) }}>
                       {getCategoryName(p.categoryId)}
                     </Badge>
-                    <p className="text-[11px] text-muted-foreground font-mono mt-1.5 flex items-center gap-1">
+                    <span className="text-[11px] sm:text-xs text-muted-foreground font-mono flex items-center gap-1 bg-accent/50 px-2 py-0.5 rounded-md">
                       <Tag className="w-3 h-3" /> {p.sku || 'No SKU'}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                {/* Middle Section: Prices */}
-                <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Harga Jual</p>
-                    <p className="text-base font-black text-primary">Rp {p.price.toLocaleString('id-ID')}</p>
+                {/* 3. Pricing & Stock */}
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1 mt-2 sm:mt-0 sm:pr-4 sm:border-r border-border/50 shrink-0">
+                  <div className="text-left sm:text-right">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hidden sm:block mb-0.5">Harga Jual</p>
+                    <p className="text-base sm:text-lg font-black text-primary">Rp {p.price.toLocaleString('id-ID')}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">HPP</p>
-                    <p className="text-sm font-semibold text-foreground">Rp {p.hpp.toLocaleString('id-ID')}</p>
-                  </div>
-                </div>
-
-                {/* Bottom Section: Stock & Actions */}
-                <div className="mt-auto pt-4 flex items-center justify-between">
                   <div className={cn(
                     'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition-colors',
                     p.stock <= 5 ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-success/10 border-success/20 text-success'
@@ -285,18 +276,19 @@ export default function Produk() {
                     <Layers className="w-3.5 h-3.5" />
                     Stok: {p.stock} {p.unit}
                   </div>
-                  
-                  <div className="flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-background border-border/60 hover:bg-primary/10 hover:text-primary hover:border-primary/30" onClick={() => openEdit(p)}>
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-background border-border/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={() => setDeleteId(p.id!)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                </div>
+
+                {/* 4. Actions */}
+                <div className="flex justify-end gap-2 shrink-0 mt-2 sm:mt-0 opacity-100 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity">
+                  <Button variant="outline" size="sm" className="h-10 sm:h-11 px-3 rounded-xl bg-background border-border/60 hover:bg-primary/10 hover:text-primary hover:border-primary/30" onClick={() => openEdit(p)}>
+                    <Edit2 className="w-4 h-4 mr-1.5" /> Edit
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-10 sm:h-11 w-10 sm:w-11 px-0 flex justify-center rounded-xl bg-background border-border/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={() => setDeleteId(p.id!)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
                 
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>

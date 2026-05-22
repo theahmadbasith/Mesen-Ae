@@ -8,10 +8,9 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Image as ImageIcon, UploadCloud
+  ChevronRight, Paintbrush, UploadCloud
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
-import BannerSettingsTab from '@/admin/components/BannerSettingsTab';
 import PromoBanner from '@/components/PromoBanner';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
@@ -35,7 +34,7 @@ import { cn } from '@/lib/utils';
 /* ─────────────────────────────────────────────────────────────────────────────
    TAB CONFIG
 ───────────────────────────────────────────────────────────────────────────── */
-type Tab = 'toko' | 'pembayaran' | 'kategori' | 'pengguna' | 'banner' | 'tampilan' | 'data' | 'tentang';
+type Tab = 'toko' | 'pembayaran' | 'kategori' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
 
 interface TabItem { id: Tab; label: string; icon: React.ReactNode }
 
@@ -43,9 +42,8 @@ const TABS: TabItem[] = [
   { id: 'toko',       label: 'Info Toko',    icon: <Store className="w-4 h-4" /> },
   { id: 'pembayaran', label: 'Pembayaran',   icon: <CreditCard className="w-4 h-4" /> },
   { id: 'kategori',  label: 'Kategori',     icon: <Tag className="w-4 h-4" /> },
-  { id: 'pengguna',  label: 'Pengguna',     icon: <Users className="w-4 h-4" /> },
-  { id: 'banner',    label: 'Banner',       icon: <ImageIcon className="w-4 h-4" /> },
-  { id: 'tampilan',  label: 'Tampilan',     icon: <Palette className="w-4 h-4" /> },
+  { id: 'pengguna',  label: 'Akses Staf',   icon: <Users className="w-4 h-4" /> },
+  { id: 'tampilan',  label: 'Tampilan',     icon: <Paintbrush className="w-4 h-4" /> },
   { id: 'data',      label: 'Data & Backup', icon: <Database className="w-4 h-4" /> },
   { id: 'tentang',   label: 'Tentang',      icon: <Settings className="w-4 h-4" /> },
 ];
@@ -616,9 +614,7 @@ export default function Pengaturan() {
           </Section>
         )}
 
-        {activeTab === 'banner' && (
-          <BannerSettingsTab />
-        )}
+
 
         {/* ══════════════ TAMPILAN ══════════════ */}
         {activeTab === 'tampilan' && (

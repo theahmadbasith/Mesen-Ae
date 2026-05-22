@@ -25,6 +25,7 @@ const ActiveOrders = lazy(() => import("./pages/ActiveOrders"));
 const Kitchen = lazy(() => import("./pages/Kitchen"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
 const Vouchers = lazy(() => import("./pages/Vouchers"));
+const BannerPromo = lazy(() => import("./pages/BannerPromo"));
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -155,6 +156,13 @@ export default function AdminApp() {
           <AdminOnlyRoute>
             <Suspense fallback={<VouchersSkeleton />}>
               <Vouchers />
+            </Suspense>
+          </AdminOnlyRoute>
+        } />
+        <Route path="banner" element={
+          <AdminOnlyRoute>
+            <Suspense fallback={<PageSkeleton />}>
+              <BannerPromo />
             </Suspense>
           </AdminOnlyRoute>
         } />

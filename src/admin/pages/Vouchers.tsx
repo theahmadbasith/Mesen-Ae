@@ -135,11 +135,13 @@ export default function Vouchers() {
 
                   <div className="flex h-full">
                     
-                    {/* Bagian Kiri Tiket (Nominal/Persen) */}
                     <div className={cn(
-                      "w-[30%] sm:w-[25%] flex flex-col items-center justify-center p-4 relative",
-                      v.isActive ? "bg-primary/5 text-primary" : "bg-muted text-muted-foreground"
+                      "w-[30%] sm:w-[25%] flex flex-col items-center justify-center p-4 relative overflow-hidden",
+                      v.isActive ? "bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground shadow-inner" : "bg-muted text-muted-foreground"
                     )}>
+                      {v.isActive && (
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                      )}
                       {v.type === 'percentage' ? (
                         <Percent className="w-8 h-8 mb-1 opacity-50" strokeWidth={2} />
                       ) : (

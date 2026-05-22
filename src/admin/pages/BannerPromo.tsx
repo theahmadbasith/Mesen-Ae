@@ -50,7 +50,7 @@ function DraggableItem({ pos, isDragging, onPointerDown, children, type }: any) 
   )
 }
 
-export default function BannerSettingsTab() {
+export default function BannerPromo() {
   const vouchers = (useDbQuery<Voucher>('vouchers') as Voucher[]) ?? [];
   const products = (useDbQuery<Product>('products') as Product[]) ?? [];
   const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
@@ -318,7 +318,7 @@ export default function BannerSettingsTab() {
   const currentBanners: PromoBanner[] = storeSettings?.promoBanners || [];
 
   return (
-    <div className="space-y-6">
+    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-bold text-foreground">Pengaturan Banner Penawaran</h3>

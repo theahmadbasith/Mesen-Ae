@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  ClipboardList
+  ClipboardList,
+  Image as ImageIcon
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -227,7 +228,8 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
             </div>
 
             <NavItem to="/admin/qr-code" icon={QrCode} label="QR Code Meja" />
-            <NavItem to="/admin/vouchers" icon={Ticket} label="Promo & Voucher" />
+            <NavItem to="/admin/banner" icon={ImageIcon} label="Banner Promo" />
+            <NavItem to="/admin/vouchers" icon={Ticket} label="Kode Voucher" />
             <NavItem to="/admin/reports" icon={FileText} label="Laporan Penjualan" />
             <NavItem to="/admin/settings" icon={Settings} label="Pengaturan Sistem" />
           </>
