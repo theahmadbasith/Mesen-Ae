@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { Product, Category, Transaction, TransactionItemRecord, PaymentMethod, StoreSettings, Voucher } from '@/hooks/db-hooks';
+import { useDbQuery, type Product, type Category, type Transaction, type TransactionItemRecord, type PaymentMethod, type StoreSettings, type Voucher } from '@/hooks/db-hooks';
 import { dbAdmin as db, dbDelete } from '@/lib/db';
+import { useLocation } from 'react-router-dom';
 
 import { toDatabaseTransaction, toDatabaseTransactionItem, toDatabaseProduct, mapCategory, mapProduct, mapPaymentMethod, mapTransaction, mapTransactionItem, mapStoreSettings } from '@/lib/sync';
 import {
@@ -45,6 +46,8 @@ const getItemSubtotal = (item: CartItem) => {
 // ProcessingBillCard dipindah ke komponen terpisah
 
 export default function Kasir() {
+  const location = useLocation();
+
   // ==========================================
   // 1. SEMUA USESTATE
   // ==========================================
@@ -94,69 +97,47 @@ export default function Kasir() {
   const scanInputRef = useRef<HTMLInputElement>(null);
 
   // ==========================================
-  // 3. DATA FETCH DARI GOOGLE SHEETS
+  // 3. DATA FETCH DARI FIREBASE ON SNAPSHOT
   // ==========================================
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [storeSettings, setStoreSettings] = useState<StoreSettings | undefined>(undefined);
-  const [openBills, setOpenBills] = useState<Transaction[]>([]);
-  const [allBills, setAllBills] = useState<Transaction[]>([]);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [loading, setLoading] = useState(true);
+  const realtimeProducts = useDbQuery<Product>('products') || [];
+  const realtimeCategories = useDbQuery<Category>('categories') || [];
+  const realtimeTransactions = useDbQuery<Transaction>('transactions') || [];
+  const realtimePaymentMethods = useDbQuery<PaymentMethod>('paymentMethods') || [];
+  const realtimeStoreSettings = useDbQuery<StoreSettings>('storeSettings') || [];
+  const realtimeVouchers = useDbQuery<Voucher>('vouchers') || [];
 
-  // Fungsi untuk refresh semua data dari Google Sheets
-  const refreshAllData = async () => {
-    try {
-      const [prods, cats, pms, settings, open, all, voucs] = await Promise.all([
-        db.from('products').select('*').then(({ data }) => data?.map(mapProduct) || []),
-        db.from('categories').select('*').then(({ data }) => data?.map(mapCategory) || []),
-        db.from('payment_methods').select('*').then(({ data }) => data?.map(mapPaymentMethod) || []),
-        db.from('store_settings').select('*').single().then(({ data }) => data ? mapStoreSettings(data) : undefined),
-        db.from('transactions').select('*').eq('status', 'belum lunas').order('date', { ascending: false }).then(({ data }) => data?.map(mapTransaction) || []),
-        db.from('transactions').select('*').order('date', { ascending: false }).then(({ data }) => data?.map(mapTransaction) || []),
-        db.from('vouchers').select('*').eq('is_active', true).then(({ data }) => data || []),
-      ]);
-      setProducts(prods);
-      setCategories(cats);
-      setPaymentMethods(pms);
-      setStoreSettings(settings);
-      setOpenBills(open);
-      setAllBills(all);
-      setVouchers(voucs.map((v: any) => ({
-        id: v.id,
-        code: v.code,
-        type: v.type,
-        value: v.value,
-        isActive: v.is_active,
-        applicableProductIds: v.applicable_product_ids || [],
-        validUntil: v.valid_until,
-      })));
-    } catch (err) {
-      console.error('[Kasir] Gagal refresh data:', err);
-    }
-  };
+  const products = realtimeProducts;
+  const categories = realtimeCategories;
+  const paymentMethods = realtimePaymentMethods;
+  const storeSettings = realtimeStoreSettings[0];
+  const allBills = realtimeTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const openBills = realtimeTransactions.filter(t => t.status === 'belum lunas' || t.status === 'open').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const vouchers = realtimeVouchers.filter(v => v.isActive);
+  
+  const loading = realtimeProducts.length === 0 && realtimeCategories.length === 0;
+
+  // Fungsi untuk muat ulang manual (sudah dihandle realtime, jadi bisa kosong atau fungsional minimal)
+  const refreshAllData = async () => {};
 
   useEffect(() => {
     refreshAllData().then(() => setLoading(false));
+  }, []);
 
-    // Polling: refresh transaksi & produk setiap 5 detik dari Google Sheets
-    const pollInterval = setInterval(async () => {
-      try {
-        const [{ data: openData }, { data: allData }, { data: prodData }] = await Promise.all([
-          db.from('transactions').select('*').eq('status', 'belum lunas').order('date', { ascending: false }),
-          db.from('transactions').select('*').order('date', { ascending: false }),
-          db.from('products').select('*'),
-        ]);
-        if (openData) setOpenBills(openData.map(mapTransaction));
-        if (allData) setAllBills(allData.map(mapTransaction));
-        if (prodData) setProducts(prodData.map(mapProduct));
-      } catch (err) {
-        // Polling error — tidak fatal, coba lagi di interval berikutnya
+  // Handle auto-load from ActiveOrders
+  useEffect(() => {
+    if (!loading && location.state?.loadBillId) {
+      const billId = location.state.loadBillId;
+      const billToLoad = openBills.find(b => b.id === billId);
+      if (billToLoad) {
+        // Clear state to prevent infinite loop
+        window.history.replaceState({}, document.title);
+        loadOpenBill(billToLoad);
       }
-    }, 5000);
+    }
+  }, [loading, location.state, openBills]);
 
-    // Polling: panggilan pelayan dari localStorage
+  // Polling: panggilan pelayan dari localStorage
+  useEffect(() => {
     let lastCheckedLength = JSON.parse(localStorage.getItem('waiter_calls') || '[]').length;
     const waiterPollInterval = setInterval(() => {
       const calls = JSON.parse(localStorage.getItem('waiter_calls') || '[]');
@@ -181,7 +162,6 @@ export default function Kasir() {
     }, 1000);
 
     return () => {
-      clearInterval(pollInterval);
       clearInterval(waiterPollInterval);
     };
   }, []);

@@ -165,21 +165,33 @@ export default function ActiveOrders() {
                 </div>
                 
                 <div className="flex gap-2.5 w-full">
-                  <Button 
-                    variant="outline" 
-                    className="flex-none px-3 text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                    onClick={() => confirmCancel(bill)}
-                    title="Batalkan Pesanan"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
-                    onClick={() => navigate('/admin/cashier', { state: { loadBillId: bill.id } })}
-                  >
-                    Buka Kasir
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
+                  {bill.status !== 'lunas' && (
+                    <Button 
+                      variant="outline" 
+                      className="flex-none px-3 text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      onClick={() => confirmCancel(bill)}
+                      title="Batalkan Pesanan"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {bill.status === 'lunas' ? (
+                    <Button 
+                      className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
+                      onClick={() => navigate('/admin/kitchen')}
+                    >
+                      Buka Dapur
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
+                      onClick={() => navigate('/admin/cashier', { state: { loadBillId: bill.id } })}
+                    >
+                      Buka Kasir
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  )}
                 </div>
               </CardFooter>
             </Card>
