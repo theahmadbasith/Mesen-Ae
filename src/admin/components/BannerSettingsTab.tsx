@@ -1,4 +1,4 @@
-import { useDbQuery, dbUpdate, dbUploadFile } from '@/hooks/db-hooks';
+import { useDbQuery, dbUpdate, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
 import { type Voucher, type Product, type StoreSettings } from '@/hooks/db-hooks';
 import { useState, useRef } from 'react';
 import { 
@@ -159,6 +159,13 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
 
     let updatedBanners: PromoBanner[];
     if (editBanner) {
+      if (editBanner.imageUrl && finalImageUrl && editBanner.imageUrl !== finalImageUrl) {
+        // Only delete the old banner image if it's NOT a product photo reused by reference.
+        // Product photos have a different structure, but if it was uniquely uploaded as a banner:
+        if (editBanner.imageUrl.includes('banners')) {
+          await dbDeleteFile(editBanner.imageUrl);
+        }
+      }
       updatedBanners = currentBanners.map(b => b.id === editBanner.id ? bannerData : b);
     } else {
       updatedBanners = [...currentBanners, bannerData];
@@ -178,10 +185,13 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
 
   const handleDeleteBanner = async () => {
     if (deleteBannerId && storeSettings?.id) {
-      const currentBanners: PromoBanner[] = storeSettings.promoBanners || [];
+      const bannerToDelete = currentBanners.find(b => b.id === deleteBannerId);
       const updatedBanners = currentBanners.filter(b => b.id !== deleteBannerId);
       
       try {
+        if (bannerToDelete?.imageUrl && bannerToDelete.imageUrl.includes('banners')) {
+          await dbDeleteFile(bannerToDelete.imageUrl);
+        }
         await dbUpdate('storeSettings', storeSettings.id, {
           ...storeSettings,
           promoBanners: updatedBanners

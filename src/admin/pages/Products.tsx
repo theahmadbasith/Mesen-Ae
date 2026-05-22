@@ -1,4 +1,4 @@
-import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
+import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
 import { type Product, type Category } from '@/hooks/db-hooks';
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X, ImageIcon, ZoomIn, ScanBarcode, Loader2, Tag, Layers, QrCode } from 'lucide-react';
@@ -126,6 +126,12 @@ export default function Produk() {
       };
 
       if (editProduct?.id) {
+        if (editProduct.photo && finalPhotoUrl && editProduct.photo !== finalPhotoUrl) {
+          await dbDeleteFile(editProduct.photo);
+        } else if (editProduct.photo && !finalPhotoUrl) {
+          // If the user removed the photo explicitly
+          await dbDeleteFile(editProduct.photo);
+        }
         await dbUpdate('products', editProduct.id, data);
         toast.success('Produk berhasil diperbarui');
       } else {
@@ -142,6 +148,10 @@ export default function Produk() {
 
   const handleDelete = async () => {
     if (deleteId) {
+      const p = products?.find(x => x.id === deleteId);
+      if (p?.photo) {
+        await dbDeleteFile(p.photo);
+      }
       await dbDelete('products', deleteId);
       toast.success('Produk berhasil dihapus');
       setDeleteId(null);

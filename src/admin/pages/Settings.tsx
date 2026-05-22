@@ -1,4 +1,4 @@
-import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
+import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
 import { type PaymentMethod, type Category, type User, type StoreSettings, type Banner } from '@/hooks/db-hooks';
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -196,11 +196,26 @@ export default function Pengaturan() {
   const saveStore = async () => {
     setIsSavingStore(true);
     try {
+      let finalLogoUrl = storeLogo;
+      if (storeLogo && storeLogo.startsWith('data:image')) {
+        const url = await dbUploadFile('storeSettings', `logo-${Date.now()}.jpg`, storeLogo);
+        if (url) finalLogoUrl = url;
+      }
+
+      if (storeSettings?.id) {
+        if (storeSettings.logo && finalLogoUrl && storeSettings.logo !== finalLogoUrl) {
+          await dbDeleteFile(storeSettings.logo);
+        } else if (storeSettings.logo && !finalLogoUrl) {
+          await dbDeleteFile(storeSettings.logo);
+        }
+      }
+
       const updates = {
         storeName: storeName.trim(), address: storeAddr.trim(),
-        phone: storePhone.trim(), logo: storeLogo || undefined,
+        phone: storePhone.trim(), logo: finalLogoUrl || undefined,
         receiptFooter: receiptFooter.trim(), tables: storeSettings?.tables ?? [],
       };
+      
       if (storeSettings?.id) {
         await dbUpdate('storeSettings', storeSettings.id, updates);
       } else {
