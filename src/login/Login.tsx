@@ -94,8 +94,8 @@ export default function SharedLogin() {
       } else {
         toast.error('Akses ditolak. Peran pengguna tidak dikenali.');
       }
-    } catch (error) {
-      toast.error('Gagal terhubung ke database. Periksa koneksi internet.');
+    } catch (error: any) {
+      toast.error('Terjadi Kesalahan: ' + (error?.message || 'Unknown error'));
       console.error('[SharedLogin]', error);
     } finally {
       setLoading(false);
