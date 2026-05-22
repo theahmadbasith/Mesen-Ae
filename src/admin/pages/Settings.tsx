@@ -21,7 +21,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/image-utils';
-// Removed excel-utils dependency
+import {
+  downloadProductTemplate, importProductsFromExcel,
+  exportAllDataToExcel, importAllDataFromExcel,
+} from '@/lib/excel-utils';
 import { isDbConfigured } from '@/lib/db';
 import { hashPassword } from '@/lib/password';
 import { cn } from '@/lib/utils';
@@ -163,6 +166,13 @@ export default function Pengaturan() {
   const [themeHue, setThemeHue] = useState(storeSettings?.themeColor ?? '25');
 
   useEffect(() => { setThemeHue(storeSettings?.themeColor ?? '25'); }, [storeSettings?.themeColor]);
+
+  /* ── Excel States & Refs ── */
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImportingAll, setIsImportingAll] = useState(false);
+  const [isImportingProd, setIsImportingProd] = useState(false);
+  const allDataInputRef = useRef<HTMLInputElement>(null);
+  const prodInputRef = useRef<HTMLInputElement>(null);
 
   /* ── Store ── */
   const [storeDialog, setStoreDialog]   = useState(false);
@@ -646,9 +656,71 @@ export default function Pengaturan() {
 
         {/* ══════════════ DATA & BACKUP ══════════════ */}
         {activeTab === 'data' && (
-          <Section title="Database" description="Status koneksi database utama.">
-            {/* Firebase Database */}
+          <Section title="Data & Backup" description="Ekspor atau impor data toko dari dan ke format Excel.">
             <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Backup Total Database</p>
+              <SettingCard>
+                <SettingRow label="Export Semua Data" description="Unduh file Excel berisi seluruh data toko (Produk, Transaksi, dll)">
+                  <Button variant="outline" size="sm" onClick={async () => {
+                    try {
+                      setIsExporting(true);
+                      await exportAllDataToExcel();
+                    } finally { setIsExporting(false); }
+                  }} disabled={isExporting}>
+                    {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileDown className="w-4 h-4 mr-2 text-blue-500" />}
+                    Export Data
+                  </Button>
+                </SettingRow>
+                <SettingRow label="Import & Restore Data" description="Pulihkan seluruh data toko dari file Excel (Hati-hati, data lama bisa tertimpa)." last>
+                  <Button variant="outline" size="sm" onClick={() => allDataInputRef.current?.click()} disabled={isImportingAll}>
+                    {isImportingAll ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2 text-rose-500" />}
+                    Import Data
+                  </Button>
+                  <input type="file" ref={allDataInputRef} className="hidden" accept=".xlsx,.xls" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setIsImportingAll(true);
+                    try {
+                      const res = await importAllDataFromExcel(file);
+                      if (res.errors.length) toast.error(`Berhasil dengan beberapa error: ${res.errors[0]}`);
+                      else toast.success(`Berhasil restore ${res.successCount} dokumen`);
+                    } catch (err: any) { toast.error('Gagal restore data: ' + err.message); }
+                    finally { setIsImportingAll(false); if (allDataInputRef.current) allDataInputRef.current.value = ''; }
+                  }} />
+                </SettingRow>
+              </SettingCard>
+            </div>
+
+            <div className="mt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Produk Khusus</p>
+              <SettingCard>
+                <SettingRow label="Download Template Produk" description="Format Excel kosong untuk mengisi data produk baru secara massal.">
+                  <Button variant="outline" size="sm" onClick={downloadProductTemplate}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-500" />
+                    Template Excel
+                  </Button>
+                </SettingRow>
+                <SettingRow label="Import Produk Masal" description="Upload produk baru dari template Excel yang telah diisi." last>
+                  <Button variant="outline" size="sm" onClick={() => prodInputRef.current?.click()} disabled={isImportingProd}>
+                    {isImportingProd ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UploadCloud className="w-4 h-4 mr-2 text-primary" />}
+                    Upload Produk
+                  </Button>
+                  <input type="file" ref={prodInputRef} className="hidden" accept=".xlsx,.xls" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setIsImportingProd(true);
+                    try {
+                      const res = await importProductsFromExcel(file);
+                      if (res.errors.length) toast.error(`Selesai dengan error: ${res.errors[0]}`);
+                      else toast.success(`Berhasil import ${res.successCount} produk`);
+                    } catch (err: any) { toast.error('Gagal import produk: ' + err.message); }
+                    finally { setIsImportingProd(false); if (prodInputRef.current) prodInputRef.current.value = ''; }
+                  }} />
+                </SettingRow>
+              </SettingCard>
+            </div>
+
+            <div className="mt-6">
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Database Firebase</p>
               <SettingCard>
                 <div className="p-4 space-y-3">

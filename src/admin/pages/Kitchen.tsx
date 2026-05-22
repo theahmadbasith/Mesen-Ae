@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-import { signalBus } from '@/lib/signal-bus';
+
 
 import KitchenReceipt from '@/components/KitchenReceipt';
 
@@ -86,15 +86,7 @@ export default function Kitchen() {
         
         await dbUpdate('transactions', bill.id!, updates);
         
-        // 🔥 Broadcast signal immediately to customer tracking page
-        signalBus.broadcast({
-          type: 'TRANSACTION_STATUS_UPDATE',
-          transactionId: bill.id!,
-          kitchenStatus: nextStatus,
-          status: bill.status,
-          receiptNumber: bill.receiptNumber,
-          timestamp: Date.now(),
-        });
+
         
         toast.success(`Pesanan ${bill.receiptNumber} lanjut ke tahap: ${nextStatus.toUpperCase()}`);
       }

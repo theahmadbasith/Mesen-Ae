@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Product, Category, Transaction, TransactionItemRecord, PaymentMethod, StoreSettings, Voucher } from '@/hooks/db-hooks';
 import { dbAdmin as db, dbDelete } from '@/lib/db';
-import { signalBus } from '@/lib/signal-bus';
+
 import { toDatabaseTransaction, toDatabaseTransactionItem, toDatabaseProduct, mapCategory, mapProduct, mapPaymentMethod, mapTransaction, mapTransactionItem, mapStoreSettings } from '@/lib/sync';
 import {
   Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote,
@@ -398,15 +398,6 @@ export default function Kasir() {
       }
 
       toast.success(`Bill diperbarui!`);
-      const openBillObj = openBills?.find(b => b.id === editingTxId);
-      signalBus.broadcast({
-        type: 'TRANSACTION_STATUS_UPDATE',
-        transactionId: editingTxId,
-        kitchenStatus: openBillObj?.kitchen_status || 'pending',
-        status: openBillObj?.status || 'belum lunas',
-        receiptNumber: openBillObj?.receiptNumber || `TX${editingTxId}`,
-        timestamp: Date.now(),
-      });
     } else {
       const receiptNumber = `TX${Date.now()}`;
 
@@ -429,15 +420,6 @@ export default function Kasir() {
         }
 
         toast.success(`Bill ${receiptNumber} disimpan!`);
-
-        signalBus.broadcast({
-          type: 'TRANSACTION_STATUS_UPDATE',
-          transactionId: newTx.id,
-          kitchenStatus: 'pending',
-          status: 'belum lunas',
-          receiptNumber,
-          timestamp: Date.now(),
-        });
       }
     }
 
@@ -632,15 +614,7 @@ export default function Kasir() {
       toast.success(`Transaksi berhasil!`);
       setReceiptOpen(true);
 
-      // 🔥 Broadcast payment confirmation to customer tracking
-      signalBus.broadcast({
-        type: 'TRANSACTION_STATUS_UPDATE',
-        transactionId: editingTxId,
-        kitchenStatus: 'diproses',
-        status: 'lunas',
-        receiptNumber: openBillObj ? openBillObj.receiptNumber : `TX${editingTxId}`,
-        timestamp: Date.now(),
-      });
+
     } else {
       const receiptNumber = `TX${Date.now()}`;
 
@@ -686,15 +660,7 @@ export default function Kasir() {
         toast.success(`Transaksi berhasil! ${receiptNumber}`);
         setReceiptOpen(true);
 
-        // 🔥 Broadcast new transaction to customer tracking
-        signalBus.broadcast({
-          type: 'TRANSACTION_STATUS_UPDATE',
-          transactionId: newTx.id,
-          kitchenStatus: 'diproses',
-          status: 'lunas',
-          receiptNumber,
-          timestamp: Date.now(),
-        });
+
       }
     }
     } catch (error) {

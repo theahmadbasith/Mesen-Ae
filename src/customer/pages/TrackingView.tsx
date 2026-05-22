@@ -14,7 +14,7 @@ import { FORMAT_IDR, getLocalTransactionIds } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReceiptModal from '../../components/Receipt';
 import { useDbQuery } from '@/hooks/db-hooks';
-import { signalBus } from '@/lib/signal-bus';
+
 
 // ==========================================
 // Tipe Data & Interfaces (TypeScript)
@@ -260,35 +260,13 @@ export default function TrackingView({
     // Immediate fetch
     fetchLatest();
 
-    // 2a. Listen to true real-time broadcasts
-    const unsubscribeSignal = signalBus.subscribe(txId, (signal) => {
-      setLiveTx(prev => {
-        if (!prev) return prev;
-        
-        // Let's also verify if payment completed
-        const wasPaid = prev.status === 'lunas' || prev.status === 'completed';
-        const nowPaid = signal.status === 'lunas' || signal.status === 'completed';
-        
-        if (!wasPaid && nowPaid) {
-           toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
-        }
 
-        return {
-          ...prev,
-          status: signal.status || prev.status,
-          kitchen_status: signal.kitchenStatus || prev.kitchen_status,
-          kitchenStatus: signal.kitchenStatus || prev.kitchenStatus
-        };
-      });
-      // A broadcast usually implies we should do a full sync just to be safe
-      setTimeout(fetchLatest, 500); 
-    });
 
     // 2b. Set up fast polling as a fallback
     pollRef.current = setInterval(fetchLatest, POLL_INTERVAL);
 
     return () => {
-      unsubscribeSignal();
+
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;

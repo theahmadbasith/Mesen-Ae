@@ -13,7 +13,7 @@ import {
   fetchTransactionByReceiptNumber, appendPaymentToTransactionByReceipt 
 } from '../../lib/db';
 import { toDatabaseTransaction, toDatabaseTransactionItem, mapVoucher } from '../../lib/sync';
-import { signalBus } from '@/lib/signal-bus';
+
 // --- DEFINISI INTERFACE & TIPE DATA ---
 
 interface Variant {
@@ -269,14 +269,7 @@ export default function CheckoutView({
           paymentMethodName: 'Bayar di Kasir'
         });
 
-        signalBus.broadcast({
-          type: 'TRANSACTION_STATUS_UPDATE',
-          transactionId: txId as number | string,
-          kitchenStatus: txData.kitchen_status,
-          status: txData.status,
-          receiptNumber,
-          timestamp: Date.now(),
-        });
+
 
         setCart([]);
         setView('success');
@@ -369,14 +362,7 @@ export default function CheckoutView({
           paymentMethodName: pm ? pm.name : method.toUpperCase()
         });
 
-        signalBus.broadcast({
-          type: 'TRANSACTION_STATUS_UPDATE',
-          transactionId: txId as number | string,
-          kitchenStatus: txData.kitchen_status,
-          status: txData.status,
-          receiptNumber,
-          timestamp: Date.now(),
-        });
+
 
         setCart([]);
       }

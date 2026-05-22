@@ -8,7 +8,7 @@ import {
   createTransaction, createTransactionItems, updateProductStock, db, 
   fetchTransactionByReceiptNumber, appendPaymentToTransactionByReceipt 
 } from '../../lib/db';
-import { signalBus } from '@/lib/signal-bus';
+
 
 interface Variant {
   name?: string;
@@ -116,14 +116,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
         paymentMethodName: 'Split Bill'
       });
 
-      signalBus.broadcast({
-        type: 'TRANSACTION_STATUS_UPDATE',
-        transactionId: createdId,
-        kitchenStatus: txData.kitchen_status,
-        status: txData.status,
-        receiptNumber: newReceipt,
-        timestamp: Date.now(),
-      });
+
 
       setCart([]);
       setPaidSplits(new Array(splitCount).fill(false));
@@ -162,14 +155,7 @@ export default function SplitView({ setView, cart, totals, customerName, setFina
       toast.success(`Tagihan ${activeSplitIndex + 1} Lunas!`);
       
       if (newPaidSplits.every(Boolean)) {
-        signalBus.broadcast({
-          type: 'TRANSACTION_STATUS_UPDATE',
-          transactionId: txId,
-          kitchenStatus: 'diproses',
-          status: 'lunas',
-          receiptNumber: receiptNumber,
-          timestamp: Date.now(),
-        });
+
         setView('success');
       }
     } catch (error) {

@@ -1,8 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { queryClient } from '@/lib/query-client';
+import { useEffect, useState } from 'react';
 import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db as firestoreDb, storage } from '@/lib/firebase';
 
 // ══════════════════════════════════════════════════════════
@@ -71,20 +69,19 @@ const mapCamelToSnake = (obj: any): any => {
 };
 
 // ══════════════════════════════════════════════════════════
-//  useDbQuery — React Query with Firestore Real-time support
+//  useDbQuery — Firestore Real-time support (No external cache)
 // ══════════════════════════════════════════════════════════
 export function useDbQuery<T = any>(tableCamelCase: string): T[] {
   const tableName = TABLE_MAP[tableCamelCase] || tableCamelCase;
-  const queryKey = [tableName];
+  const [data, setData] = useState<T[]>([]);
 
   useEffect(() => {
-    // Firestore real-time snapshot subscription (No offline caching)
+    // Firestore real-time snapshot subscription
     const colRef = collection(firestoreDb, tableName);
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const camelData = mapSnakeToCamel(data) as T[];
-      
-      queryClient.setQueryData(queryKey, camelData);
+      const docsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const camelData = mapSnakeToCamel(docsData) as T[];
+      setData(camelData);
     }, (error) => {
       console.warn(`[useDbQuery] Snapshot error for ${tableName}:`, error);
     });
@@ -92,27 +89,7 @@ export function useDbQuery<T = any>(tableCamelCase: string): T[] {
     return () => unsubscribe();
   }, [tableName]);
 
-  const { data } = useQuery<T[]>({
-    queryKey,
-    queryFn: async () => {
-      // Fetch initial data directly from Firestore without any caching fallback
-      try {
-        const colRef = collection(firestoreDb, tableName);
-        const snapshot = await getDocs(colRef);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return mapSnakeToCamel(data) as T[];
-      } catch (error) {
-        console.warn(`[useDbQuery] Fetch fail for ${tableName}.`);
-        return [] as T[];
-      }
-    },
-    staleTime: Infinity, // Rely on real-time snapshot instead of polling
-    gcTime: 1000 * 60,
-    initialData: undefined,
-    refetchOnWindowFocus: false,
-  });
-
-  return Array.isArray(data) ? (data as T[]) : ([] as T[]);
+  return data;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -166,21 +143,15 @@ export async function dbUploadFile(
   file: File | Blob | string
 ): Promise<string | null> {
   try {
-    let dataUrl: string;
-    if (typeof file === 'string' && file.startsWith('data:')) {
-      dataUrl = file;
-    } else {
-      dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file as Blob);
-      });
-    }
-
     const storageRef = ref(storage, `${bucket}/${Date.now()}_${fileName}`);
-    // uploadString assumes data_url format
-    await uploadString(storageRef, dataUrl, 'data_url');
+    
+    if (typeof file === 'string' && file.startsWith('data:')) {
+      await uploadString(storageRef, file, 'data_url');
+    } else if (file instanceof Blob || file instanceof File) {
+      await uploadBytes(storageRef, file);
+    } else {
+      return null;
+    }
     
     const downloadUrl = await getDownloadURL(storageRef);
     return downloadUrl;
