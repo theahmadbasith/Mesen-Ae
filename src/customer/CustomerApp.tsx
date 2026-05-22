@@ -327,8 +327,8 @@ export default function CustomerApp() {
   }
 
   return (
-    // Background utama netral; darkmode hanya diterapkan di dalam kontainer customer
-    <div className={`min-h-[100dvh] font-sans flex flex-col transition-colors duration-300 bg-slate-50`}>
+    // Background utama selaras tema; darkmode diterapkan hingga ke akar
+    <div className={`min-h-[100dvh] font-sans flex flex-col transition-colors duration-300 bg-slate-50 dark:bg-slate-950`}>
 
       {/* 
         PERUBAHAN UTAMA DESKTOP RESPONSIVE:
