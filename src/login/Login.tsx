@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, User, Lock, LogIn, Loader2, ShieldCheck, Sparkles, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import bcrypt from 'bcryptjs';
 import LoginLeftColumn from './components/LoginLeftColumn';
 import LoginRightColumn from './components/LoginRightColumn';
 
@@ -38,7 +39,6 @@ export default function SharedLogin() {
         // Fallback for first-time setup
         if (username.toLowerCase() === 'admin' && password === 'admin123') {
            const { dbInsert } = await import('@/hooks/db-hooks');
-           const bcrypt = (await import('bcryptjs')).default;
            const password_hash = await bcrypt.hash('admin123', 10);
            await dbInsert('users', {
              username: 'admin',
@@ -63,7 +63,6 @@ export default function SharedLogin() {
       let isPasswordValid = false;
       if (user.password_hash) {
         try {
-          const bcrypt = (await import('bcryptjs')).default;
           isPasswordValid = await bcrypt.compare(password, user.password_hash);
         } catch (err) {
           console.error("Bcrypt compare error:", err);
