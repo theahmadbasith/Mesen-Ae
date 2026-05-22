@@ -90,7 +90,7 @@ export default function SupplierPage() {
         await dbUpdate('suppliers', editSupplier.id, data);
         toast.success(`Data supplier "${data.name}" berhasil diperbarui`);
       } else {
-        await dbInsert('suppliers', { ...data, createdAt: new Date() });
+        await dbInsert('suppliers', { ...data, createdAt: new Date().toISOString() });
         toast.success(`Supplier "${data.name}" berhasil ditambahkan`);
       }
       setDialogOpen(false);

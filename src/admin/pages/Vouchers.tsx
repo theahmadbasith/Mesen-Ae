@@ -68,7 +68,7 @@ export default function Vouchers() {
       isActive,
       applicableProductIds,
       validUntil: null,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
 
     try {
@@ -76,7 +76,7 @@ export default function Vouchers() {
         await dbUpdate('vouchers', editVoucher.id, data);
         toast.success('Voucher berhasil diperbarui');
       } else {
-        await dbInsert('vouchers', { ...data, createdAt: new Date() } as Voucher);
+        await dbInsert('vouchers', { ...data, createdAt: new Date().toISOString() } as Voucher);
         toast.success('Voucher baru berhasil dibuat');
       }
       setDialogOpen(false);

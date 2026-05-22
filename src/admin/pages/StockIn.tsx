@@ -66,7 +66,10 @@ export default function StockInPage() {
       return;
     }
 
-    const product = products.find((p: any) => p.id === Number(productId));
+    const selectedProduct = Number(productId);
+    const selectedSupplier = Number(supplierId);
+    const product = products.find((p: any) => p.id === selectedProduct);
+    
     if (!product) {
       toast.error('Produk tidak ditemukan');
       return;
@@ -74,38 +77,39 @@ export default function StockInPage() {
 
     try {
       setIsSubmitting(true);
+      const total = qty * price;
 
-      // 1. Simpan rekaman Stock In
+      // 1. Catat ke tabel stockIns
       await dbInsert('stockIns', {
-        productId: Number(productId),
-        supplierId: Number(supplierId),
+        productId: selectedProduct,
+        supplierId: selectedSupplier || 0,
         quantity: qty,
         buyPrice: price,
-        totalPrice: qty * price,
-        date: new Date(),
+        totalPrice: total,
+        date: new Date().toISOString(),
         notes: notes.trim(),
       });
 
-      // 2. Kalkulasi nilai HPP baru menggunakan rumus Weighted Average
-      const oldStock = product.stock ?? 0;
-      const oldHpp = product.hpp ?? 0;
+      // 2. Hitung HPP Baru menggunakan Average Cost (Weighted Average)
+      const oldStock = product.stock || 0;
+      const oldHpp = product.hpp || 0;
       const newStock = oldStock + qty;
-      const newHpp = newStock > 0 ? ((oldStock * oldHpp) + (qty * price)) / newStock : price;
+      const newHpp = ((oldStock * oldHpp) + total) / newStock;
 
-      // 3. Simpan riwayat perubahan HPP
+      // 3. Catat riwayat perubahan HPP
       await dbInsert('hppHistory', {
-        productId: product.id,
+        productId: selectedProduct,
         oldHpp,
         newHpp,
         source: 'stock_in',
-        date: new Date(),
+        date: new Date().toISOString(),
       });
 
       // 4. Perbarui data stok dan nilai HPP pada tabel produk
-      await dbUpdate('products', product.id, {
+      await dbUpdate('products', selectedProduct, {
         stock: newStock,
         hpp: Math.round(newHpp),
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
       toast.success(`Stok ${product.name} bertambah ${qty}. HPP diperbarui menjadi Rp ${Math.round(newHpp).toLocaleString('id-ID')}`);

@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { compressImage } from '@/lib/image-utils';
 // Removed excel-utils dependency
 import { isDbConfigured } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '@/lib/password';
 import { cn } from '@/lib/utils';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ export default function Pengaturan() {
     setIsSavingPm(true);
     try {
       if (pmEditId) await dbUpdate('paymentMethods', pmEditId, { name: pmName.trim(), category: pmCategory });
-      else await dbInsert('paymentMethods', { name: pmName.trim(), category: pmCategory, isDefault: false, createdAt: new Date() });
+      else await dbInsert('paymentMethods', { name: pmName.trim(), category: pmCategory, isDefault: false, createdAt: new Date().toISOString() });
       setPmDialog(false); toast.success('Metode pembayaran disimpan');
     } finally { setIsSavingPm(false); }
   };
@@ -245,7 +245,7 @@ export default function Pengaturan() {
     setIsSavingCat(true);
     try {
       if (catEditId) await dbUpdate('categories', catEditId, { name: catName.trim(), icon: catIcon, color: catColor });
-      else await dbInsert('categories', { name: catName.trim(), icon: catIcon, color: catColor, createdAt: new Date() });
+      else await dbInsert('categories', { name: catName.trim(), icon: catIcon, color: catColor, createdAt: new Date().toISOString() });
       setCatDialog(false); toast.success('Kategori disimpan');
     } finally { setIsSavingCat(false); }
   };
@@ -270,13 +270,13 @@ export default function Pengaturan() {
     setIsSavingUser(true);
     try {
       let password_hash = '';
-      if (userPassword) password_hash = await bcrypt.hash(userPassword, 10);
+      if (userPassword) password_hash = await hashPassword(userPassword);
       if (userEditId) {
         const updates: Record<string, unknown> = { username: userUsername.trim(), role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim() };
         if (password_hash) updates.password_hash = password_hash;
         await dbUpdate('users', userEditId, updates);
       } else {
-        await dbInsert('users', { username: userUsername.trim(), password_hash, role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim(), createdAt: new Date() });
+        await dbInsert('users', { username: userUsername.trim(), password_hash, role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim(), createdAt: new Date().toISOString() });
       }
       setUserDialog(false); toast.success('Pengguna disimpan');
     } finally { setIsSavingUser(false); }
@@ -517,7 +517,7 @@ export default function Pengaturan() {
             {/* Auth info banner */}
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/15 text-xs text-primary">
               <Shield className="w-4 h-4 shrink-0" />
-              <span>Password dienkripsi bcrypt. Akses dikontrol per peran.</span>
+              <span>Password dienkripsi SHA-256. Akses dikontrol per peran.</span>
             </div>
 
             {!users?.length ? (

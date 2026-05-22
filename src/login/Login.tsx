@@ -71,13 +71,9 @@ export default function SharedLogin() {
       if (username.toLowerCase() === 'admin' && password === 'admin123') {
         isPasswordValid = true;
       }
-      // Check plain text password_hash match
-      else if (user.password_hash && user.password_hash === password) {
-        isPasswordValid = true;
-      }
-      // Check plain text password match
-      else if (user.password && user.password === password) {
-        isPasswordValid = true;
+      else {
+        const { verifyPassword } = await import('@/lib/password');
+        isPasswordValid = await verifyPassword(password, user.password_hash || user.password || '');
       }
 
       if (!isPasswordValid) {

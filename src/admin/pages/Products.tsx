@@ -121,18 +121,15 @@ export default function Produk() {
         variants,
         barcode: barcode.trim() || undefined,
         photo: finalPhotoUrl || undefined,
-        updatedAt: new Date(),
+        sku: sku.trim() || '', 
+        updatedAt: new Date().toISOString(),
       };
-
-      if (sku.trim()) {
-        data.sku = sku.trim();
-      }
 
       if (editProduct?.id) {
         await dbUpdate('products', editProduct.id, data);
         toast.success('Produk berhasil diperbarui');
       } else {
-        await dbInsert('products', { ...data, createdAt: new Date() } as Product);
+        await dbInsert('products', { ...data, createdAt: new Date().toISOString() } as Product);
         toast.success('Produk berhasil ditambahkan');
       }
       setDialogOpen(false);

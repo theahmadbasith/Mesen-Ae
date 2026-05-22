@@ -81,14 +81,14 @@ export default function StockOutPage() {
         productId: Number(productId),
         quantity: qty,
         reason,
-        date: new Date(),
+        date: new Date().toISOString(),
         notes: notes.trim(),
       });
 
       // 2. Potong jumlah stok produk utama
       await dbUpdate('products', product.id, {
         stock: product.stock - qty,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
       toast.success(`Stok ${product.name} berhasil dikurangi sebanyak ${qty}`);
