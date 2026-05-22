@@ -105,7 +105,7 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped }: 
     <Dialog open={open} onOpenChange={(val) => {
       if (!val) onOpenChange(false);
     }}>
-      <DialogContent className="max-w-md p-0 overflow-hidden bg-background rounded-2xl border-border/60 shadow-2xl">
+      <DialogContent className="max-w-md p-0 overflow-hidden bg-background rounded-2xl border-border/60 shadow-2xl z-[999]">
         
         <DialogHeader className="p-4 border-b border-border/50 relative">
           <DialogTitle className="flex items-center gap-2 text-base font-bold">

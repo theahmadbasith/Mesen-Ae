@@ -1,6 +1,10 @@
 import React from 'react';
+import { useDbQuery } from '@/hooks/db-hooks';
 
 export default function SplashScreen(): React.JSX.Element {
+  const storeSettingsList = useDbQuery<any>('storeSettings') ?? [];
+  const storeSettings = storeSettingsList[0] || null;
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-700 to-blue-900 text-white relative overflow-hidden min-h-screen">
       
@@ -15,17 +19,17 @@ export default function SplashScreen(): React.JSX.Element {
       <div className="relative z-10 flex flex-col items-center">
         
         {/* Logo Container dengan Animasi Scale-In */}
-        <div className="logo-container bg-white p-7 rounded-[2rem] shadow-2xl shadow-blue-900/50 mb-6 relative">
+        <div className="logo-container bg-white p-7 rounded-[2rem] shadow-2xl shadow-blue-900/50 mb-6 relative overflow-hidden">
           <div 
             className="absolute inset-0 bg-blue-100 rounded-[2rem] scale-110 animate-ping opacity-20" 
             style={{ animationDuration: '3s' }}
           />
-          <img src="/icon-192.png" alt="MesenAe Logo" className="w-16 h-16 object-contain relative z-10" />
+          <img src={storeSettings?.logo || "/icon-192.png"} alt={storeSettings?.storeName || "MesenAe Logo"} className="w-16 h-16 object-contain relative z-10" />
         </div>
         
         {/* Nama Brand dengan Animasi Fade-In-Up */}
         <h1 className="title-text text-4xl font-black tracking-tight mb-2 drop-shadow-md">
-          MesenAe
+          {storeSettings?.storeName || "MesenAe"}
         </h1>
         
         {/* Slogan dengan Animasi Fade-In-Up (Delay) */}

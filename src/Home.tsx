@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ShoppingBag, LogIn, ChevronRight } from 'lucide-react';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useDbQuery } from '@/hooks/db-hooks';
 
 export default function Home() {
   useThemeColor();
   const navigate = useNavigate();
+  const storeSettingsList = useDbQuery<any>('storeSettings') ?? [];
+  const storeSettings = storeSettingsList[0] || null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-slate-100 relative overflow-hidden px-6">
@@ -17,12 +20,12 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
         {/* Logo */}
-        <div className="w-24 h-24 mb-8 bg-white/5 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl border border-white/10 relative group">
+        <div className="w-24 h-24 mb-8 bg-white/5 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl border border-white/10 relative group p-2 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
           <img
-            src="/icon-192.png"
-            alt="MesenAe Logo"
-            className="w-14 h-14 object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110"
+            src={storeSettings?.logo || "/icon-192.png"}
+            alt={storeSettings?.storeName || "MesenAe Logo"}
+            className="w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110"
             onError={(e) => {
               const target = e.currentTarget;
               target.style.display = 'none';
@@ -31,7 +34,7 @@ export default function Home() {
         </div>
 
         <h1 className="text-4xl font-black tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-orange-400">
-          MesenAe
+          {storeSettings?.storeName || "MesenAe"}
         </h1>
         <p className="text-sm text-zinc-400 mb-12 font-medium px-4">
           Selamat datang di portal MesenAe. Silakan pilih layanan yang ingin Anda akses.
