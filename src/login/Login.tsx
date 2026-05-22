@@ -59,8 +59,21 @@ export default function SharedLogin() {
         return;
       }
 
-      // Simple password check (Note: production should use bcrypt/hashing comparison)
-      if (user.password_hash !== password && user.password !== password) {
+      // Password check
+      let isPasswordValid = false;
+      if (user.password_hash) {
+        try {
+          const bcrypt = (await import('bcryptjs')).default;
+          isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        } catch (err) {
+          console.error("Bcrypt compare error:", err);
+        }
+      } else if (user.password) {
+        // Fallback for plain text passwords if any
+        isPasswordValid = (user.password === password);
+      }
+
+      if (!isPasswordValid) {
         toast.error('Password salah!');
         return;
       }
