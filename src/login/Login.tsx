@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, User, Lock, LogIn, Loader2, ShieldCheck, Sparkles, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import bcrypt from 'bcryptjs';
 import LoginLeftColumn from './components/LoginLeftColumn';
 import LoginRightColumn from './components/LoginRightColumn';
 
@@ -39,7 +38,10 @@ export default function SharedLogin() {
         // Fallback for first-time setup
         if (username.toLowerCase() === 'admin' && password === 'admin123') {
            const { dbInsert } = await import('@/hooks/db-hooks');
-           const password_hash = await bcrypt.hash('admin123', 10);
+           
+           // Gunakan plain text sementara untuk fallback agar tidak error bcrypt
+           const password_hash = 'admin123'; 
+           
            await dbInsert('users', {
              username: 'admin',
              password_hash,
