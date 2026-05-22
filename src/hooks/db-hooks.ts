@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db as firestoreDb, storage } from '@/lib/firebase';
+import { db as firestoreDb } from '@/lib/firebase';
+import imageCompression from 'browser-image-compression';
 
 // ══════════════════════════════════════════════════════════
 //  Types
@@ -136,27 +136,87 @@ export async function dbDelete(tableCamelCase: string, id: number | string): Pro
   }
 }
 
-/** Upload file ke Firebase Storage, kembalikan URL public */
+/** Upload file ke Cloudinary dengan kompresi maksimal 300KB, kembalikan URL secure */
 export async function dbUploadFile(
   bucket: string,
   fileName: string,
   file: File | Blob | string
 ): Promise<string | null> {
   try {
-    const storageRef = ref(storage, `${bucket}/${Date.now()}_${fileName}`);
-    
+    let fileToUpload: File | Blob;
+
     if (typeof file === 'string' && file.startsWith('data:')) {
-      await uploadString(storageRef, file, 'data_url');
+      // Mengubah Data URL (Base64) menjadi Blob
+      const res = await fetch(file);
+      fileToUpload = await res.blob();
     } else if (file instanceof Blob || file instanceof File) {
-      await uploadBytes(storageRef, file);
+      fileToUpload = file;
     } else {
       return null;
     }
+
+    // 1. Kompresi Gambar Maksimal 300KB (0.3 MB)
+    if (fileToUpload.type.startsWith('image/')) {
+      if (!(fileToUpload instanceof File)) {
+        fileToUpload = new File([fileToUpload], fileName, { type: fileToUpload.type });
+      }
+      const options = {
+        maxSizeMB: 0.3, 
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      };
+      fileToUpload = await imageCompression(fileToUpload as File, options);
+    }
+
+    // 2. Kredensial Cloudinary
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
+    const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      console.error("Cloudinary env variables missing. Please set VITE_CLOUDINARY_CLOUD_NAME, VITE_CLOUDINARY_API_KEY, VITE_CLOUDINARY_API_SECRET");
+      return null;
+    }
+
+    // 3. Tanda Tangan Kriptografi (Signature) untuk Upload Aman
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const params: Record<string, string> = {
+      folder: bucket,
+      timestamp: timestamp,
+    };
+
+    const sortedKeys = Object.keys(params).sort();
+    const sortedParamsStr = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
+    const strToSign = sortedParamsStr + apiSecret;
     
-    const downloadUrl = await getDownloadURL(storageRef);
-    return downloadUrl;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(strToSign);
+    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // 4. Proses Upload ke Cloudinary
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp);
+    formData.append('signature', signature);
+    formData.append('folder', bucket);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error?.message || response.statusText);
+    }
+
+    return result.secure_url;
   } catch (err) {
-    console.error('[dbUploadFile] Exception during Firebase Storage upload:', err);
+    console.error('[dbUploadFile] Exception during Cloudinary upload:', err);
     return null;
   }
 }
