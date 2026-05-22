@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, User, Lock, LogIn, Loader2, ShieldCheck, Sparkles, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { db as firestoreDb } from '@/lib/firebase';
 import LoginLeftColumn from './components/LoginLeftColumn';
 import LoginRightColumn from './components/LoginRightColumn';
 
@@ -27,51 +29,55 @@ export default function SharedLogin() {
 
     setLoading(true);
     try {
-      // Simulate network delay for UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const { dbSelect } = await import('@/lib/db');
-      const users = await dbSelect<any>('users', { username: username.trim() });
+      // Step 1: Query Firestore directly for the user
+      console.log('[Login] Querying Firestore for username:', username.trim());
+      const colRef = collection(firestoreDb, 'users');
+      const q = query(colRef, where('username', '==', username.trim()));
+      const snapshot = await getDocs(q);
+      const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
       const user = users.length > 0 ? users[0] : null;
+      console.log('[Login] User found:', user ? 'yes' : 'no');
 
       if (!user) {
-        // Fallback for first-time setup
+        // Fallback: create admin account if credentials match defaults
         if (username.toLowerCase() === 'admin' && password === 'admin123') {
-           const { dbInsert } = await import('@/hooks/db-hooks');
-           
-           // Gunakan plain text sementara untuk fallback agar tidak error bcrypt
-           const password_hash = 'admin123'; 
-           
-           await dbInsert('users', {
-             username: 'admin',
-             password_hash,
-             role: 'admin',
-             name: 'Admin Utama',
-             createdAt: new Date()
-           });
-           
-           const authData = JSON.stringify({ role: 'admin', username: 'admin', name: 'Admin Utama' });
-           localStorage.setItem('admin_auth', authData);
-           toast.success('Selamat datang, Admin! (Sistem telah membuat akun default)');
-           navigate('/admin/');
-           return;
+          console.log('[Login] Creating default admin account...');
+          const docId = String(Date.now());
+          const docRef = doc(firestoreDb, 'users', docId);
+          await setDoc(docRef, {
+            id: docId,
+            username: 'admin',
+            password_hash: 'admin123',
+            role: 'admin',
+            name: 'Admin Utama',
+            created_at: new Date().toISOString()
+          });
+
+          const authData = JSON.stringify({ role: 'admin', username: 'admin', name: 'Admin Utama' });
+          localStorage.setItem('admin_auth', authData);
+          toast.success('Selamat datang, Admin! (Sistem telah membuat akun default)');
+          navigate('/admin/');
+          return;
         }
 
         toast.error('Pengguna tidak ditemukan!');
         return;
       }
 
+      // Step 2: Validate password
       let isPasswordValid = false;
-      if (user.password_hash) {
-        if (username.toLowerCase() === 'admin' && password === 'admin123') {
-           isPasswordValid = true;
-        } else {
-          // Bypass disabled or not admin
-          console.error("Non-admin passwords cannot be verified without bcrypt");
-        }
-      } else if (user.password) {
-        // Fallback for plain text passwords if any
-        isPasswordValid = (user.password === password);
+
+      // Check admin default credentials
+      if (username.toLowerCase() === 'admin' && password === 'admin123') {
+        isPasswordValid = true;
+      }
+      // Check plain text password_hash match
+      else if (user.password_hash && user.password_hash === password) {
+        isPasswordValid = true;
+      }
+      // Check plain text password match
+      else if (user.password && user.password === password) {
+        isPasswordValid = true;
       }
 
       if (!isPasswordValid) {
@@ -79,25 +85,25 @@ export default function SharedLogin() {
         return;
       }
 
+      // Step 3: Route based on role
       const role = user.role || 'user';
       const authData = JSON.stringify({ role, username: user.username, name: user.name, whatsapp: user.whatsapp });
-      
-      // Dynamically save the session in localStorage and route based on the account's role
+
       if (role === 'admin') {
         localStorage.setItem('admin_auth', authData);
         toast.success(`Selamat datang, ${user.username}!`);
         navigate('/admin/');
       } else if (role === 'user') {
         localStorage.setItem('kitchen_auth', authData);
-        localStorage.setItem('admin_auth', authData); // Also set for general session guards if needed
+        localStorage.setItem('admin_auth', authData);
         toast.success(`Selamat datang Koki ${user.username}!`);
         navigate('/kitchen/');
       } else {
         toast.error('Akses ditolak. Peran pengguna tidak dikenali.');
       }
     } catch (error: any) {
-      toast.error('Terjadi Kesalahan: ' + (error?.message || 'Unknown error'));
-      console.error('[SharedLogin]', error);
+      console.error('[SharedLogin] Full error:', error);
+      toast.error('Terjadi Kesalahan: ' + (error?.code || '') + ' ' + (error?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
