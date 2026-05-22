@@ -47,15 +47,15 @@ export default function KitchenTopbar() {
   };
 
   return (
-    <header className="w-full shrink-0 border-b border-orange-900/30 bg-background/80 backdrop-blur-2xl px-6 py-4 flex items-center justify-between gap-4 relative shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-10 transition-colors">
+    <header className="w-full shrink-0 border-b border-primary/20 bg-background/80 backdrop-blur-2xl px-6 py-4 flex items-center justify-between gap-4 relative shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-10 transition-colors">
       
       {/* Glow efek dekoratif */}
-      <div className="absolute top-0 left-[10%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-50"></div>
+      <div className="absolute top-0 left-[10%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
       
       {/* Brand/Store Info */}
       <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center border border-orange-400/30 shadow-[0_0_15px_rgba(249,115,22,0.3)] shrink-0 overflow-hidden">
-          <img src="/logo.png" alt="MesenAe Logo" className="w-9 h-9 object-contain drop-shadow-md brightness-0 invert" />
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center border border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.3)] shrink-0 overflow-hidden">
+          <img src={storeSettings?.logo || "/logo.png"} alt="Store Logo" className={cn("w-10 h-10 object-contain drop-shadow-md", !storeSettings?.logo && "brightness-0 invert p-1")} />
         </div>
         <div className="flex flex-col justify-center">
           <h2 className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70 tracking-tight leading-none uppercase">
@@ -78,12 +78,12 @@ export default function KitchenTopbar() {
         
         {/* User Profile Badge */}
         <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl border border-border bg-muted/50 shadow-inner transition-colors">
-          <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-500 font-black text-sm flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 text-primary font-black text-sm flex items-center justify-center">
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="text-left pr-2 leading-tight">
             <p className="text-[11px] font-extrabold text-foreground">{displayName}</p>
-            <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">User</p>
+            <p className="text-[9px] font-bold text-primary uppercase tracking-widest mt-0.5">User</p>
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { isDbConfigured } from "./lib/db";
 
 import Home from "./Home";
+import { useThemeColor } from "./hooks/use-theme-color";
 
 const SharedLogin = lazy(() => import("./login/Login"));
 
@@ -30,6 +31,8 @@ function IndexRoute() {
 }
 
 const App = () => {
+  useThemeColor(); // Activate global theme color sync
+
   return (
 
       <TooltipProvider>

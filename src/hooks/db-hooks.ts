@@ -20,7 +20,7 @@ export interface TransactionItemRecord { id?: string | number; transactionId: st
 export interface StoreSettings { id?: string | number; storeName: string; address: string; phone: string; receiptFooter: string; onboardingDone: boolean; themeColor?: string; logo?: string; tables?: string[]; promoBanners?: any[]; }
 export interface User { id?: string | number; username: string; password_hash: string; role: string; name?: string; whatsapp?: string; }
 export interface Voucher { id?: string | number; code: string; type: string; value: number; isActive: boolean; applicableProductIds?: (string | number)[]; validUntil: Date | string | null; }
-export interface Banner { id?: string | number; title: string; description?: string; imageUrl: string; isActive: boolean; link?: string; }
+export interface Banner { id?: string | number; title: string; description?: string; imageUrl: string; isActive: boolean; link?: string; overlayImageUrl?: string | null; titlePos?: { x: number, y: number }; descPos?: { x: number, y: number }; overlayPos?: { x: number, y: number }; }
 
 // ── Table name mapping (camelCase → snake_case) ──────────────
 const TABLE_MAP: Record<string, string> = {

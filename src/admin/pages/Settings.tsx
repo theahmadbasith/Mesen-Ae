@@ -232,8 +232,16 @@ export default function Pengaturan() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('File harus berupa gambar'); return; }
-    try { setStoreLogo(await compressImage(file)); }
-    catch { toast.error('Gagal memproses gambar'); }
+    toast.loading('Mengompres logo...', { id: 'compress-logo' });
+    try { 
+      setStoreLogo(await compressImage(file)); 
+      toast.dismiss('compress-logo');
+      toast.success('Logo berhasil dikompres');
+    }
+    catch { 
+      toast.dismiss('compress-logo');
+      toast.error('Gagal memproses gambar'); 
+    }
     if (logoInputRef.current) logoInputRef.current.value = '';
   };
 
@@ -550,7 +558,7 @@ export default function Pengaturan() {
             {/* Auth info banner */}
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/15 text-xs text-primary">
               <Shield className="w-4 h-4 shrink-0" />
-              <span>Password dienkripsi SHA-256. Akses dikontrol per peran.</span>
+              <span>Password dienkripsi kuat menggunakan Bcrypt-TS. Akses dikontrol per peran.</span>
             </div>
 
             {!users?.length ? (

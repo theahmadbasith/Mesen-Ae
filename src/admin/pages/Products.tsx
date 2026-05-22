@@ -77,12 +77,20 @@ export default function Produk() {
     setDialogOpen(true);
   };
 
-  const handlePhotoFile = (file: File) => {
+  const handlePhotoFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('File harus berupa gambar');
       return;
     }
-    setCropFile(file);
+    toast.loading('Mengompres gambar...', { id: 'compress-img' });
+    try {
+      const compressed = await compressImage(file);
+      setCropFile(new File([compressed], file.name, { type: file.type }));
+      toast.dismiss('compress-img');
+    } catch {
+      toast.dismiss('compress-img');
+      toast.error('Gagal memproses gambar');
+    }
   };
 
   const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {

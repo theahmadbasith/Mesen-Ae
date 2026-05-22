@@ -2,7 +2,7 @@ import { useDbQuery, dbUpdate, dbUploadFile, dbDeleteFile } from '@/hooks/db-hoo
 import { type Voucher, type Product, type StoreSettings } from '@/hooks/db-hooks';
 import { useState, useRef } from 'react';
 import { 
-  Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Gift, Clock
+  Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Gift, Clock, Move
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,29 @@ export interface PromoBanner {
   voucherId?: string | number;
   productId?: string | number;
   imageUrl?: string | null;
+  overlayImageUrl?: string | null;
+  titlePos?: { x: number, y: number };
+  descPos?: { x: number, y: number };
+  overlayPos?: { x: number, y: number };
   isActive: boolean;
 }
 
 interface BannerSettingsTabProps {
   vouchers: Voucher[];
   products: Product[];
+}
+
+function DraggableItem({ pos, isDragging, onPointerDown, children, type }: any) {
+  const transform = type === 'overlay' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)';
+  return (
+    <div 
+      style={{ position: 'absolute', left: `${pos.x}%`, top: `${pos.y}%`, transform, cursor: isDragging ? 'grabbing' : 'grab' }}
+      onPointerDown={onPointerDown}
+      className={cn("select-none z-40 touch-none", isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-blue-900/50 z-50 rounded-lg scale-105 transition-transform duration-75")}
+    >
+      {children}
+    </div>
+  )
 }
 
 export default function BannerSettingsTab({ vouchers, products }: BannerSettingsTabProps) {
@@ -47,7 +64,16 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [bannerIsActive, setBannerIsActive] = useState(true);
 
+  // Drag and drop states
+  const [overlayImage, setOverlayImage] = useState<string | null>(null);
+  const [titlePos, setTitlePos] = useState({ x: 8, y: 30 });
+  const [descPos, setDescPos] = useState({ x: 8, y: 70 });
+  const [overlayPos, setOverlayPos] = useState({ x: 85, y: 50 });
+  const [dragTarget, setDragTarget] = useState<'title' | 'desc' | 'overlay' | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const overlayInputRef = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const storeSettingsList = useDbQuery<StoreSettings>('storeSettings');
   const storeSettings = storeSettingsList?.[0] || null;
@@ -60,6 +86,22 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     );
   }
 
+  // Handle Drag & Drop
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragTarget || !previewRef.current) return;
+    const rect = previewRef.current.getBoundingClientRect();
+    let x = ((e.clientX - rect.left) / rect.width) * 100;
+    let y = ((e.clientY - rect.top) / rect.height) * 100;
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+
+    if (dragTarget === 'title') setTitlePos({ x, y });
+    else if (dragTarget === 'desc') setDescPos({ x, y });
+    else if (dragTarget === 'overlay') setOverlayPos({ x, y });
+  };
+
+  const handlePointerUp = () => setDragTarget(null);
+
   const openAddBanner = () => {
     setEditBanner(null);
     setBannerType('custom');
@@ -68,6 +110,10 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     setBannerVoucherId('');
     setBannerProductId('');
     setBannerImage(null);
+    setOverlayImage(null);
+    setTitlePos({ x: 8, y: 30 });
+    setDescPos({ x: 8, y: 70 });
+    setOverlayPos({ x: 85, y: 50 });
     setBannerIsActive(true);
     setBannerDialogOpen(true);
   };
@@ -80,6 +126,10 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     setBannerVoucherId(b.voucherId?.toString() || '');
     setBannerProductId(b.productId?.toString() || '');
     setBannerImage(b.imageUrl || null);
+    setOverlayImage(b.overlayImageUrl || null);
+    setTitlePos(b.titlePos ?? { x: 8, y: 30 });
+    setDescPos(b.descPos ?? { x: 8, y: 70 });
+    setOverlayPos(b.overlayPos ?? { x: 85, y: 50 });
     setBannerIsActive(b.isActive);
     setBannerDialogOpen(true);
   };
@@ -91,6 +141,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
       setBannerTitle(`Promo Spesial ${v.code}`);
       setBannerDesc(`Dapatkan diskon ${v.type === 'percentage' ? `${v.value}%` : FORMAT_IDR(v.value)} untuk pesanan Anda menggunakan kode promo ini!`);
       setBannerImage(null);
+      setOverlayImage(null);
     }
   };
 
@@ -101,23 +152,34 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
       setBannerTitle(`Coba Menu Baru: ${p.name}!`);
       setBannerDesc(`Nikmati sensasi kelezatan menu rekomendasi ${p.name} hari ini, hanya seharga ${FORMAT_IDR(p.price)}!`);
       setBannerImage(p.photo || null);
+      setOverlayImage(null);
     }
   };
 
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>, isOverlay: boolean = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast.error('File harus berupa gambar');
       return;
     }
+    
+    toast.loading('Mengompres gambar...', { id: 'compress-img' });
     try {
       const compressed = await compressImage(file);
-      setBannerImage(compressed);
+      if (isOverlay) {
+        setOverlayImage(compressed);
+      } else {
+        setBannerImage(compressed);
+      }
+      toast.dismiss('compress-img');
+      toast.success('Gambar berhasil dikompres');
     } catch {
+      toast.dismiss('compress-img');
       toast.error('Gagal memproses gambar');
     }
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (isOverlay && overlayInputRef.current) overlayInputRef.current.value = '';
+    if (!isOverlay && fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSaveBanner = async () => {
@@ -134,14 +196,28 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     
     let finalImageUrl = bannerImage;
     if (bannerImage && bannerImage.startsWith('data:image')) {
-      toast.loading('Mengunggah gambar banner...', { id: 'upload-banner' });
+      toast.loading('Mengunggah gambar latar...', { id: 'upload-bg' });
       try {
-        const url = await dbUploadFile('banners', `banner-${Date.now()}.jpg`, bannerImage);
+        const url = await dbUploadFile('banners', `banner-bg-${Date.now()}.jpg`, bannerImage);
         if (url) finalImageUrl = url;
-        toast.dismiss('upload-banner');
+        toast.dismiss('upload-bg');
       } catch (e) {
-        toast.dismiss('upload-banner');
-        toast.error('Gagal mengunggah gambar');
+        toast.dismiss('upload-bg');
+        toast.error('Gagal mengunggah gambar latar');
+        return;
+      }
+    }
+
+    let finalOverlayUrl = overlayImage;
+    if (overlayImage && overlayImage.startsWith('data:image')) {
+      toast.loading('Mengunggah foto overlay...', { id: 'upload-overlay' });
+      try {
+        const url = await dbUploadFile('banners', `banner-overlay-${Date.now()}.png`, overlayImage);
+        if (url) finalOverlayUrl = url;
+        toast.dismiss('upload-overlay');
+      } catch (e) {
+        toast.dismiss('upload-overlay');
+        toast.error('Gagal mengunggah foto overlay');
         return;
       }
     }
@@ -154,17 +230,20 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
       voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) || bannerVoucherId : undefined,
       productId: bannerType === 'menu' ? Number(bannerProductId) || bannerProductId : undefined,
       imageUrl: finalImageUrl,
+      overlayImageUrl: finalOverlayUrl,
+      titlePos,
+      descPos,
+      overlayPos,
       isActive: bannerIsActive
     };
 
     let updatedBanners: PromoBanner[];
     if (editBanner) {
       if (editBanner.imageUrl && finalImageUrl && editBanner.imageUrl !== finalImageUrl) {
-        // Only delete the old banner image if it's NOT a product photo reused by reference.
-        // Product photos have a different structure, but if it was uniquely uploaded as a banner:
-        if (editBanner.imageUrl.includes('banners')) {
-          await dbDeleteFile(editBanner.imageUrl);
-        }
+        if (editBanner.imageUrl.includes('banners')) await dbDeleteFile(editBanner.imageUrl);
+      }
+      if (editBanner.overlayImageUrl && finalOverlayUrl && editBanner.overlayImageUrl !== finalOverlayUrl) {
+        if (editBanner.overlayImageUrl.includes('banners')) await dbDeleteFile(editBanner.overlayImageUrl);
       }
       updatedBanners = currentBanners.map(b => b.id === editBanner.id ? bannerData : b);
     } else {
@@ -192,6 +271,9 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
         if (bannerToDelete?.imageUrl && bannerToDelete.imageUrl.includes('banners')) {
           await dbDeleteFile(bannerToDelete.imageUrl);
         }
+        if (bannerToDelete?.overlayImageUrl && bannerToDelete.overlayImageUrl.includes('banners')) {
+          await dbDeleteFile(bannerToDelete.overlayImageUrl);
+        }
         await dbUpdate('storeSettings', storeSettings.id, {
           ...storeSettings,
           promoBanners: updatedBanners
@@ -211,10 +293,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
     const updatedBanners = currentBanners.map(b => b.id === bId ? { ...b, isActive: !currentActive } : b);
     
     try {
-      await dbUpdate('storeSettings', storeSettings.id, {
-        ...storeSettings,
-        promoBanners: updatedBanners
-      });
+      await dbUpdate('storeSettings', storeSettings.id, { ...storeSettings, promoBanners: updatedBanners });
       toast.success(!currentActive ? 'Banner penawaran diaktifkan' : 'Banner penawaran dinonaktifkan');
     } catch (err) {
       toast.error('Gagal mengubah status banner');
@@ -222,6 +301,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
   };
 
   const bannerList: PromoBanner[] = storeSettings?.promoBanners || [];
+  const currentBanners: PromoBanner[] = storeSettings?.promoBanners || [];
 
   return (
     <div className="space-y-6">
@@ -253,28 +333,35 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
             <Card key={b.id} className="border border-border/60 rounded-[1.5rem] overflow-hidden flex flex-col bg-card hover:shadow-md transition-shadow">
               <div className="p-5 flex-1 flex flex-col md:flex-row gap-5">
                 
-                {/* Visual Preview Card (Exactly matching Customer Mobile Banner Style) */}
-                <div className="w-full md:w-[220px] aspect-[2/1] rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-4 relative overflow-hidden flex flex-col justify-between shadow-sm shrink-0">
+                {/* Visual Preview Card */}
+                <div className="w-full md:w-[220px] aspect-[2/1] rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-4 relative overflow-hidden shadow-sm shrink-0">
                   {b.imageUrl ? (
                     <div className="absolute inset-0 z-0">
-                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover opacity-35" />
+                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover opacity-50" />
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-900/95 to-indigo-900/40" />
                     </div>
                   ) : (
                     <Gift size={80} className="absolute -right-3 -bottom-3 text-white/15 rotate-[-15deg] z-0" />
                   )}
                   
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <span className="bg-white/20 text-[8px] px-2 py-0.5 rounded backdrop-blur-md font-bold inline-block uppercase tracking-wider border border-white/10 mb-1">
+                  {b.overlayImageUrl && (
+                    <div style={{ position: 'absolute', left: `${b.overlayPos?.x ?? 85}%`, top: `${b.overlayPos?.y ?? 50}%`, transform: 'translate(-50%, -50%)', zIndex: 5 }}>
+                       <img src={b.overlayImageUrl} className="w-16 h-auto object-contain drop-shadow-lg" />
+                    </div>
+                  )}
+
+                  <div style={{ position: 'absolute', left: `${b.titlePos?.x ?? 8}%`, top: `${b.titlePos?.y ?? 30}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[80%] max-w-[200px]">
+                     <span className="bg-white/20 text-[8px] px-2 py-0.5 rounded backdrop-blur-md font-bold inline-block uppercase tracking-wider border border-white/10 mb-1">
                         {b.type === 'voucher' ? 'Promo' : b.type === 'menu' ? 'Menu Baru' : 'Spesial'}
-                      </span>
-                      <h4 className="font-extrabold text-sm line-clamp-1 leading-tight">{b.title}</h4>
-                    </div>
-                    <p className="text-[10px] text-blue-50/90 line-clamp-2 leading-relaxed mt-1 font-medium">{b.description}</p>
-                    <div className="mt-2 text-[9px] bg-white text-blue-600 font-bold px-3 py-1 rounded-md self-start">
-                      Cek Katalog
-                    </div>
+                     </span>
+                     <h4 className="font-extrabold text-sm line-clamp-1 leading-tight">{b.title}</h4>
+                  </div>
+                  
+                  <div style={{ position: 'absolute', left: `${b.descPos?.x ?? 8}%`, top: `${b.descPos?.y ?? 70}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[80%] max-w-[200px]">
+                     <p className="text-[10px] text-blue-50/90 line-clamp-2 leading-relaxed font-medium">{b.description}</p>
+                     <div className="mt-1 text-[9px] bg-white text-blue-600 font-bold px-2 py-0.5 rounded self-start inline-block">
+                        Lihat
+                     </div>
                   </div>
                 </div>
 
@@ -289,14 +376,13 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
                         {b.isActive ? 'Tampil' : 'Arsip'}
                       </Badge>
                       <Badge variant="secondary" className="text-[9px] font-bold px-2 py-0.5 rounded-md">
-                        {b.type === 'voucher' ? 'Voucher Link' : b.type === 'menu' ? 'Produk Link' : 'Custom'}
+                        {b.type === 'voucher' ? 'Voucher' : b.type === 'menu' ? 'Produk' : 'Custom'}
                       </Badge>
                     </div>
                     <h4 className="font-bold text-base text-foreground leading-snug">{b.title}</h4>
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">{b.description}</p>
                   </div>
 
-                  {/* Controls Footer */}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Aktif</span>
@@ -326,7 +412,7 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
 
       {/* Modal Add/Edit Banner Penawaran */}
       <Dialog open={bannerDialogOpen} onOpenChange={setBannerDialogOpen}>
-        <DialogContent className="max-w-[500px] rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl">
+        <DialogContent className="max-w-[700px] w-[95vw] rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl">
           <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10">
             <DialogTitle className="text-xl font-extrabold flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
@@ -336,143 +422,183 @@ export default function BannerSettingsTab({ vouchers, products }: BannerSettings
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-            {/* Tipe Penawaran Selection */}
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe Konten Banner <span className="text-destructive">*</span></Label>
-              <Select value={bannerType} onValueChange={(val: 'voucher' | 'menu' | 'custom') => {
-                setBannerType(val);
-                if (val === 'custom') {
-                  setBannerVoucherId('');
-                  setBannerProductId('');
-                }
-              }}>
-                <SelectTrigger className="h-12 bg-background rounded-xl font-semibold focus:ring-1 focus:ring-primary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="voucher" className="font-medium">Link Kode Promo / Voucher</SelectItem>
-                  <SelectItem value="menu" className="font-medium">Link Menu Baru / Unggulan</SelectItem>
-                  <SelectItem value="custom" className="font-medium">Kustom Bebas (Tulisan & Gambar)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Voucher Dropdown (If Voucher Link selected) */}
-            {bannerType === 'voucher' && (
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Voucher Promo <span className="text-destructive">*</span></Label>
-                <Select value={bannerVoucherId} onValueChange={handleBannerVoucherChange}>
-                  <SelectTrigger className="h-12 bg-background rounded-xl font-semibold focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="Pilih voucher..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {vouchers.map(v => (
-                      <SelectItem key={v.id} value={v.id!.toString()} className="font-medium">
-                        {v.code} - ({v.type === 'percentage' ? `${v.value}%` : FORMAT_IDR(v.value)})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div 
+            className="px-6 py-5 overflow-y-auto custom-scrollbar" 
+            style={{ maxHeight: 'calc(100vh - 180px)' }}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            
+            {/* INTERACTIVE PREVIEW */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-2">
+                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Live Preview & Editor</Label>
+                 <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                   <Move className="w-3 h-3" /> Sentuh & Geser Elemen
+                 </span>
               </div>
-            )}
+              <div 
+                ref={previewRef}
+                className="w-full aspect-[2/1] sm:aspect-[21/9] rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white relative overflow-hidden shadow-inner border border-border/50"
+              >
+                {bannerImage && !bannerImage.startsWith('preset:') ? (
+                  <div className="absolute inset-0 z-0 select-none pointer-events-none">
+                    <img src={bannerImage} alt="Bg" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40" />
+                  </div>
+                ) : (
+                  <Gift size={120} className="absolute -right-2 -bottom-2 text-white/10 rotate-[-15deg] z-0 select-none pointer-events-none" />
+                )}
 
-            {/* Product Dropdown (If Product Link selected) */}
-            {bannerType === 'menu' && (
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Menu Unggulan <span className="text-destructive">*</span></Label>
-                <Select value={bannerProductId} onValueChange={handleBannerProductChange}>
-                  <SelectTrigger className="h-12 bg-background rounded-xl font-semibold focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="Pilih produk..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {products.map(p => (
-                      <SelectItem key={p.id} value={p.id!.toString()} className="font-medium">
-                        {p.name} - ({FORMAT_IDR(p.price)})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Title Input */}
-            <div className="space-y-2 group">
-              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Judul Penawaran <span className="text-destructive">*</span></Label>
-              <Input 
-                value={bannerTitle} 
-                onChange={e => setBannerTitle(e.target.value)} 
-                placeholder="Contoh: Diskon Kopi Aren 20%" 
-                maxLength={45}
-                className="h-12 bg-background rounded-xl font-semibold focus-visible:ring-1 focus-visible:ring-primary" 
-              />
-            </div>
-
-            {/* Description Textarea */}
-            <div className="space-y-2 group">
-              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Deskripsi Penawaran <span className="text-destructive">*</span></Label>
-              <textarea 
-                value={bannerDesc} 
-                onChange={e => setBannerDesc(e.target.value)} 
-                placeholder="Tuliskan copywriting penawaran menarik di sini..." 
-                rows={3}
-                maxLength={120}
-                className="w-full p-3.5 bg-background rounded-xl border border-input focus:outline-none focus:ring-1 focus:ring-primary text-sm font-medium resize-none shadow-sm"
-              />
-            </div>
-
-            {/* Custom Image Upload */}
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                {bannerType === 'custom' ? 'Unggah Gambar Latar (Kustom)' : 'Gambar Banner (Otomatis/Kustom)'}
-              </Label>
-              
-              <div className="flex gap-4 items-center">
-                {/* Thumbnail Preview */}
-                <div className="w-24 h-16 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0 relative">
-                  {bannerImage ? (
-                    <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-6 h-6 text-muted-foreground/40" />
-                  )}
-                </div>
-
-                <div className="flex-1 space-y-1.5">
-                  <input 
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageSelect}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="rounded-xl text-xs font-bold h-9 border-border/60 hover:bg-muted"
-                    onClick={() => fileInputRef.current?.click()}
+                {/* OVERLAY DRAG */}
+                {overlayImage && (
+                  <DraggableItem 
+                    pos={overlayPos} 
+                    isDragging={dragTarget === 'overlay'} 
+                    onPointerDown={(e: any) => { e.currentTarget.setPointerCapture(e.pointerId); setDragTarget('overlay'); }}
+                    type="overlay"
                   >
-                    Pilih File Gambar
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground">Rasio disarankan 2:1. Maksimal 1MB. Format PNG, JPG, WebP.</p>
-                </div>
+                     <img src={overlayImage} className="w-24 sm:w-32 h-auto object-contain drop-shadow-2xl pointer-events-none" alt="Overlay" />
+                  </DraggableItem>
+                )}
+
+                {/* TITLE DRAG */}
+                <DraggableItem 
+                  pos={titlePos} 
+                  isDragging={dragTarget === 'title'} 
+                  onPointerDown={(e: any) => { e.currentTarget.setPointerCapture(e.pointerId); setDragTarget('title'); }}
+                  type="title"
+                >
+                  <div className="w-[180px] sm:w-[280px]">
+                    <span className="text-[8px] sm:text-[10px] px-2 py-0.5 rounded-md backdrop-blur-md font-bold mb-1.5 inline-block uppercase tracking-wider bg-white/20 border border-white/10 shadow-sm pointer-events-none">
+                      Penawaran Spesial
+                    </span>
+                    <h4 className="font-extrabold text-base sm:text-2xl leading-tight line-clamp-2 drop-shadow-md pointer-events-none">
+                      {bannerTitle || 'Judul Penawaran'}
+                    </h4>
+                  </div>
+                </DraggableItem>
+
+                {/* DESC DRAG */}
+                <DraggableItem 
+                  pos={descPos} 
+                  isDragging={dragTarget === 'desc'} 
+                  onPointerDown={(e: any) => { e.currentTarget.setPointerCapture(e.pointerId); setDragTarget('desc'); }}
+                  type="desc"
+                >
+                  <div className="w-[180px] sm:w-[280px]">
+                    <p className="text-[10px] sm:text-xs text-slate-100 font-medium line-clamp-3 leading-relaxed drop-shadow-sm mb-2 pointer-events-none">
+                      {bannerDesc || 'Ketik deskripsi menarik untuk mengundang pelanggan...'}
+                    </p>
+                    <button className="bg-white text-slate-900 text-[9px] sm:text-[11px] font-bold px-3 py-1.5 sm:py-2 rounded-lg shadow-lg pointer-events-none">
+                      Lihat Sekarang
+                    </button>
+                  </div>
+                </DraggableItem>
+
               </div>
             </div>
 
-            {/* Banner Active Switch */}
-            <div className="flex items-center justify-between p-4 bg-muted/30 border border-border/50 rounded-xl">
-              <div>
-                <Label htmlFor="banner-active" className="text-sm font-bold cursor-pointer">Status Tampilkan</Label>
-                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Tampilkan banner penawaran ini di beranda customer.</p>
-              </div>
-              <Switch id="banner-active" checked={bannerIsActive} onCheckedChange={setBannerIsActive} className="data-[state=checked]:bg-green-500" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-4">
+                  {/* Tipe Penawaran */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe Konten <span className="text-destructive">*</span></Label>
+                    <Select value={bannerType} onValueChange={(val: 'voucher' | 'menu' | 'custom') => {
+                      setBannerType(val);
+                      if (val === 'custom') { setBannerVoucherId(''); setBannerProductId(''); }
+                    }}>
+                      <SelectTrigger className="h-11 bg-background rounded-xl font-semibold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="voucher" className="font-medium">Link Kode Promo</SelectItem>
+                        <SelectItem value="menu" className="font-medium">Link Menu Baru</SelectItem>
+                        <SelectItem value="custom" className="font-medium">Kustom Bebas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {bannerType === 'voucher' && (
+                    <div className="space-y-2">
+                      <Select value={bannerVoucherId} onValueChange={handleBannerVoucherChange}>
+                        <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih voucher..." /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {vouchers.map(v => (
+                            <SelectItem key={v.id} value={v.id!.toString()} className="font-medium">{v.code}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {bannerType === 'menu' && (
+                    <div className="space-y-2">
+                      <Select value={bannerProductId} onValueChange={handleBannerProductChange}>
+                        <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {products.map(p => (
+                            <SelectItem key={p.id} value={p.id!.toString()} className="font-medium">{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Title & Desc */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Judul Penawaran <span className="text-destructive">*</span></Label>
+                    <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} maxLength={45} className="h-11 bg-background rounded-xl font-semibold" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Deskripsi <span className="text-destructive">*</span></Label>
+                    <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={2} maxLength={120} className="w-full p-3 bg-background rounded-xl border border-input focus:outline-none focus:ring-1 focus:ring-primary text-sm font-medium resize-none" />
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                  {/* Background Upload */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Latar Belakang Banner</Label>
+                    <div className="flex gap-3 items-center">
+                      <div className="w-16 h-12 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0">
+                        {bannerImage ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
+                      </div>
+                      <div className="flex-1">
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, false)} />
+                        <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-border/60" onClick={() => fileInputRef.current?.click()}>Ubah Latar</Button>
+                        <p className="text-[9px] text-muted-foreground mt-1">Rasio disarankan 2:1 (Opsional).</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overlay Upload */}
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Foto Produk (PNG Transparan)</Label>
+                    <div className="flex gap-3 items-center">
+                      <div className="w-16 h-16 rounded-lg border border-dashed border-border/60 bg-muted/10 flex items-center justify-center overflow-hidden shrink-0">
+                        {overlayImage ? <img src={overlayImage} alt="Overlay" className="w-full h-full object-contain" /> : <Gift className="w-5 h-5 text-muted-foreground/40" />}
+                      </div>
+                      <div className="flex-1">
+                        <input ref={overlayInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={e => handleImageSelect(e, true)} />
+                        <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-primary/30 text-primary hover:bg-primary/10" onClick={() => overlayInputRef.current?.click()}>Upload Overlay PNG</Button>
+                        <p className="text-[9px] text-muted-foreground mt-1">Akan ditindihkan di atas latar banner.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/30 border border-border/50 rounded-xl mt-4">
+                    <Label htmlFor="banner-active" className="text-sm font-bold cursor-pointer">Tampilkan Banner</Label>
+                    <Switch id="banner-active" checked={bannerIsActive} onCheckedChange={setBannerIsActive} className="data-[state=checked]:bg-green-500 scale-90" />
+                  </div>
+               </div>
             </div>
 
           </div>
 
           <DialogFooter className="px-6 py-4 border-t border-border/50 bg-muted/10 gap-2 sm:gap-0">
-            <Button variant="outline" className="h-11 rounded-xl font-bold border-border/60 hover:bg-muted" onClick={() => setBannerDialogOpen(false)}>
-              Batal
-            </Button>
+            <Button variant="outline" className="h-11 rounded-xl font-bold border-border/60 hover:bg-muted" onClick={() => setBannerDialogOpen(false)}>Batal</Button>
             <Button 
               className="h-11 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-md active:scale-[0.98] transition-all px-8" 
               onClick={handleSaveBanner} 
