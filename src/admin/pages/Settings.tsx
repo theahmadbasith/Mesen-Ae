@@ -616,9 +616,8 @@ export default function Pengaturan() {
           </Section>
         )}
 
-        {/* ══════════════ BANNER ══════════════ */}
         {activeTab === 'banner' && (
-          <BannerSettingsTab vouchers={vouchers} products={products} />
+          <BannerSettingsTab />
         )}
 
         {/* ══════════════ TAMPILAN ══════════════ */}

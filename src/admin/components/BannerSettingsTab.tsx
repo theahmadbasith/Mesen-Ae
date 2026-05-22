@@ -36,10 +36,6 @@ export interface PromoBanner {
   isActive: boolean;
 }
 
-interface BannerSettingsTabProps {
-  vouchers: Voucher[];
-  products: Product[];
-}
 
 function DraggableItem({ pos, isDragging, onPointerDown, children, type }: any) {
   const transform = type === 'overlay' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)';
@@ -54,7 +50,9 @@ function DraggableItem({ pos, isDragging, onPointerDown, children, type }: any) 
   )
 }
 
-export default function BannerSettingsTab({ vouchers, products }: BannerSettingsTabProps) {
+export default function BannerSettingsTab() {
+  const vouchers = (useDbQuery<Voucher>('vouchers') as Voucher[]) ?? [];
+  const products = (useDbQuery<Product>('products') as Product[]) ?? [];
   const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
   const [deleteBannerId, setDeleteBannerId] = useState<string | number | null>(null);
   const [editBanner, setEditBanner] = useState<PromoBanner | null>(null);
