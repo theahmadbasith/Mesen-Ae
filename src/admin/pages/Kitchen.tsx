@@ -28,7 +28,7 @@ function KitchenItemsList({ transactionId }: { transactionId: number }) {
           index !== items.length - 1 && "border-b border-dashed border-border/60"
         )}>
           {/* Quantity Badge */}
-          <div className="bg-foreground text-background font-black text-sm w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+          <div className="bg-primary/10 text-primary border border-primary/20 font-black text-sm w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm mt-0.5">
             {item.quantity}
           </div>
           
@@ -44,7 +44,7 @@ function KitchenItemsList({ transactionId }: { transactionId: number }) {
             
             {item.notes && (
               <div className="inline-flex mt-1.5">
-                <span className="text-[11px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/50 dark:text-amber-400 px-2 py-1 rounded-md leading-tight border border-amber-200 dark:border-amber-900">
+                <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded-md leading-tight border border-amber-200">
                   📝 {item.notes}
                 </span>
               </div>
@@ -100,7 +100,7 @@ export default function Kitchen() {
       case 'diproses': 
         return { 
           label: 'Baru Masuk', 
-          badge: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+          badge: 'bg-yellow-100 text-yellow-700 border-yellow-200',
           btn: 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-yellow-500/20',
           action: 'Mulai Masak',
           icon: <ChefHat className="w-4 h-4 mr-2" />
@@ -108,7 +108,7 @@ export default function Kitchen() {
       case 'dimasak': 
         return { 
           label: 'Sedang Dimasak', 
-          badge: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 animate-pulse',
+          badge: 'bg-orange-100 text-orange-700 border-orange-200 animate-pulse',
           btn: 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20',
           action: 'Selesai Dimasak',
           icon: <Timer className="w-4 h-4 mr-2" />
@@ -116,7 +116,7 @@ export default function Kitchen() {
       case 'disiapkan': 
         return { 
           label: 'Tahap Penyajian', 
-          badge: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
+          badge: 'bg-purple-100 text-purple-700 border-purple-200',
           btn: 'bg-purple-500 hover:bg-purple-600 text-white shadow-purple-500/20',
           action: 'Pesanan Siap',
           icon: <UtensilsCrossed className="w-4 h-4 mr-2" />
@@ -124,7 +124,7 @@ export default function Kitchen() {
       case 'siap': 
         return { 
           label: 'Siap Diantar', 
-          badge: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+          badge: 'bg-green-100 text-green-700 border-green-200',
           btn: 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20',
           action: 'Tandai Diantar',
           icon: <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -197,8 +197,8 @@ export default function Kitchen() {
                     
                     <div className="text-right flex flex-col items-end">
                       <div className={cn(
-                        "flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md mb-2 border",
-                        isLate ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30" : "bg-background border-border/50 text-muted-foreground"
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border shrink-0",
+                        isLate ? "bg-red-50 text-red-600 border-red-200" : "bg-muted border-border/50 text-muted-foreground"
                       )}>
                         <Clock className="w-3.5 h-3.5" />
                         {diffMins} mnt lalu

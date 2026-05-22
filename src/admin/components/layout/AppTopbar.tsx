@@ -16,7 +16,8 @@ import {
   Ticket, 
   FileText, 
   Settings,
-  Menu
+  Menu,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -148,6 +149,13 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
         title: 'QR Code Meja',
         description: 'Unduh dan kelola kode QR untuk pemesanan mandiri.',
         icon: <QrCode className="w-5 h-5 text-primary" />
+      };
+    }
+    if (pathname.includes('/admin/banner')) {
+      return {
+        title: 'Banner Promo',
+        description: 'Kelola banner dan penawaran menarik di halaman pelanggan.',
+        icon: <ImageIcon className="w-5 h-5 text-primary" />
       };
     }
     if (pathname.includes('/admin/vouchers')) {

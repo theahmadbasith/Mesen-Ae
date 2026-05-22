@@ -178,9 +178,9 @@ export default function KitchenReceipt({ open, onClose, transaction, items, stor
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-slate-50 dark:bg-slate-900 border-none">
+      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-slate-50 border-none">
         <DialogHeader className="mb-2">
-          <DialogTitle className="text-center text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
+          <DialogTitle className="text-center text-slate-800 flex items-center justify-center gap-2">
             <ChefHat className="text-orange-500 w-6 h-6" />
             Tiket Dapur
           </DialogTitle>
@@ -268,32 +268,32 @@ export default function KitchenReceipt({ open, onClose, transaction, items, stor
         <div className="grid grid-cols-3 gap-3 mt-4">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center gap-2 h-auto py-3.5 bg-white dark:bg-slate-800 hover:bg-slate-50 border-slate-200 dark:border-slate-700" 
+            className="flex flex-col items-center gap-2 h-auto py-3.5 bg-white hover:bg-slate-50 border-slate-200" 
             onClick={handleDownload} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Download className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Unduh</span>
+            {generating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Download className="w-5 h-5 text-slate-600" />}
+            <span className="text-[11px] font-medium text-slate-600">Unduh</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center gap-2 h-auto py-3.5 bg-white dark:bg-slate-800 hover:bg-slate-50 border-slate-200 dark:border-slate-700" 
+            className="flex flex-col items-center gap-2 h-auto py-3.5 bg-white hover:bg-slate-50 border-slate-200" 
             onClick={handleShare} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Share2 className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">WA Dapur</span>
+            {generating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Share2 className="w-5 h-5 text-slate-600" />}
+            <span className="text-[11px] font-medium text-slate-600">WA Dapur</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center gap-2 h-auto py-3.5 bg-white dark:bg-slate-800 hover:bg-slate-50 border-slate-200 dark:border-slate-700" 
+            className="flex flex-col items-center gap-2 h-auto py-3.5 bg-white hover:bg-slate-50 border-slate-200" 
             onClick={handleBluetoothPrint} 
             disabled={generating || printing}
           >
-            {printing ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Printer className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Cetak</span>
+            {printing ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Printer className="w-5 h-5 text-slate-600" />}
+            <span className="text-[11px] font-medium text-slate-600">Cetak</span>
           </Button>
         </div>
 
