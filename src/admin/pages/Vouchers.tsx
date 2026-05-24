@@ -122,22 +122,29 @@ export default function Vouchers() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
-              {vouchers.map(v => (
+              {vouchers.map((v, idx) => (
                 <Card key={v.id} className={cn(
-                  "group relative overflow-hidden border-2 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col bg-card",
-                  v.isActive ? "border-primary/20 hover:border-primary/40" : "border-border/50 opacity-70 grayscale-[0.2]"
+                  "group relative overflow-hidden border-0 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[1.5rem] flex flex-col",
+                  v.isActive 
+                    ? "bg-gradient-to-br from-card via-card to-primary/5 dark:from-card dark:to-primary/10 ring-1 ring-primary/20" 
+                    : "bg-muted opacity-70 grayscale-[0.4] ring-1 ring-border/50"
                 )}>
                   
                   {/* Efek Garis Putus-putus Khas Tiket */}
-                  <div className="absolute left-[30%] sm:left-[25%] top-0 bottom-0 border-l-2 border-dashed border-border/60 z-10" />
-                  <div className="absolute left-[30%] sm:left-[25%] top-[-10px] w-5 h-5 bg-background rounded-full border-b-2 border-border/60 z-10 -translate-x-1/2" />
-                  <div className="absolute left-[30%] sm:left-[25%] bottom-[-10px] w-5 h-5 bg-background rounded-full border-t-2 border-border/60 z-10 -translate-x-1/2" />
+                  <div className="absolute left-[30%] sm:left-[25%] top-0 bottom-0 border-l-2 border-dashed border-primary/20 dark:border-primary/30 z-10" />
+                  <div className="absolute left-[30%] sm:left-[25%] top-[-10px] w-5 h-5 bg-background rounded-full border-b-2 border-primary/20 dark:border-primary/30 z-10 -translate-x-1/2 shadow-inner" />
+                  <div className="absolute left-[30%] sm:left-[25%] bottom-[-10px] w-5 h-5 bg-background rounded-full border-t-2 border-primary/20 dark:border-primary/30 z-10 -translate-x-1/2 shadow-inner" />
 
-                  <div className="flex h-full">
+                  {/* Shine Effect */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[100%] group-hover:animate-shimmer z-0 pointer-events-none" />
+
+                  <div className="flex h-full relative z-20">
                     
                     <div className={cn(
                       "w-[30%] sm:w-[25%] flex flex-col items-center justify-center p-4 relative overflow-hidden",
-                      v.isActive ? "bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground shadow-inner" : "bg-muted text-muted-foreground"
+                      v.isActive 
+                        ? (idx % 2 === 0 ? "bg-gradient-to-br from-primary via-primary/90 to-primary/80" : "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600") + " text-white shadow-[inset_0_0_20px_rgba(0,0,0,0.2)]" 
+                        : "bg-muted-foreground/20 text-muted-foreground"
                     )}>
                       {v.isActive && (
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
@@ -180,10 +187,10 @@ export default function Vouchers() {
                       </div>
 
                       <div className="mt-auto pt-4 flex gap-2 justify-end opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-background hover:bg-primary/10 hover:text-primary border-border/60" onClick={() => openEdit(v)}>
+                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg shadow-sm hover:bg-primary hover:text-white transition-colors" onClick={() => openEdit(v)}>
                           <Edit2 className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-background hover:bg-destructive/10 hover:text-destructive border-border/60" onClick={() => setDeleteId(v.id!)}>
+                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg shadow-sm hover:bg-destructive hover:text-white transition-colors" onClick={() => setDeleteId(v.id!)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>

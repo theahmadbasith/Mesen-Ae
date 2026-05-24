@@ -1,5 +1,5 @@
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
-import { type PaymentMethod, type Category, type User, type StoreSettings, type Banner } from '@/hooks/db-hooks';
+import { type PaymentMethod, type Category, type User, type StoreSettings } from '@/hooks/db-hooks';
 import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Store, CreditCard, Tag, Plus, Trash2, Edit2,
@@ -11,7 +11,7 @@ import {
   ChevronRight, Paintbrush, UploadCloud
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
-import PromoBanner from '@/components/PromoBanner';
+
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
@@ -158,7 +158,7 @@ export default function Pengaturan() {
   const paymentMethods  = useDbQuery<PaymentMethod>('paymentMethods');
   const categories      = useDbQuery<Category>('categories');
   const users           = useDbQuery<User>('users');
-  const banners         = useDbQuery<Banner>('banners');
+
 
   /* ── Active Tab ── */
   const [activeTab, setActiveTab] = useState<Tab>('toko');
@@ -327,44 +327,6 @@ export default function Pengaturan() {
   };
   const deleteUser = async (id: string | number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
 
-  const [bannerDialog,    setBannerDialog]    = useState(false);
-  const [bannerEditId,    setBannerEditId]    = useState<number | null>(null);
-  const [bannerTitle,     setBannerTitle]     = useState('');
-  const [bannerDesc,      setBannerDesc]      = useState('');
-  const [bannerLink,      setBannerLink]      = useState('');
-  const [bannerImage,     setBannerImage]     = useState<File | string | null>(null);
-  const [bannerIsActive,  setBannerIsActive]  = useState(true);
-  const [isSavingBanner,  setIsSavingBanner]  = useState(false);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-
-  const PRESET_BANNERS = [
-    { id: 'preset:blue', class: 'from-blue-600 via-indigo-600 to-purple-600' },
-    { id: 'preset:green', class: 'from-emerald-600 via-teal-600 to-cyan-600' },
-    { id: 'preset:red', class: 'from-rose-600 via-red-600 to-orange-600' },
-    { id: 'preset:purple', class: 'from-fuchsia-600 via-purple-600 to-violet-600' },
-    { id: 'preset:orange', class: 'from-orange-500 via-amber-500 to-yellow-500' }
-  ];
-
-  const openBannerAdd  = () => { setBannerEditId(null); setBannerTitle(''); setBannerDesc(''); setBannerLink(''); setBannerImage(null); setBannerIsActive(true); setBannerDialog(true); };
-  const openBannerEdit = (b: Banner) => { setBannerEditId(b.id!); setBannerTitle(b.title); setBannerDesc(b.description || ''); setBannerLink(b.link || ''); setBannerImage(b.imageUrl); setBannerIsActive(b.isActive); setBannerDialog(true); };
-  const saveBanner = async () => {
-    if (!bannerTitle.trim() || !bannerImage) { toast.error('Judul dan gambar wajib diisi'); return; }
-    setIsSavingBanner(true);
-    try {
-      let imageUrl = typeof bannerImage === 'string' ? bannerImage : '';
-      if (bannerImage instanceof File) {
-        const uploaded = await dbUploadFile('mesenae', `banner-${Date.now()}`, bannerImage);
-        if (uploaded) imageUrl = uploaded;
-        else throw new Error('Upload gambar gagal');
-      }
-      const payload = { title: bannerTitle.trim(), description: bannerDesc.trim(), imageUrl, link: bannerLink.trim(), isActive: bannerIsActive };
-      if (bannerEditId) await dbUpdate('banners', bannerEditId, payload);
-      else await dbInsert('banners', payload);
-      setBannerDialog(false); toast.success('Banner disimpan');
-    } catch (err: any) { toast.error('Gagal menyimpan banner: ' + (err.message || err)); }
-    finally { setIsSavingBanner(false); }
-  };
-  const deleteBanner = async (id: string | number) => { await dbDelete('banners', id); toast.success('Banner dihapus'); };
 
   /* ── Storage ── */
   const [storageUsage, setStorageUsage] = useState<{ usage: number; quota: number } | null>(null);

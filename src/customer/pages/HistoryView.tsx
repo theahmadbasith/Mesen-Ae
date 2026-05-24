@@ -142,11 +142,11 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
       <div className="flex-1 p-4 pb-[120px] overflow-y-auto">
         {loading ? (
           /* Skeleton Loading */
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-5 border border-slate-100 dark:border-slate-800 space-y-4 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-2">
+              <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 space-y-4 shadow-sm">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-slate-200 dark:bg-slate-800 rounded-full animate-pulse" />
                       <div className="h-3 w-28 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-full" />
@@ -186,7 +186,7 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
           </div>
         ) : (
           /* Transaction List */
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {history.map((tx: Transaction) => {
               const statusInfo = getStatusDisplay(tx.status);
               const txDate = new Date(tx.date || tx.created_at || new Date());
@@ -194,7 +194,7 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
               return (
                 <div 
                   key={tx.id} 
-                  className="group bg-white dark:bg-slate-900 rounded-[1.5rem] p-5 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all relative overflow-hidden active:scale-[0.98] cursor-pointer"
+                  className="group bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all relative overflow-hidden active:scale-[0.98] cursor-pointer"
                   onClick={async () => {
                     const toastId = toast.loading('Memuat detail struk...');
                     try {
@@ -230,27 +230,27 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
                   }}
                 >
                   {/* Bagian Atas: Tanggal & Nomor Pesanan */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center space-x-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                        <Clock size={14} />
+                  <div className="flex justify-between items-start mb-3 gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1 text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 flex-wrap">
+                        <Clock size={12} className="sm:w-3.5 sm:h-3.5" />
                         <span>
                           {txDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                           <span className="mx-1">•</span>
                           {txDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Receipt size={16} className="text-slate-400" />
-                        <p className="font-extrabold text-slate-900 dark:text-white">
+                      <div className="flex items-center gap-1.5">
+                        <Receipt size={14} className="text-slate-400 sm:w-4 sm:h-4" />
+                        <p className="font-extrabold text-[14px] sm:text-[15px] text-slate-900 dark:text-white truncate">
                           {tx.receipt_number || `ORD-${tx.id.toString().slice(-5).toUpperCase()}`}
                         </p>
                       </div>
                     </div>
 
                     {/* Badge Status */}
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider border border-transparent ${statusInfo.bg} ${statusInfo.text}`}>
-                      <statusInfo.Icon size={12} strokeWidth={3} />
+                    <div className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase rounded-md tracking-wider border border-transparent flex-shrink-0 mt-0.5 ${statusInfo.bg} ${statusInfo.text}`}>
+                      <statusInfo.Icon size={12} strokeWidth={3} className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       {statusInfo.label}
                     </div>
                   </div>
@@ -263,31 +263,31 @@ export default function HistoryView({ setView, customerName, storeSettings }: Hi
                   </div>
 
                   {/* Bagian Bawah: Total & Info Meja */}
-                  <div className="flex justify-between items-end relative z-10">
-                    <div>
-                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">
+                  <div className="flex justify-between items-end relative z-10 gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">
                         Total Belanja
                       </p>
-                      <p className="font-black text-xl text-blue-600 dark:text-blue-400">
+                      <p className="font-black text-lg sm:text-xl text-blue-600 dark:text-blue-400 truncate">
                         {FORMAT_IDR(tx.total)}
                       </p>
                     </div>
                     
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                       {tx.table_number && (
-                        <div className="text-right border-r border-slate-200 dark:border-slate-700 pr-4">
-                          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">
+                        <div className="text-right border-r border-slate-200 dark:border-slate-700 pr-2 sm:pr-4">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">
                             {String(tx.table_number) === 'Bawa Pulang' ? 'Tipe' : 'Meja'}
                           </p>
-                          <p className="font-bold text-slate-900 dark:text-white">
+                          <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-white truncate max-w-[80px] sm:max-w-[120px]">
                             {String(tx.table_number) === 'Bawa Pulang' ? 'Take Away' : tx.table_number}
                           </p>
                         </div>
                       )}
                       
                       {/* Chevron Detail Indicator */}
-                      <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
-                        <ChevronRight size={18} strokeWidth={2.5} />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors flex-shrink-0">
+                        <ChevronRight size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                       </div>
                     </div>
                   </div>

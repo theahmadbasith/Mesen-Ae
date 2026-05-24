@@ -350,13 +350,20 @@ export async function appendPaymentToTransactionByReceipt(receiptNumber: string,
     const totalDue = Number(existing.total) || Number(existing.grand_total) || 0;
     const newStatus = totalPaid >= totalDue ? 'lunas' : (totalPaid > 0 ? 'partial' : existing.status || 'open');
 
-    const docRef = doc(firestoreDb, 'transactions', String(existing.id));
-    await updateDoc(docRef, {
+    const updates: any = {
       payments: JSON.stringify(payments),
       payment_amount: totalPaid,
       status: newStatus,
       closed_at: newStatus === 'lunas' ? new Date().toISOString() : existing.closed_at || null
-    });
+    };
+
+    // Jika pesanan sudah lunas namun masih pending di dapur, segera kirim ke dapur
+    if (newStatus === 'lunas' && existing.kitchen_status === 'pending') {
+      updates.kitchen_status = 'diproses';
+    }
+
+    const docRef = doc(firestoreDb, 'transactions', String(existing.id));
+    await updateDoc(docRef, updates);
 
     return true;
   } catch (err) {

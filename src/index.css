@@ -243,4 +243,18 @@
   .animate-bounce-slow {
     animation: bounce-slow 3s linear infinite;
   }
+
+  /* Hover & Active Pro Canvas-style */
+  .pro-card {
+    @apply transition-all duration-300 ease-out;
+  }
+  .pro-card:hover {
+    @apply -translate-y-1 shadow-[0_12px_24px_-10px_rgba(0,0,0,0.1)];
+  }
+  .pro-card:active {
+    @apply scale-[0.98] -translate-y-0.5 shadow-sm;
+  }
+  .dark .pro-card:hover {
+    @apply shadow-[0_12px_24px_-10px_rgba(0,0,0,0.4)] border-white/10;
+  }
 }

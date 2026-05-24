@@ -70,6 +70,8 @@ MesenAe menerapkan strategi pengelolaan data modern menggunakan `@tanstack/react
 *   **Interactive Drag & Drop Banner:** Bangun *banner* promosi toko Anda secara bebas! Pindahkan gambar, teks, dan tombol promo ke mana saja menggunakan kursor secara presisi langsung dari panel Admin.
 *   **Store Logo Cropper:** Alat pemotong otomatis (*cropper*) untuk merapikan logo toko Anda agar presisi di struk dan aplikasi pelanggan.
 *   **Premium Edge-to-Edge UI:** Foto produk ditampilkan tanpa jarak (*borderless*) di beranda pelanggan. Ditambah dukungan mode layar Dapur (*Kitchen View*) dan *Horizontal Carousel* untuk pengalaman sekelas aplikasi *Native*.
+*   **Split Bill Sync to Kitchen:** Tagihan bayar parsial (Split Bill) otomatis melanjutkan pesanan ke status dapur sesaat setelah lunas, menjamin efisiensi koki tanpa *delay*!
+*   **Dynamic High-Res Store Logo:** Logo di Sidebar Admin dan Struk diatur terpusat berdasarkan prioritas; menggunakan Logo Toko Anda jika ada, atau turun *(fallback)* ke Ikon sistem.
 *   **Indikator Animasi & Loading Mulus:** Memberikan respons visual (seperti Spinner & "Menyimpan...") di semua aksi simpan.
 *   **Premium Built-In Modals:** Semua komponen dialog, checkout, variasi, dan hapus bill dibuat menggunakan komponen bawaan (`Dialog` & `AlertDialog` shadcn). Aplikasi ini **100% bebas dari dialog native browser**.
 

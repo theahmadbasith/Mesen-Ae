@@ -34,6 +34,9 @@ export interface PromoBanner {
   buttonText?: string;
   link?: string;
   isActive: boolean;
+  bgType?: 'image' | 'solid' | 'gradient';
+  bgColor?: string;
+  bgGradient?: string;
 }
 
 
@@ -66,6 +69,9 @@ export default function BannerPromo() {
   const [bannerLink, setBannerLink] = useState('');
   const [bannerButtonText, setBannerButtonText] = useState('');
   const [bannerIsActive, setBannerIsActive] = useState(true);
+  const [bannerBgType, setBannerBgType] = useState<'image' | 'solid' | 'gradient'>('image');
+  const [bannerBgColor, setBannerBgColor] = useState('#1E293B');
+  const [bannerBgGradient, setBannerBgGradient] = useState('linear-gradient(to bottom right, #3b82f6, #9333ea)');
 
   // Drag and drop states
   const [overlayImage, setOverlayImage] = useState<string | null>(null);
@@ -123,6 +129,9 @@ export default function BannerPromo() {
     setDescPos({ x: 8, y: 60 });
     setOverlayPos({ x: 85, y: 50 });
     setButtonPos({ x: 8, y: 80 });
+    setBannerBgType('image');
+    setBannerBgColor('#1E293B');
+    setBannerBgGradient('linear-gradient(to bottom right, #3b82f6, #9333ea)');
     setBannerDialogOpen(true);
   };
 
@@ -142,6 +151,9 @@ export default function BannerPromo() {
     setOverlayPos(b.overlayPos || { x: 85, y: 50 });
     setButtonPos(b.buttonPos || { x: 8, y: 80 });
     setBannerIsActive(b.isActive);
+    setBannerBgType(b.bgType || 'image');
+    setBannerBgColor(b.bgColor || '#1E293B');
+    setBannerBgGradient(b.bgGradient || 'linear-gradient(to bottom right, #3b82f6, #9333ea)');
     setBannerDialogOpen(true);
   };
 
@@ -248,7 +260,10 @@ export default function BannerPromo() {
       buttonPos,
       buttonText: bannerButtonText.trim(),
       link: bannerLink.trim(),
-      isActive: bannerIsActive
+      isActive: bannerIsActive,
+      bgType: bannerBgType,
+      bgColor: bannerBgType === 'solid' ? bannerBgColor : undefined,
+      bgGradient: bannerBgType === 'gradient' ? bannerBgGradient : undefined
     };
 
     let updatedBanners: PromoBanner[];
@@ -454,16 +469,17 @@ export default function BannerPromo() {
               </div>
               <div 
                 ref={previewRef}
-                className="w-full aspect-[2/1] sm:aspect-[21/9] rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white relative overflow-hidden shadow-inner border border-border/50"
+                className="w-full aspect-[2/1] sm:aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-inner border border-border/50"
+                style={{ background: bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : 'linear-gradient(to right, #2563eb, #9333ea)' }}
               >
-                {bannerImage && !bannerImage.startsWith('preset:') ? (
+                {bannerBgType === 'image' && bannerImage && !bannerImage.startsWith('preset:') ? (
                   <div className="absolute inset-0 z-0 select-none pointer-events-none">
                     <img src={bannerImage} alt="Bg" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40" />
                   </div>
-                ) : (
+                ) : bannerBgType === 'image' ? (
                   <Gift size={120} className="absolute -right-2 -bottom-2 text-white/10 rotate-[-15deg] z-0 select-none pointer-events-none" />
-                )}
+                ) : null}
 
                 {/* OVERLAY DRAG */}
                 {overlayImage && (
@@ -583,19 +599,51 @@ export default function BannerPromo() {
                </div>
 
                <div className="space-y-4">
-                  {/* Background Upload */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Latar Belakang Banner</Label>
-                    <div className="flex gap-3 items-center">
-                      <div className="w-16 h-12 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0">
-                        {bannerImage ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
-                      </div>
-                      <div className="flex-1">
-                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, false)} />
-                        <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-border/60" onClick={() => fileInputRef.current?.click()}>Ubah Latar</Button>
-                        <p className="text-[9px] text-muted-foreground mt-1">Rasio disarankan 2:1 (Opsional).</p>
-                      </div>
+                  {/* Background Selector */}
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe Latar Belakang</Label>
+                      <Select value={bannerBgType} onValueChange={(val: any) => setBannerBgType(val)}>
+                        <SelectTrigger className="h-10 bg-background rounded-xl font-semibold text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="image" className="font-medium">Gambar Foto (Upload)</SelectItem>
+                          <SelectItem value="solid" className="font-medium">Warna Solid</SelectItem>
+                          <SelectItem value="gradient" className="font-medium">Warna Gradasi (CSS)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+
+                    {bannerBgType === 'image' && (
+                      <div className="flex gap-3 items-center">
+                        <div className="w-16 h-12 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0">
+                          {bannerImage && !bannerImage.startsWith('preset:') ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
+                        </div>
+                        <div className="flex-1">
+                          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, false)} />
+                          <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-border/60" onClick={() => fileInputRef.current?.click()}>Upload Gambar Latar</Button>
+                          <p className="text-[9px] text-muted-foreground mt-1">Rasio disarankan 2:1 (Opsional).</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {bannerBgType === 'solid' && (
+                      <div className="flex gap-3 items-center">
+                        <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-16 h-12 p-1 cursor-pointer rounded-lg border-border/60" />
+                        <div className="flex-1">
+                          <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-sm font-semibold uppercase font-mono" />
+                        </div>
+                      </div>
+                    )}
+
+                    {bannerBgType === 'gradient' && (
+                      <div className="space-y-2">
+                        <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-sm font-semibold font-mono" />
+                        <div className="w-full h-10 rounded-lg border border-border/60" style={{ background: bannerBgGradient }} />
+                        <p className="text-[9px] text-muted-foreground">Ketik sintaks CSS, contoh: <code>linear-gradient(to right, #ff0, #f00)</code></p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Overlay Upload */}

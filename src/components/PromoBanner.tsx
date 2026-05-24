@@ -18,10 +18,22 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
   return (
     <div className={cn("rounded-[1.5rem] text-white relative overflow-hidden shadow-md", className)}>
       {/* LAYER 1: BACKGROUND */}
-      {banner.imageUrl && !banner.imageUrl.startsWith('preset:') ? (
+      {(!banner.bgType || banner.bgType === 'image') && banner.imageUrl && !banner.imageUrl.startsWith('preset:') ? (
         <div className="absolute inset-0 z-0">
           <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/40" />
+        </div>
+      ) : banner.bgType === 'solid' ? (
+        <div className="absolute inset-0 z-0" style={{ backgroundColor: banner.bgColor || '#1E293B' }}>
+          {!banner.overlayImageUrl && (
+            <Gift size={160} strokeWidth={1} className="absolute -right-4 -bottom-8 text-white/10 rotate-[-15deg] z-0" />
+          )}
+        </div>
+      ) : banner.bgType === 'gradient' && banner.bgGradient ? (
+        <div className="absolute inset-0 z-0" style={{ background: banner.bgGradient }}>
+          {!banner.overlayImageUrl && (
+            <Gift size={160} strokeWidth={1} className="absolute -right-4 -bottom-8 text-white/10 rotate-[-15deg] z-0" />
+          )}
         </div>
       ) : (
         <div className={cn("absolute inset-0 z-0 bg-gradient-to-br", 

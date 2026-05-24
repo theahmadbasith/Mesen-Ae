@@ -20,8 +20,8 @@ export async function uploadToCloudinary(
     const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
 
     if (!cloudName || !apiKey || !apiSecret) {
-      console.error("Cloudinary env variables missing. Please set VITE_CLOUDINARY_CLOUD_NAME, VITE_CLOUDINARY_API_KEY, VITE_CLOUDINARY_API_SECRET");
-      return null;
+      console.error("Cloudinary env variables missing.");
+      throw new Error("Konfigurasi Cloudinary (Env API Keys) belum diatur! Gambar gagal diunggah.");
     }
 
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -59,9 +59,9 @@ export async function uploadToCloudinary(
     }
 
     return result.secure_url;
-  } catch (err) {
+  } catch (err: any) {
     console.error('[Cloudinary] Exception during upload:', err);
-    return null;
+    throw new Error(err.message || 'Terjadi kesalahan saat menghubungi server Cloudinary.');
   }
 }
 

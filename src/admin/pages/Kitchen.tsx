@@ -157,9 +157,30 @@ export default function Kitchen() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-          {processingBills.map(bill => {
-            const config = getStatusConfig(bill.kitchenStatus || 'diproses');
+        <div className="flex flex-col gap-8">
+          {/* Group 1: Baru Masuk & Dimasak */}
+          {['diproses', 'dimasak', 'disiapkan', 'siap'].map((statusKey) => {
+            const groupBills = processingBills.filter(b => b.kitchenStatus === statusKey);
+            if (groupBills.length === 0) return null;
+            
+            const config = getStatusConfig(statusKey);
+            
+            return (
+              <div key={statusKey} className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+                  <div className={cn("p-1.5 rounded-md", config.badge.split(' ')[0])}>
+                    {config.icon}
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground">{config.label}</h3>
+                  <Badge variant="secondary" className="ml-2 rounded-full font-bold">{groupBills.length}</Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {groupBills.map(bill => {
+                    const billConfig = getStatusConfig(bill.kitchenStatus || 'diproses');
+                    const orderDate = new Date(bill.date);
+                    const diffMins = Math.floor((currentTime.getTime() - orderDate.getTime()) / 60000);
+                    const isLate = diffMins > 20;
             
             // Calculate elapsed time (simple string)
             const orderDate = new Date(bill.date);
@@ -203,8 +224,8 @@ export default function Kitchen() {
                         <Clock className="w-3.5 h-3.5" />
                         {diffMins} mnt lalu
                       </div>
-                      <Badge className={cn("px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider shadow-none", config.badge)}>
-                        {config.label}
+                      <Badge className={cn("px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider shadow-none", billConfig.badge)}>
+                        {billConfig.label}
                       </Badge>
                     </div>
                   </div>
@@ -234,14 +255,18 @@ export default function Kitchen() {
                 {/* Ticket Footer (Action) */}
                 <div className="p-4 pt-0 mt-auto bg-background">
                   <Button 
-                    className={cn("w-full h-12 text-sm font-extrabold tracking-wide transition-all shadow-lg active:scale-95", config.btn)}
+                    className={cn("w-full h-12 text-sm font-extrabold tracking-wide transition-all shadow-lg active:scale-95", billConfig.btn)}
                     onClick={() => handleNextStep(bill)}
                   >
-                    {config.icon}
-                    <span>{config.action}</span>
+                    {billConfig.icon}
+                    <span>{billConfig.action}</span>
                   </Button>
                 </div>
               </Card>
+            );
+          })}
+                </div>
+              </div>
             );
           })}
         </div>

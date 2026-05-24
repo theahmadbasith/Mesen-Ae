@@ -225,10 +225,10 @@ export default function Produk() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filtered.map(p => (
-            <Card key={p.id} className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden bg-card">
-              <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            <Card key={p.id} className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden bg-card relative">
+              <div className="p-3 sm:p-4 flex items-center gap-4 relative z-10">
                 
                 {/* 1. Image Section */}
                 <div
@@ -264,28 +264,34 @@ export default function Produk() {
                 </div>
 
                 {/* 3. Pricing & Stock */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1 mt-2 sm:mt-0 shrink-0 ml-auto">
-                  <div className="text-left sm:text-right">
+                <div className="flex flex-col items-end justify-center gap-1.5 shrink-0 ml-auto">
+                  <div className="text-right">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hidden sm:block mb-0.5">Harga Jual</p>
-                    <p className="text-base sm:text-lg font-black text-primary">Rp {p.price.toLocaleString('id-ID')}</p>
+                    <p className="text-base sm:text-lg font-black text-primary leading-none">Rp {p.price.toLocaleString('id-ID')}</p>
                   </div>
                   <div className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition-colors',
+                    'flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[10px] sm:text-xs font-bold transition-colors',
                     p.stock <= 5 ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-success/10 border-success/20 text-success'
                   )}>
-                    <Layers className="w-3.5 h-3.5" />
-                    Stok: {p.stock} {p.unit}
+                    <Layers className="w-3 h-3" />
+                    Stok: {p.stock}
                   </div>
                 </div>
 
-                {/* 4. Actions */}
-                <div className="flex justify-end gap-2 shrink-0 mt-2 sm:mt-0 opacity-100 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity">
-                  <Button variant="outline" size="sm" className="h-10 sm:h-11 px-3 rounded-xl bg-background border-border/60 hover:bg-primary/10 hover:text-primary hover:border-primary/30" onClick={() => openEdit(p)}>
-                    <Edit2 className="w-4 h-4 mr-1.5" /> Edit
+                {/* 4. Actions (Hover Slide In) */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex-col gap-2 shrink-0 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:flex bg-card/80 backdrop-blur-sm p-1.5 rounded-xl border border-border/50 shadow-sm z-20">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => openEdit(p)}>
+                    <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="h-10 sm:h-11 w-10 sm:w-11 px-0 flex justify-center rounded-xl bg-background border-border/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={() => setDeleteId(p.id!)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive hover:text-white" onClick={() => setDeleteId(p.id!)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
+                </div>
+                
+                {/* Mobile Actions */}
+                <div className="flex sm:hidden flex-col gap-1 shrink-0 ml-1">
+                   <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-primary" onClick={() => openEdit(p)}><Edit2 className="w-3.5 h-3.5" /></Button>
+                   <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-destructive" onClick={() => setDeleteId(p.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
                 
               </div>

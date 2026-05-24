@@ -77,18 +77,18 @@ export default function MenuView({
         </div>
         
         {/* Product List Skeleton */}
-        <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 pb-32 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-3 flex gap-4 border border-slate-100 dark:border-slate-800">
-              <div className="w-28 h-28 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse shrink-0" />
-              <div className="flex-1 flex flex-col py-1 justify-between">
-                <div className="space-y-2">
-                  <div className="h-5 bg-slate-200 dark:bg-slate-800 animate-pulse rounded w-full" />
-                  <div className="h-4 bg-slate-200 dark:bg-slate-800 animate-pulse rounded w-2/3" />
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl flex flex-col border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="aspect-square bg-slate-200 dark:bg-slate-800 animate-pulse w-full" />
+              <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="h-4 bg-slate-200 dark:bg-slate-800 animate-pulse rounded w-full mb-1.5" />
+                  <div className="h-3 bg-slate-200 dark:bg-slate-800 animate-pulse rounded w-2/3" />
                 </div>
-                <div className="flex justify-between items-end">
-                  <div className="h-6 bg-slate-200 dark:bg-slate-800 animate-pulse rounded w-24" />
-                  <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                <div className="flex justify-between items-end mt-2">
+                  <div className="h-5 bg-slate-200 dark:bg-slate-800 animate-pulse rounded w-16" />
+                  <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
                 </div>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function MenuView({
         </div>
         
         {/* Grid/List Container */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3.5 mt-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 sm:gap-4 mt-2">
           {filteredMenu.map((item) => {
             const isOutOfStock = item.stock <= 0;
             
@@ -173,34 +173,28 @@ export default function MenuView({
                 key={item.id} 
                 onClick={() => {
                   if (isOutOfStock) return;
-                  if (cartLength === 0) {
-                    setSelectedItem(item);
-                  } else if (item.variants && item.variants.length > 0) {
+                  if (cartLength === 0 || (item.variants && item.variants.length > 0) || !addToCart) {
                     setSelectedItem(item);
                   } else {
-                    if (addToCart) {
-                      addToCart(item, 1, '', []);
-                      toast.success(`${item.name} ditambahkan ke keranjang`);
-                    } else {
-                      setSelectedItem(item);
-                    }
+                    addToCart(item, 1, '', []);
+                    toast.success(`${item.name} ditambahkan ke keranjang`);
                   }
                 }}
-                className={`bg-white dark:bg-slate-900 rounded-[1.5rem] overflow-hidden border transition-all flex flex-col ${
+                className={`bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border flex flex-col group ${
                   isOutOfStock 
                     ? 'border-slate-100 dark:border-slate-800 opacity-60 grayscale' 
-                    : 'border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 cursor-pointer active:scale-[0.98]'
+                    : 'border-slate-100 dark:border-slate-800 pro-card cursor-pointer'
                 }`}
               >
-                {/* Product Image */}
-                <div className="aspect-square w-full relative flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-b border-slate-100 dark:border-slate-800/50">
+                {/* Product Image Edge-to-Edge */}
+                <div className="aspect-square w-full relative flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-b border-slate-100/50 dark:border-slate-800/50 overflow-hidden">
                   {item.photo ? (
-                    <img src={item.photo} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={item.photo} alt={item.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
                   ) : (
                     <ImageIcon size={32} strokeWidth={1.5} className="text-slate-300 dark:text-slate-600" />
                   )}
                   {isOutOfStock && (
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-10">
                       <span className="text-white text-[10px] font-bold bg-slate-800 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm">
                         Habis
                       </span>
@@ -209,21 +203,21 @@ export default function MenuView({
                 </div>
                 
                 {/* Product Info */}
-                <div className="flex-1 flex flex-col justify-between p-3">
-                  <div>
-                    <h4 className="font-bold text-sm leading-snug text-slate-900 dark:text-white line-clamp-2 mb-1.5">
+                <div className="flex-1 flex flex-col justify-between p-3 sm:p-4">
+                  <div className="mb-2">
+                    <h4 className="font-bold text-[13px] sm:text-sm leading-snug text-slate-900 dark:text-white line-clamp-2">
                       {item.name}
                     </h4>
                     {/* Show stock quantity if low */}
                     {!isOutOfStock && item.stock < 10 && (
-                      <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md inline-block">
+                      <span className="text-[10px] mt-1 font-semibold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md inline-block">
                         Sisa {item.stock}
                       </span>
                     )}
                   </div>
                   
-                  <div className="flex justify-between items-center mt-2 gap-2">
-                    <p className="font-extrabold text-blue-600 dark:text-blue-400 text-[13px] sm:text-[14px]">
+                  <div className="flex justify-between items-end mt-auto gap-2">
+                    <p className="font-extrabold text-blue-600 dark:text-blue-400 text-[14px] sm:text-base tracking-tight">
                       {FORMAT_IDR(item.price)}
                     </p>
                     <button 
@@ -231,28 +225,22 @@ export default function MenuView({
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         if (isOutOfStock) return;
-                        if (cartLength === 0) {
-                          setSelectedItem(item);
-                        } else if (item.variants && item.variants.length > 0) {
+                        if (cartLength === 0 || (item.variants && item.variants.length > 0) || !addToCart) {
                           setSelectedItem(item);
                         } else {
-                          if (addToCart) {
-                            addToCart(item, 1, '', []);
-                            toast.success(`${item.name} ditambahkan ke keranjang`);
-                          } else {
-                            setSelectedItem(item);
-                          }
+                          addToCart(item, 1, '', []);
+                          toast.success(`${item.name} ditambahkan ke keranjang`);
                         }
                       }}
                       disabled={isOutOfStock}
-                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform flex-shrink-0 ${
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all flex-shrink-0 shadow-sm ${
                         isOutOfStock 
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-400' 
-                          : 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500'
+                          : 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 hover:scale-105 active:scale-95'
                       }`}
                       aria-label={`Tambah ${item.name}`}
                     >
-                      <Plus size={18} strokeWidth={2.5} />
+                      <Plus size={20} strokeWidth={2.5} />
                     </button>
                   </div>
                 </div>
