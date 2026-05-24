@@ -235,16 +235,8 @@ export default function Pengaturan() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('File harus berupa gambar'); return; }
-    toast.loading('Mengompres logo...', { id: 'compress-logo' });
-    try { 
-      const compressed = await compressImage(file);
-      setCropFile(new File([compressed], file.name, { type: file.type }));
-      toast.dismiss('compress-logo');
-    }
-    catch { 
-      toast.dismiss('compress-logo');
-      toast.error('Gagal memproses gambar'); 
-    }
+    // Langsung arahkan ke alat Crop dalam ukuran dan resolusi aslinya
+    setCropFile(file);
     if (logoInputRef.current) logoInputRef.current.value = '';
   };
 
@@ -998,12 +990,13 @@ export default function Pengaturan() {
 
       <PhotoCropModal
         open={!!cropFile}
-        onOpenChange={(open) => { if (!open) setCropFile(null); }}
+        onOpenChange={(v) => { if (!v) setCropFile(null); }}
         file={cropFile}
-        onCrop={(dataUrl) => {
+        onCropped={(dataUrl) => {
           setStoreLogo(dataUrl);
           setCropFile(null);
         }}
+        disableCompression={true}
       />
     </div>
   );

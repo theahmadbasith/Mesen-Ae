@@ -83,15 +83,8 @@ export default function Produk() {
       toast.error('File harus berupa gambar');
       return;
     }
-    toast.loading('Mengompres gambar...', { id: 'compress-img' });
-    try {
-      const compressed = await compressImage(file);
-      setCropFile(new File([compressed], file.name, { type: file.type }));
-      toast.dismiss('compress-img');
-    } catch {
-      toast.dismiss('compress-img');
-      toast.error('Gagal memproses gambar');
-    }
+    // Langsung arahkan ke alat Crop dalam ukuran dan resolusi aslinya!
+    setCropFile(file);
   };
 
   const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {

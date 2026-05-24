@@ -187,20 +187,17 @@ export default function BannerPromo() {
       return;
     }
     
-    toast.loading('Mengompres gambar...', { id: 'compress-img' });
-    try {
-      const compressed = await compressImage(file);
+    // Langsung gunakan gambar asli tanpa kompresi untuk menjaga kualitas banner
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
       if (isOverlay) {
-        setOverlayImage(compressed);
+        setOverlayImage(dataUrl);
       } else {
-        setBannerImage(compressed);
+        setBannerImage(dataUrl);
       }
-      toast.dismiss('compress-img');
-      toast.success('Gambar berhasil dikompres');
-    } catch {
-      toast.dismiss('compress-img');
-      toast.error('Gagal memproses gambar');
-    }
+    };
+    reader.readAsDataURL(file);
     if (isOverlay && overlayInputRef.current) overlayInputRef.current.value = '';
     if (!isOverlay && fileInputRef.current) fileInputRef.current.value = '';
   };

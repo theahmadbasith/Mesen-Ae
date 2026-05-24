@@ -11,9 +11,10 @@ interface PhotoCropModalProps {
   onOpenChange: (open: boolean) => void;
   file: File | null;
   onCropped: (croppedDataUrl: string) => void;
+  disableCompression?: boolean;
 }
 
-export default function PhotoCropModal({ open, onOpenChange, file, onCropped }: PhotoCropModalProps) {
+export default function PhotoCropModal({ open, onOpenChange, file, onCropped, disableCompression = false }: PhotoCropModalProps) {
   const [imgSrc, setImgSrc] = useState<string>('');
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -87,8 +88,14 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped }: 
         0, 0, TARGET_SIZE, TARGET_SIZE // Destination
       );
 
-      // Konversi ke blob untuk diteruskan ke compressImage
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      // Konversi ke blob untuk diteruskan ke compressImage atau dikirim mentah
+      const dataUrl = canvas.toDataURL('image/jpeg', disableCompression ? 1.0 : 0.9);
+      
+      if (disableCompression) {
+        onCropped(dataUrl);
+        return;
+      }
+
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const croppedFile = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
