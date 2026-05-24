@@ -36,6 +36,10 @@ export default function SuccessView({ setView, finalOrderData }: SuccessViewProp
   // Mengambil dan menentukan tipe data query dari DB
   const storeSettingsList = (useDbQuery('storeSettings') as StoreSettings[]) ?? [];
   const storeSettings: StoreSettings | undefined = storeSettingsList[0] || undefined;
+  
+  // Ambil data transaksi secara real-time dari Firestore
+  const allTransactions = (useDbQuery('transactions') as TransactionData[]) ?? [];
+  const liveTransaction = allTransactions.find(t => t.id === finalOrderData?.transaction?.id) || finalOrderData?.transaction;
 
   // Memastikan layar kembali ke atas saat masuk ke halaman ini
   useEffect(() => {
@@ -52,9 +56,9 @@ export default function SuccessView({ setView, finalOrderData }: SuccessViewProp
 
   if (!finalOrderData) return null;
 
-  const isLunas: boolean = finalOrderData.transaction?.status === 'lunas' || finalOrderData.transaction?.status === 'completed';
-  const orderNumber: string = finalOrderData.transaction?.receipt_number || finalOrderData.transaction?.receiptNumber || 'TX-???';
-  const total: number = finalOrderData.transaction?.total || 0;
+  const isLunas: boolean = liveTransaction?.status === 'lunas' || liveTransaction?.status === 'completed';
+  const orderNumber: string = liveTransaction?.receipt_number || liveTransaction?.receiptNumber || 'TX-???';
+  const total: number = liveTransaction?.total || 0;
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 min-h-screen items-center justify-center p-6 text-center animate-in fade-in duration-500">
