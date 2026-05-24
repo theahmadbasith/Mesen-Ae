@@ -42,6 +42,18 @@ export default function ActiveOrders() {
     (i: any) => receiptTx && i.transactionId === receiptTx.id
   );
 
+  // Smart Trigger: Bunyikan notifikasi saat ada pesanan baru
+  const prevBillsCountRef = React.useRef(openBills.length);
+  React.useEffect(() => {
+    if (openBills.length > prevBillsCountRef.current) {
+      toast.success('🔔 Pesanan Baru Masuk!');
+      import('@/lib/fcm').then(({ showBrowserNotification }) => {
+        showBrowserNotification('Pesanan Baru!', 'Ada pesanan pelanggan baru yang menunggu tindakan Anda.');
+      });
+    }
+    prevBillsCountRef.current = openBills.length;
+  }, [openBills.length]);
+
   // Handlers
   const confirmCancel = (bill: Transaction) => {
     setBillToCancel(bill);

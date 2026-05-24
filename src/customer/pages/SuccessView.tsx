@@ -40,7 +40,15 @@ export default function SuccessView({ setView, finalOrderData }: SuccessViewProp
   // Memastikan layar kembali ke atas saat masuk ke halaman ini
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    
+    // Minta izin notifikasi (FCM) secara elegan setelah berhasil pesan
+    import('@/lib/fcm').then(({ requestForToken }) => {
+      const custName = finalOrderData?.transaction?.customer_name || 'Tamu';
+      requestForToken('customer', custName).then(token => {
+        if (token) console.log('Customer Opt-In Push Notification');
+      });
+    });
+  }, [finalOrderData]);
 
   if (!finalOrderData) return null;
 

@@ -2,6 +2,7 @@ import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } 
 import { type Product, type Category } from '@/hooks/db-hooks';
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X, ImageIcon, ZoomIn, ScanBarcode, Loader2, Tag, Layers, QrCode } from 'lucide-react';
+import { compressImage } from '@/lib/image-utils';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import PhotoCropModal from '@/admin/components/PhotoCropModal';
 import ProductVariantEditor from '@/admin/components/ProductVariantEditor';

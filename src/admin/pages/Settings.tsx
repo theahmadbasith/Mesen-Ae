@@ -24,9 +24,9 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/image-utils';
 import {
-  downloadProductTemplate, importProductsFromExcel,
-  exportAllDataToExcel, importAllDataFromExcel,
+  downloadProductTemplate, importProductsFromExcel
 } from '@/lib/excel-utils';
+import { exportAllDataToJSON, importAllDataFromJSON } from '@/lib/backup-utils';
 import { isDbConfigured } from '@/lib/db';
 import { hashPassword } from '@/lib/password';
 import { cn } from '@/lib/utils';
@@ -598,34 +598,44 @@ export default function Pengaturan() {
 
         {/* ══════════════ DATA & BACKUP ══════════════ */}
         {activeTab === 'data' && (
-          <Section title="Data & Backup" description="Ekspor atau impor data toko dari dan ke format Excel.">
+          <Section title="Data & Backup" description="Ekspor atau impor seluruh data toko menggunakan format JSON.">
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Backup Total Database</p>
               <SettingCard>
-                <SettingRow label="Export Semua Data" description="Unduh file Excel berisi seluruh data toko (Produk, Transaksi, dll)">
+                <SettingRow label="Export Semua Data (JSON)" description="Unduh file JSON berisi seluruh struktur database toko (13 Tabel) untuk backup penuh.">
                   <Button variant="outline" size="sm" onClick={async () => {
                     try {
                       setIsExporting(true);
-                      await exportAllDataToExcel();
+                      const blob = await exportAllDataToJSON();
+                      if (blob) {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `mesenae-backup-${new Date().toISOString().split('T')[0]}.json`;
+                        a.click();
+                        toast.success('Backup JSON berhasil diunduh');
+                      } else {
+                        toast.error('Gagal membuat backup');
+                      }
                     } finally { setIsExporting(false); }
                   }} disabled={isExporting}>
                     {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileDown className="w-4 h-4 mr-2 text-blue-500" />}
-                    Export Data
+                    Export JSON
                   </Button>
                 </SettingRow>
-                <SettingRow label="Import & Restore Data" description="Pulihkan seluruh data toko dari file Excel (Hati-hati, data lama bisa tertimpa)." last>
+                <SettingRow label="Restore Database (JSON)" description="Pulihkan seluruh data dari file JSON. Awas: ini akan menimpa data yang ada secara parsial/total!" last>
                   <Button variant="outline" size="sm" onClick={() => allDataInputRef.current?.click()} disabled={isImportingAll}>
                     {isImportingAll ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2 text-rose-500" />}
-                    Import Data
+                    Restore JSON
                   </Button>
-                  <input type="file" ref={allDataInputRef} className="hidden" accept=".xlsx,.xls" onChange={async (e) => {
+                  <input type="file" ref={allDataInputRef} className="hidden" accept=".json" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     setIsImportingAll(true);
                     try {
-                      const res = await importAllDataFromExcel(file);
-                      if (res.errors.length) toast.error(`Berhasil dengan beberapa error: ${res.errors[0]}`);
-                      else toast.success(`Berhasil restore ${res.successCount} dokumen`);
+                      const res = await importAllDataFromJSON(file);
+                      if (res.success) toast.success(`Berhasil memulihkan ${res.imported} dokumen`);
+                      else toast.error('Format backup tidak valid atau gagal');
                     } catch (err: any) { toast.error('Gagal restore data: ' + err.message); }
                     finally { setIsImportingAll(false); if (allDataInputRef.current) allDataInputRef.current.value = ''; }
                   }} />
@@ -654,7 +664,7 @@ export default function Pengaturan() {
                     try {
                       const res = await importProductsFromExcel(file);
                       if (res.errors.length) toast.error(`Selesai dengan error: ${res.errors[0]}`);
-                      else toast.success(`Berhasil import ${res.successCount} produk`);
+                      else toast.success(`Berhasil import ${res.imported} produk`);
                     } catch (err: any) { toast.error('Gagal import produk: ' + err.message); }
                     finally { setIsImportingProd(false); if (prodInputRef.current) prodInputRef.current.value = ''; }
                   }} />

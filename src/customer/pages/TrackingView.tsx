@@ -210,13 +210,27 @@ export default function TrackingView({
         setLiveTx(targetTx);
         setPaymentMethodName(extractPaymentMethod(targetTx));
       } else {
-        // If liveTx exists, detect changes to trigger toast
+        // If liveTx exists, detect changes to trigger toast and push notification
         if (liveTx.status !== targetTx.status || liveTx.kitchenStatus !== targetTx.kitchenStatus || liveTx.kitchen_status !== targetTx.kitchen_status) {
            const wasPaid = liveTx?.status === 'lunas' || liveTx?.status === 'completed';
            const nowPaid = targetTx.status === 'lunas' || targetTx.status === 'completed';
            if (!wasPaid && nowPaid) {
              toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
+             import('@/lib/fcm').then(({ showBrowserNotification }) => {
+               showBrowserNotification('Pembayaran Dikonfirmasi', 'Pesanan Anda sedang diproses oleh dapur.');
+             });
            }
+
+           const oldKitchen = (liveTx?.kitchenStatus || liveTx?.kitchen_status || '').toLowerCase();
+           const newKitchen = (targetTx?.kitchenStatus || targetTx?.kitchen_status || '').toLowerCase();
+           
+           if (oldKitchen !== 'siap' && newKitchen === 'siap') {
+             toast.success('🎉 Pesanan Anda sudah SIAP!');
+             import('@/lib/fcm').then(({ showBrowserNotification }) => {
+               showBrowserNotification('Pesanan Siap!', 'Pesanan Anda sudah matang dan siap dinikmati.');
+             });
+           }
+           
            setLiveTx(targetTx);
            setPaymentMethodName(extractPaymentMethod(targetTx));
         }

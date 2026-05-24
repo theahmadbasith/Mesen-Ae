@@ -73,6 +73,19 @@ export interface FinalOrderData {
 export default function CustomerApp() {
   useThemeColor();
 
+  useEffect(() => {
+    import('@/lib/fcm').then(({ onMessageListener, showBrowserNotification, requestForToken }) => {
+      onMessageListener().then((payload: any) => {
+        const title = payload?.notification?.title || 'Pemberitahuan';
+        const body = payload?.notification?.body || '';
+        import('sonner').then(({ toast }) => {
+          toast.success(title, { description: body });
+        });
+        showBrowserNotification(title, body);
+      }).catch(err => console.log('FCM listen failed:', err));
+    });
+  }, []);
+
   // Ambil view awal dari URL jika ada
   const getInitialView = (): string => {
     if (typeof window !== 'undefined') {
