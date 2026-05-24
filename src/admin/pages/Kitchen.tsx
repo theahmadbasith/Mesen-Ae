@@ -182,11 +182,6 @@ export default function Kitchen() {
                     const diffMins = Math.floor((currentTime.getTime() - orderDate.getTime()) / 60000);
                     const isLate = diffMins > 20;
             
-            // Calculate elapsed time (simple string)
-            const orderDate = new Date(bill.date);
-            const diffMins = Math.floor((currentTime.getTime() - orderDate.getTime()) / 60000);
-            const isLate = diffMins > 20; // Example threshold for visual warning
-            
             return (
               <Card key={bill.id} className="border-border/60 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card rounded-2xl overflow-hidden group">
                 
