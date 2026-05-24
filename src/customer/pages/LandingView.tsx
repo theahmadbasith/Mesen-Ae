@@ -100,55 +100,10 @@ export default function LandingView({
     const scrollLeft = carouselRef.current.scrollLeft;
     const width = carouselRef.current.clientWidth;
     if (width > 0) {
-      const totalIndex = Math.round(scrollLeft / width);
-      const activeIndex = totalIndex % displayOffers.length;
+      const activeIndex = Math.round(scrollLeft / width);
       setActiveDotIndex(activeIndex);
-
-      // Silent reset if reaching boundaries to support infinite loop
-      if (totalIndex < displayOffers.length) {
-        carouselRef.current.scrollLeft = (totalIndex + displayOffers.length) * width;
-      } else if (totalIndex >= displayOffers.length * 2) {
-        carouselRef.current.scrollLeft = (totalIndex - displayOffers.length) * width;
-      }
     }
   };
-
-  // Set initial scroll position to the middle copy on mount
-  useEffect(() => {
-    if (displayOffers.length <= 1 || !carouselRef.current || loading) return;
-    const width = carouselRef.current.clientWidth;
-    if (width > 0) {
-      carouselRef.current.scrollLeft = displayOffers.length * width;
-      setActiveDotIndex(0);
-    } else {
-      const timeout = setTimeout(() => {
-        if (carouselRef.current) {
-          const w = carouselRef.current.clientWidth;
-          carouselRef.current.scrollLeft = displayOffers.length * w;
-        }
-      }, 150);
-      return () => clearTimeout(timeout);
-    }
-  }, [displayOffers.length, loading]);
-
-  useEffect(() => {
-    if (displayOffers.length <= 1 || loading) return;
-
-    const interval = setInterval(() => {
-      if (!carouselRef.current) return;
-      const width = carouselRef.current.clientWidth;
-      if (width > 0) {
-        const scrollLeft = carouselRef.current.scrollLeft;
-        const totalIndex = Math.round(scrollLeft / width);
-        carouselRef.current.scrollTo({
-          left: (totalIndex + 1) * width,
-          behavior: 'smooth'
-        });
-      }
-    }, 4500);
-
-    return () => clearInterval(interval);
-  }, [displayOffers.length, loading]);
 
   // Render Skeleton saat Kondisi Loading
   if (loading) {
@@ -274,9 +229,9 @@ export default function LandingView({
                   className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth rounded-[1.5rem] shadow-lg shadow-blue-600/20 custom-scrollbar-hide" 
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  {[...displayOffers, ...displayOffers, ...displayOffers].map((promo, index) => (
+                  {displayOffers.map((promo, index) => (
                     <PromoBanner 
-                      key={`${promo.id}-${index}`}
+                      key={`${promo.id || index}`}
                       banner={promo}
                       className="snap-start shrink-0 w-full min-h-[220px]"
                       onAction={() => setView('menu')}
@@ -292,8 +247,7 @@ export default function LandingView({
                       onClick={() => {
                         if (!carouselRef.current) return;
                         const width = carouselRef.current.clientWidth;
-                        // Target slide index in the middle copy: i + displayOffers.length
-                        carouselRef.current.scrollTo({ left: (i + displayOffers.length) * width, behavior: 'smooth' });
+                        carouselRef.current.scrollTo({ left: i * width, behavior: 'smooth' });
                         setActiveDotIndex(i);
                       }}
                       className={`h-1.5 rounded-full transition-all duration-300 ${i === activeDotIndex ? 'w-4 bg-blue-600' : 'w-1.5 bg-slate-300 dark:bg-slate-700'}`}
