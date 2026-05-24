@@ -146,7 +146,7 @@ export default function SuccessView({ setView, finalOrderData }: SuccessViewProp
       <Receipt 
         open={receiptOpen}
         onClose={() => setReceiptOpen(false)}
-        transaction={finalOrderData.transaction as any}
+        transaction={liveTransaction as any}
         items={finalOrderData.items}
         storeSettings={storeSettings}
         paymentMethodName={finalOrderData.paymentMethodName}
