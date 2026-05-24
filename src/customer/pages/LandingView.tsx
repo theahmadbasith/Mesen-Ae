@@ -80,13 +80,11 @@ export default function LandingView({
 
   const storeName = storeSettings?.storeName || 'Toko Kami';
 
-  const bannersResult = useDbQuery<any>('banners');
-  const banners = React.useMemo(() => bannersResult || [], [bannersResult]);
-
-  // Penawaran dinamis hasil konfigurasi di Tab Banner Admin
+  // Ambil Banners dari storeSettings, bukan dari koleksi terpisah
   const activeBanners = React.useMemo(() => {
-    return banners.filter((b: any) => b.isActive);
-  }, [banners]);
+    const promos = storeSettings?.promoBanners || [];
+    return promos.filter((b: any) => b.isActive !== false);
+  }, [storeSettings]);
 
   const displayOffers = React.useMemo(() => {
     return activeBanners;

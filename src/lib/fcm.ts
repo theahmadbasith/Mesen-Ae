@@ -1,68 +1,76 @@
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+// FCM dependencies removed as we are using native Web Push API
 import { app, db } from "./firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { dbSelect, dbUpsert } from '@/lib/db';
 
 const DEFAULT_VAPID = "BOS-76i4DY8yREaNKWdh3xkqKkPTVLibbvSroA2rAkOxJlfY7HhF2YDzuIryY4D_5Ky-nQhehNBLBcL7IBt-TNQ";
 
-export const requestForToken = async (role: 'admin' | 'customer', identifier?: string): Promise<string | null> => {
+// Helper alias for dbInsert used in requestForToken
+const dbInsert = async (table: string, data: any) => {
+  return dbUpsert(table, data, 'token');
+};
+
+export const requestForToken = async (role: 'admin' | 'customer', name: string) => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const messaging = getMessaging(app);
-      const currentToken = await getToken(messaging, { 
-        vapidKey: import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID
+      const registration = await navigator.serviceWorker.ready;
+      
+      const publicVapidKey = 'BOS-76i4DY8yREaNKWdh3xkqKkPTVLibbvSroA2rAkOxJlfY7HhF2YDzuIryY4D_5Ky-nQhehNBLBcL7IBt-TNQ';
+      
+      // Convert VAPID key to Uint8Array
+      const urlBase64ToUint8Array = (base64String: string) => {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      };
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
       });
-      if (currentToken) {
-        await saveTokenToFirestore(currentToken, role, identifier);
-        return currentToken;
-      } else {
-        console.log('No registration token available. Request permission to generate one.');
-        return null;
-      }
-    } else {
-      console.log('Notification permission denied.');
-      return null;
+
+      const subJSON = JSON.parse(JSON.stringify(subscription));
+
+      // Simpan ke Firestore
+      await dbInsert('fcmTokens', {
+        token: subJSON.endpoint, // Gunakan endpoint sebagai ID unik
+        subscription: subJSON,
+        role,
+        name,
+        updatedAt: new Date().toISOString()
+      });
+
+      return subJSON.endpoint;
     }
   } catch (err) {
     console.error('An error occurred while retrieving token. ', err);
-    return null;
   }
+  return null;
 };
 
-const saveTokenToFirestore = async (token: string, role: string, identifier?: string) => {
+export const sendPushToRole = async (role: string, payload: any) => {
   try {
-    const docRef = doc(db, 'fcm_tokens', token);
-    await setDoc(docRef, {
-      token,
-      role,
-      identifier: identifier || 'anonymous',
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-  } catch (err) {
-    console.error('Failed to save FCM token to Firestore:', err);
-  }
-};
-
-export const onMessageListener = () =>
-  new Promise((resolve) => {
-    try {
-        const messaging = getMessaging(app);
-        onMessage(messaging, (payload) => {
-        resolve(payload);
-        });
-    } catch (err) {
-        console.error('Messaging not supported or not initialized', err);
+    const tokens = await dbSelect('fcmTokens');
+    const targetTokens = tokens.filter((t: any) => t.role === role);
+    
+    for (const t of targetTokens) {
+      if (t.subscription) {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: t.subscription, payload })
+        }).catch(console.error);
+      }
     }
-  });
-
-export const showBrowserNotification = (title: string, body: string) => {
-  if (!("Notification" in window)) return;
-  
-  if (Notification.permission === "granted") {
-    new Notification(title, {
-      body,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-    });
+  } catch (err) {
+    console.error('Gagal mengirim push ke role', role, err);
   }
 };
+
+// Legacy unused listener functions have been cleaned up

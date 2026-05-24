@@ -12,6 +12,7 @@ import {
   createTransaction, createTransactionItems, updateProductStock, db, 
   fetchTransactionByReceiptNumber, appendPaymentToTransactionByReceipt 
 } from '../../lib/db';
+import { sendPushToRole } from '../../lib/fcm';
 import { toDatabaseTransaction, toDatabaseTransactionItem, mapVoucher } from '../../lib/sync';
 
 // --- DEFINISI INTERFACE & TIPE DATA ---
@@ -269,7 +270,14 @@ export default function CheckoutView({
           paymentMethodName: 'Bayar di Kasir'
         });
 
-
+        // Trigger Notifikasi Push ke Perangkat Admin (Background)
+        await sendPushToRole('admin', {
+          title: 'Pesanan Baru Masuk! 🚀',
+          options: {
+            body: `Pesanan dari ${txData.customer_name} (Meja: ${txData.table_number || 'Bawa Pulang'}) menunggu konfirmasi.`,
+            vibrate: [200, 100, 200, 100, 400]
+          }
+        });
 
         setCart([]);
         setView('success');
@@ -362,7 +370,14 @@ export default function CheckoutView({
           paymentMethodName: pm ? pm.name : method.toUpperCase()
         });
 
-
+        // Trigger Notifikasi Push ke Perangkat Admin (Background)
+        await sendPushToRole('admin', {
+          title: 'Pembayaran Diterima! 💸',
+          options: {
+            body: `Pesanan dari ${txData.customer_name} (Meja: ${txData.table_number || 'Bawa Pulang'}) telah dibayar via Midtrans.`,
+            vibrate: [200, 100, 200, 100, 400]
+          }
+        });
 
         setCart([]);
       }

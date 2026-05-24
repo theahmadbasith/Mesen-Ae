@@ -73,7 +73,7 @@ const AdminOnlyRoute = ({ children, allowedForUser = false }: { children: React.
 };
 
 import { useEffect } from "react";
-import { requestForToken, onMessageListener } from "@/lib/fcm";
+import { requestForToken } from "@/lib/fcm";
 import { toast } from "sonner";
 
 export default function AdminApp() {
@@ -83,12 +83,7 @@ export default function AdminApp() {
       if (token) console.log('Admin FCM Ready');
     });
 
-    // Listen for foreground messages
-    onMessageListener().then((payload: any) => {
-      toast.success(payload?.notification?.title || 'Pesanan Baru!', {
-        description: payload?.notification?.body || 'Cek daftar pesanan aktif.',
-      });
-    }).catch(err => console.log('failed: ', err));
+    // Token diminta hanya saat login atau aksi eksplisit
   }, []);
 
   return (

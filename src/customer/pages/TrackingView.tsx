@@ -216,9 +216,6 @@ export default function TrackingView({
            const nowPaid = targetTx.status === 'lunas' || targetTx.status === 'completed';
            if (!wasPaid && nowPaid) {
              toast.success('🎉 Pembayaran dikonfirmasi! Pesanan sedang diproses.');
-             import('@/lib/fcm').then(({ showBrowserNotification }) => {
-               showBrowserNotification('Pembayaran Dikonfirmasi', 'Pesanan Anda sedang diproses oleh dapur.');
-             });
            }
 
            const oldKitchen = (liveTx?.kitchenStatus || liveTx?.kitchen_status || '').toLowerCase();
@@ -226,9 +223,6 @@ export default function TrackingView({
            
            if (oldKitchen !== 'siap' && newKitchen === 'siap') {
              toast.success('🎉 Pesanan Anda sudah SIAP!');
-             import('@/lib/fcm').then(({ showBrowserNotification }) => {
-               showBrowserNotification('Pesanan Siap!', 'Pesanan Anda sudah matang dan siap dinikmati.');
-             });
            }
            
            setLiveTx(targetTx);

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: false, // Jangan bersihkan folder public saat build
       outDir: 'public',
       lib: {
-        entry: path.resolve(__dirname, 'src/firebase-messaging-sw.ts'),
+        entry: path.resolve(__dirname, 'src/services/firebase-messaging-sw.ts'),
         name: 'firebaseMessagingSW',
         formats: ['iife'],
         fileName: () => 'firebase-messaging-sw.js',

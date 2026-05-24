@@ -9,6 +9,7 @@ import {
   Check, ScanBarcode, Package as PackageIcon, ClipboardList, Save, Pencil,
   User, Hash, Trash2, Barcode, QrCode, Wallet, Building2, LayoutGrid, UtensilsCrossed, CheckCircle, Bell
 } from "lucide-react";
+import { sendPushToRole } from '@/lib/fcm';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
@@ -591,6 +592,15 @@ export default function Kasir() {
         notes: r.notes
       })));
 
+      // Trigger Notifikasi Push ke Pelanggan (Background)
+      await sendPushToRole('customer', {
+        title: 'Pembayaran Dikonfirmasi! 🎉',
+        options: {
+          body: `Pesanan Anda (${finalTx.receiptNumber}) telah lunas dan sedang disiapkan.`,
+          vibrate: [200, 100, 200, 100, 400]
+        }
+      });
+
       toast.success(`Transaksi berhasil!`);
       setReceiptOpen(true);
 
@@ -636,6 +646,15 @@ export default function Kasir() {
           selectedVariants: r.selected_variants,
           notes: r.notes
         })));
+
+        // Trigger Notifikasi Push ke Pelanggan (Background)
+        await sendPushToRole('customer', {
+          title: 'Pembayaran Dikonfirmasi! 🎉',
+          options: {
+            body: `Pesanan Anda (${receiptNumber}) telah lunas dan sedang disiapkan.`,
+            vibrate: [200, 100, 200, 100, 400]
+          }
+        });
 
         toast.success(`Transaksi berhasil! ${receiptNumber}`);
         setReceiptOpen(true);

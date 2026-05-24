@@ -1,4 +1,5 @@
 import { useDbQuery, dbUpdate } from '@/hooks/db-hooks';
+import { sendPushToRole } from '@/lib/fcm';
 import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionItemRecord, StoreSettings } from '@/hooks/db-hooks';
 import { Card, CardContent } from '@/components/ui/card';
@@ -86,8 +87,16 @@ export default function Kitchen() {
         
         await dbUpdate('transactions', bill.id!, updates);
         
-
-        
+        // Trigger Notifikasi Push ke Pelanggan (Background)
+        if (nextStatus === 'disajikan') {
+          await sendPushToRole('customer', {
+            title: 'Pesanan Siap! 🍽️',
+            options: {
+              body: `Pesanan Anda (${bill.receiptNumber}) sudah matang dan siap dinikmati.`,
+              vibrate: [200, 100, 200, 100, 400]
+            }
+          });
+        }
         toast.success(`Pesanan ${bill.receiptNumber} lanjut ke tahap: ${nextStatus.toUpperCase()}`);
       }
     } catch (err) {

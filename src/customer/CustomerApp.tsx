@@ -74,15 +74,9 @@ export default function CustomerApp() {
   useThemeColor();
 
   useEffect(() => {
-    import('@/lib/fcm').then(({ onMessageListener, showBrowserNotification, requestForToken }) => {
-      onMessageListener().then((payload: any) => {
-        const title = payload?.notification?.title || 'Pemberitahuan';
-        const body = payload?.notification?.body || '';
-        import('sonner').then(({ toast }) => {
-          toast.success(title, { description: body });
-        });
-        showBrowserNotification(title, body);
-      }).catch(err => console.log('FCM listen failed:', err));
+    import('@/lib/fcm').then(({ requestForToken }) => {
+      // Tidak perlu lagi mendengarkan pesan foreground,
+      // karena Service Worker murni akan menanganinya di latar belakang
     });
   }, []);
 

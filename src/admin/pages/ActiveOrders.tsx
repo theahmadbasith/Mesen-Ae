@@ -47,9 +47,6 @@ export default function ActiveOrders() {
   React.useEffect(() => {
     if (openBills.length > prevBillsCountRef.current) {
       toast.success('🔔 Pesanan Baru Masuk!');
-      import('@/lib/fcm').then(({ showBrowserNotification }) => {
-        showBrowserNotification('Pesanan Baru!', 'Ada pesanan pelanggan baru yang menunggu tindakan Anda.');
-      });
     }
     prevBillsCountRef.current = openBills.length;
   }, [openBills.length]);
