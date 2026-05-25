@@ -46,9 +46,19 @@ function DraggableItem({ pos, isDragging, onPointerDown, children, type }: any) 
   const transform = type === 'overlay' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)';
   return (
     <div 
-      style={{ position: 'absolute', left: `${pos.x}%`, top: `${pos.y}%`, transform, cursor: isDragging ? 'grabbing' : 'grab' }}
+      style={{ 
+        position: 'absolute', 
+        left: `${pos.x}%`, 
+        top: `${pos.y}%`, 
+        transform, 
+        cursor: isDragging ? 'grabbing' : 'grab', 
+        width: 'max-content',
+        minWidth: 'max-content',
+        maxWidth: 'none',
+        right: 'auto'
+      }}
       onPointerDown={onPointerDown}
-      className={cn("select-none z-40 touch-none", isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-blue-900/50 z-50 rounded-lg scale-105 transition-transform duration-75")}
+      className={cn("select-none z-40 touch-none whitespace-nowrap flex shrink-0", isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-blue-900/50 z-50 rounded-lg scale-[1.02]")}
     >
       {children}
     </div>
@@ -103,22 +113,67 @@ export default function BannerPromo() {
     );
   }
 
-  // Handle Drag & Drop
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragTarget || !previewRef.current) return;
-    const rect = previewRef.current.getBoundingClientRect();
-    let x = ((e.clientX - rect.left) / rect.width) * 100;
-    let y = ((e.clientY - rect.top) / rect.height) * 100;
-    x = Math.max(0, Math.min(100, x));
-    y = Math.max(0, Math.min(100, y));
+  // High performance direct DOM drag handler to avoid React re-render lag
+  const handleDragStart = (e: React.PointerEvent<HTMLDivElement>, target: 'title' | 'desc' | 'overlay' | 'button') => {
+    e.preventDefault();
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    setDragTarget(target);
 
-    if (dragTarget === 'title') setTitlePos({ x, y });
-    else if (dragTarget === 'desc') setDescPos({ x, y });
-    else if (dragTarget === 'overlay') setOverlayPos({ x, y });
-    else if (dragTarget === 'button') setButtonPos({ x, y });
+    const canvas = previewRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+
+    let currentX = target === 'title' ? titlePos.x : target === 'desc' ? descPos.x : target === 'overlay' ? overlayPos.x : buttonPos.x;
+    let currentY = target === 'title' ? titlePos.y : target === 'desc' ? descPos.y : target === 'overlay' ? overlayPos.y : buttonPos.y;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      let x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+      let y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
+      x = Math.round(Math.max(0, Math.min(100, x)));
+      y = Math.round(Math.max(0, Math.min(100, y)));
+
+      currentX = x;
+      currentY = y;
+
+      el.style.left = `${x}%`;
+      el.style.top = `${y}%`;
+
+      if (target === 'overlay') {
+        const toolbar = el.querySelector('.floating-toolbar') as HTMLDivElement | null;
+        if (toolbar) {
+          if (y < 25) {
+            toolbar.style.bottom = '-52px';
+            toolbar.style.top = 'auto';
+          } else {
+            toolbar.style.top = '-52px';
+            toolbar.style.bottom = 'auto';
+          }
+        }
+      }
+    };
+
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      el.releasePointerCapture(upEvent.pointerId);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      setDragTarget(null);
+
+      if (target === 'title') {
+        setTitlePos({ x: currentX, y: currentY });
+      } else if (target === 'desc') {
+        setDescPos({ x: currentX, y: currentY });
+      } else if (target === 'overlay') {
+        setOverlayPos({ x: currentX, y: currentY });
+      } else if (target === 'button') {
+        setButtonPos({ x: currentX, y: currentY });
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   };
 
-  const handlePointerUp = () => setDragTarget(null);
 
   const openAddBanner = () => {
     setEditBanner(null);
@@ -380,7 +435,10 @@ export default function BannerPromo() {
                 {/* Visual Preview Card - 1 Kolom besar */}
                 <div 
                   className="w-full lg:w-[420px] aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-md shrink-0 select-none bg-slate-900"
-                  style={{ background: b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined }}
+                  style={{ 
+                    background: b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined,
+                    containerType: 'inline-size'
+                  }}
                 >
                   {b.imageUrl ? (
                     <div className="absolute inset-0 z-0">
@@ -405,10 +463,10 @@ export default function BannerPromo() {
                          src={b.overlayImageUrl} 
                          style={{
                            transform: `scaleX(${b.overlayFlipX ? -1 : 1}) rotate(${b.overlayRotate ?? 0}deg)`,
-                           width: `${(b.overlayScale ?? 1) * 80}px`,
+                           width: `calc(${b.overlayScale ?? 1} * 20cqw)`,
                            height: 'auto',
                          }}
-                         className="object-contain drop-shadow-2xl" 
+                         className="object-contain drop-shadow-2xl max-w-none" 
                          alt="Overlay"
                        />
                     </div>
@@ -445,13 +503,6 @@ export default function BannerPromo() {
                     </div>
                     <h4 className="font-extrabold text-lg sm:text-xl text-foreground leading-snug">{b.title}</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
-                    
-                    {b.link && (
-                      <div className="flex items-center gap-1.5 text-xs text-primary font-bold pt-1">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span className="truncate max-w-md">{b.link}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50 w-full">
@@ -481,9 +532,9 @@ export default function BannerPromo() {
         </div>
       )}
 
-      {/* Modal Add/Edit Banner Penawaran - WORKSPACE 2 KOLOM PREMIUM */}
+      {/* Modal Add/Edit Banner Penawaran - WORKSPACE DIALOG LEBIH BESAR */}
       <Dialog open={bannerDialogOpen} onOpenChange={setBannerDialogOpen}>
-        <DialogContent className="max-w-[1000px] w-[95vw] rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl bg-background">
+        <DialogContent className="max-w-[1200px] w-[96vw] rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl bg-background">
           <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10">
             <DialogTitle className="text-xl font-extrabold flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
@@ -494,25 +545,27 @@ export default function BannerPromo() {
           </DialogHeader>
 
           <div 
-            className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 overflow-y-auto custom-scrollbar" 
+            className="p-6 space-y-6 overflow-y-auto custom-scrollbar" 
             style={{ maxHeight: 'calc(100vh - 180px)' }}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
           >
             
-            {/* KOLOM KIRI: WORKSPACE VISUAL & TRANSFORMATION SLIDERS */}
-            <div className="lg:col-span-6 space-y-6">
-              <div className="space-y-2">
-                 <Label className="text-xs font-black text-muted-foreground uppercase tracking-wider">Canvas Desain Interaktif</Label>
-                 <p className="text-[11px] text-muted-foreground">Sentuh lalu geser tulisan atau produk untuk mengatur posisinya sesuka hati.</p>
+            {/* AREA 1: KANVAS DESAIN VISUAL - DIATAS DAN FULL WIDTH LEBIH BESAR */}
+            <div className="space-y-3 w-full max-w-[1100px] mx-auto">
+              <div className="flex items-center justify-between">
+                 <Label className="text-xs font-black text-muted-foreground uppercase tracking-wider">Canvas Desain Interaktif (Drag & Drop)</Label>
+                 <span className="text-[10px] text-primary bg-primary/10 px-2.5 py-1 rounded font-bold flex items-center gap-1">
+                   <Move className="w-3.5 h-3.5" /> Tekan & Geser Komponen untuk Mengatur Posisi
+                 </span>
               </div>
 
-              {/* STICKY LIVE CANVAS PREVIEW */}
+              {/* LIVE CANVAS PREVIEW */}
               <div 
                 ref={previewRef}
                 className="w-full aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-inner border border-border/50 select-none bg-slate-950"
-                style={{ background: bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : undefined }}
+                style={{ 
+                  background: bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : undefined,
+                  containerType: 'inline-size'
+                }}
               >
                 {bannerBgType === 'image' && bannerImage ? (
                   <div className="absolute inset-0 z-0 select-none pointer-events-none">
@@ -525,38 +578,40 @@ export default function BannerPromo() {
                   </div>
                 ) : null}
 
-                {/* OVERLAY IMAGE WITH BOUNDING BOX & TOOLBAR */}
+                {/* OVERLAY IMAGE WITH BOUNDING BOX & FLOATING TOOLBAR */}
                 {overlayImage && (
                   <DraggableItem 
                     pos={overlayPos} 
                     isDragging={dragTarget === 'overlay'} 
                     onPointerDown={(e: any) => { 
                       if (e.target.closest('.no-drag')) return;
-                      e.currentTarget.setPointerCapture(e.pointerId); 
-                      setDragTarget('overlay'); 
+                      handleDragStart(e, 'overlay'); 
                     }}
                     type="overlay"
                   >
-                    <div className="relative p-2 border-2 border-primary/55 border-dashed rounded-xl bg-black/10 backdrop-blur-[1px] hover:border-primary transition-colors">
+                    <div className="relative p-2 border-2 border-primary/55 border-dashed rounded-xl bg-black/10 backdrop-blur-[1px] select-none whitespace-nowrap flex shrink-0">
                       <img 
                         src={overlayImage} 
                         style={{
                           transform: `scaleX(${overlayFlipX ? -1 : 1}) rotate(${overlayRotate}deg)`,
-                          width: `${overlayScale * 110}px`,
+                          width: `calc(${overlayScale} * 20cqw)`,
                           height: 'auto',
                         }}
-                        className="object-contain drop-shadow-2xl pointer-events-none transition-all duration-75" 
+                        className="object-contain drop-shadow-2xl pointer-events-none select-none max-w-none" 
                         alt="Overlay" 
                       />
                       
-                      {/* Floating actions toolbar below the image */}
-                      <div className="no-drag absolute -bottom-12 left-1/2 -translate-x-1/2 bg-slate-950/95 text-white border border-white/10 rounded-lg shadow-xl flex items-center gap-1 p-1 z-50 backdrop-blur-sm opacity-90 hover:opacity-100 transition-opacity">
+                      {/* Floating actions toolbar */}
+                      <div 
+                        style={overlayPos.y < 25 ? { bottom: '-52px', top: 'auto' } : { top: '-52px', bottom: 'auto' }}
+                        className="floating-toolbar no-drag absolute left-1/2 -translate-x-1/2 bg-slate-950/95 text-white border border-white/10 rounded-lg shadow-xl flex items-center gap-1 p-1 z-50 backdrop-blur-sm opacity-90 hover:opacity-100 transition-opacity"
+                      >
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           className="w-6.5 h-6.5 hover:bg-white/10 rounded-md text-white p-0" 
                           onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.max(0.2, prev - 0.1)); }} 
+                          onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.max(0.2, Math.round((prev - 0.1) * 10) / 10)); }} 
                           title="Kecilkan"
                         >
                           <Minus className="w-3.5 h-3.5" />
@@ -567,7 +622,7 @@ export default function BannerPromo() {
                           size="icon" 
                           className="w-6.5 h-6.5 hover:bg-white/10 rounded-md text-white p-0" 
                           onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.min(3.0, prev + 0.1)); }} 
+                          onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.min(3.0, Math.round((prev + 0.1) * 10) / 10)); }} 
                           title="Besarkan"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -624,14 +679,14 @@ export default function BannerPromo() {
                 <DraggableItem 
                   pos={titlePos} 
                   isDragging={dragTarget === 'title'} 
-                  onPointerDown={(e: any) => { e.currentTarget.setPointerCapture(e.pointerId); setDragTarget('title'); }}
+                  onPointerDown={(e: any) => handleDragStart(e, 'title')}
                   type="title"
                 >
-                  <div className="w-[200px] sm:w-[280px] cursor-grab active:cursor-grabbing">
+                  <div className="w-[200px] sm:w-[320px] cursor-grab active:cursor-grabbing">
                     <span className="text-[8px] sm:text-[9px] px-2 py-0.5 rounded bg-white/20 backdrop-blur-md font-bold mb-1 inline-block uppercase tracking-wider border border-white/10 shadow-sm pointer-events-none">
                       Promo Spesial
                     </span>
-                    <h4 className="font-black text-sm sm:text-lg leading-tight line-clamp-1 drop-shadow-md pointer-events-none">
+                    <h4 className="font-black text-sm sm:text-xl leading-tight line-clamp-1 drop-shadow-md pointer-events-none">
                       {bannerTitle || 'Judul Penawaran'}
                     </h4>
                   </div>
@@ -641,10 +696,10 @@ export default function BannerPromo() {
                 <DraggableItem 
                   pos={descPos} 
                   isDragging={dragTarget === 'desc'} 
-                  onPointerDown={(e: any) => { e.currentTarget.setPointerCapture(e.pointerId); setDragTarget('desc'); }}
+                  onPointerDown={(e: any) => handleDragStart(e, 'desc')}
                   type="desc"
                 >
-                  <div className="w-[200px] sm:w-[280px] cursor-grab active:cursor-grabbing">
+                  <div className="w-[200px] sm:w-[320px] cursor-grab active:cursor-grabbing">
                     <p className="text-[10px] sm:text-xs text-slate-100 font-semibold line-clamp-2 leading-snug drop-shadow-sm mb-1.5 pointer-events-none">
                       {bannerDesc || 'Tulis deskripsi promo produk Anda di sini...'}
                     </p>
@@ -654,216 +709,155 @@ export default function BannerPromo() {
                   </div>
                 </DraggableItem>
               </div>
+            </div>
 
-              {/* TRANSFORMATION CONTROL CARD */}
-              {overlayImage && (
-                <div className="space-y-4 p-5 bg-muted/40 border border-border/60 rounded-2xl">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-foreground">Transformasi Gambar Overlay</h4>
-                    <Badge variant="outline" className="text-[9px] bg-background">PNG Mode</Badge>
+            {/* AREA 2: PARAMETER EDITING KONTEN & LATAR - 2 KOLOM DI BAWAH KANVAS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border/40 w-full max-w-[1100px] mx-auto">
+               
+               {/* Parameter Data & Teks */}
+               <div className="space-y-4">
+                  {/* Tipe Penawaran */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black text-foreground uppercase tracking-wider">Tipe Konten Penawaran <span className="text-destructive">*</span></Label>
+                    <Select value={bannerType} onValueChange={(val: 'voucher' | 'menu' | 'custom') => {
+                      setBannerType(val);
+                      if (val === 'custom') { setBannerVoucherId(''); setBannerProductId(''); }
+                    }}>
+                      <SelectTrigger className="h-11 bg-background rounded-xl font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="voucher" className="font-semibold">Kode Promo / Voucher</SelectItem>
+                        <SelectItem value="menu" className="font-semibold">Menu Baru / Rekomendasi</SelectItem>
+                        <SelectItem value="custom" className="font-semibold">Kustom Bebas (Manual)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {bannerType === 'voucher' && (
+                    <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Voucher</Label>
+                      <Select value={bannerVoucherId} onValueChange={handleBannerVoucherChange}>
+                        <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih voucher..." /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {vouchers.map(v => (
+                            <SelectItem key={v.id} value={v.id!.toString()} className="font-semibold">{v.code} (Diskon {v.type === 'percentage' ? `${v.value}%` : FORMAT_IDR(v.value)})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {bannerType === 'menu' && (
+                    <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Produk</Label>
+                      <Select value={bannerProductId} onValueChange={handleBannerProductChange}>
+                        <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {products.map(p => (
+                            <SelectItem key={p.id} value={p.id!.toString()} className="font-semibold">{p.name} ({FORMAT_IDR(p.price)})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Title & Desc */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black text-foreground uppercase tracking-wider">Judul Banner <span className="text-destructive">*</span></Label>
+                    <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} maxLength={45} placeholder="Contoh: Promo Spesial Weekend!" className="h-11 bg-background rounded-xl font-semibold text-sm" />
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
-                      <span>Ukuran Gambar</span>
-                      <span>{Math.round(overlayScale * 100)}%</span>
+                    <Label className="text-xs font-black text-foreground uppercase tracking-wider">Deskripsi Singkat <span className="text-destructive">*</span></Label>
+                    <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} maxLength={120} placeholder="Ketik keterangan promo di sini..." className="w-full p-3 bg-background rounded-xl border border-input focus:outline-none focus:ring-1 focus:ring-primary text-sm font-semibold resize-none" />
+                  </div>
+               </div>
+
+               {/* Parameter Desain & Upload */}
+               <div className="space-y-4">
+                  {/* Background Selector */}
+                  <div className="p-4 bg-muted/30 border border-border/40 rounded-xl space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe Latar Belakang Canvas</Label>
+                      <Select value={bannerBgType} onValueChange={(val: any) => setBannerBgType(val)}>
+                        <SelectTrigger className="h-10 bg-background rounded-lg font-bold text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="image" className="font-semibold text-xs">Gambar Latar Kustom (Upload)</SelectItem>
+                          <SelectItem value="solid" className="font-semibold text-xs">Warna Solid Tunggal</SelectItem>
+                          <SelectItem value="gradient" className="font-semibold text-xs">Warna Gradasi Modern</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0.2" 
-                      max="3.0" 
-                      step="0.05" 
-                      value={overlayScale} 
-                      onChange={(e) => setOverlayScale(Number(e.target.value))}
-                      className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
+
+                    {bannerBgType === 'image' && (
+                      <div className="flex gap-3 items-center animate-in fade-in duration-200">
+                        <div className="w-16 h-12 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0">
+                          {bannerImage && !bannerImage.startsWith('preset:') ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
+                        </div>
+                        <div className="flex-1">
+                          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, false)} />
+                          <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-border/60" onClick={() => fileInputRef.current?.click()}>Pilih File Latar</Button>
+                          <p className="text-[9px] text-muted-foreground mt-1">Rasio optimal 21:9.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {bannerBgType === 'solid' && (
+                      <div className="flex gap-3 items-center animate-in fade-in duration-200">
+                        <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-14 h-11 p-1 cursor-pointer rounded-lg border-border/60 shrink-0" />
+                        <div className="flex-1">
+                          <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-xs font-bold uppercase font-mono" />
+                        </div>
+                      </div>
+                    )}
+
+                    {bannerBgType === 'gradient' && (
+                      <div className="space-y-2 animate-in fade-in duration-200">
+                        <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-xs font-bold font-mono" />
+                        <div className="w-full h-8 rounded-lg border border-border/60" style={{ background: bannerBgGradient }} />
+                        <p className="text-[9px] text-muted-foreground">CSS: <code>linear-gradient(to right, #1e3c72, #2a5298)</code></p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
-                      <span>Sudut Rotasi</span>
-                      <span>{overlayRotate}°</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="-180" 
-                      max="180" 
-                      step="5" 
-                      value={overlayRotate} 
-                      onChange={(e) => setOverlayRotate(Number(e.target.value))}
-                      className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      className={cn("flex-1 rounded-xl h-10 border-border/60 text-xs font-black", overlayFlipX && "bg-primary/10 border-primary text-primary")}
-                      onClick={() => setOverlayFlipX(prev => !prev)}
-                    >
-                      <FlipHorizontal className="w-4 h-4 mr-2" />
-                      Flip Horizontal
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 rounded-xl h-10 border-destructive/20 text-destructive hover:bg-destructive/10 text-xs font-black"
-                      onClick={() => setOverlayImage(null)}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Hapus Overlay
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* KOLOM KANAN: PARAMETER EDITING KONTEN & LATAR */}
-            <div className="lg:col-span-6 space-y-5">
-              <div className="pb-3 border-b border-border/40">
-                <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">Detail Data & Latar Banner</h4>
-              </div>
-
-              {/* Tipe Penawaran */}
-              <div className="space-y-2">
-                <Label className="text-xs font-black text-foreground uppercase tracking-wider">Tipe Konten Penawaran <span className="text-destructive">*</span></Label>
-                <Select value={bannerType} onValueChange={(val: 'voucher' | 'menu' | 'custom') => {
-                  setBannerType(val);
-                  if (val === 'custom') { setBannerVoucherId(''); setBannerProductId(''); }
-                }}>
-                  <SelectTrigger className="h-11 bg-background rounded-xl font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="voucher" className="font-semibold">Menghubungkan Kode Promo / Voucher</SelectItem>
-                    <SelectItem value="menu" className="font-semibold">Menghubungkan Menu Baru</SelectItem>
-                    <SelectItem value="custom" className="font-semibold">Kustom Bebas (Manual)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {bannerType === 'voucher' && (
-                <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Voucher Aktif</Label>
-                  <Select value={bannerVoucherId} onValueChange={handleBannerVoucherChange}>
-                    <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih voucher..." /></SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {vouchers.map(v => (
-                        <SelectItem key={v.id} value={v.id!.toString()} className="font-semibold">{v.code} (Diskon {v.type === 'percentage' ? `${v.value}%` : FORMAT_IDR(v.value)})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {bannerType === 'menu' && (
-                <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Produk Menu</Label>
-                  <Select value={bannerProductId} onValueChange={handleBannerProductChange}>
-                    <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {products.map(p => (
-                        <SelectItem key={p.id} value={p.id!.toString()} className="font-semibold">{p.name} ({FORMAT_IDR(p.price)})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Title & Desc */}
-              <div className="space-y-2">
-                <Label className="text-xs font-black text-foreground uppercase tracking-wider">Judul Banner <span className="text-destructive">*</span></Label>
-                <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} maxLength={45} placeholder="Contoh: Diskon Gajian Tiba!" className="h-11 bg-background rounded-xl font-semibold text-sm" />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-xs font-black text-foreground uppercase tracking-wider">Deskripsi Singkat <span className="text-destructive">*</span></Label>
-                <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} maxLength={120} placeholder="Ketik keterangan promo secara padat dan memikat di sini..." className="w-full p-3 bg-background rounded-xl border border-input focus:outline-none focus:ring-1 focus:ring-primary text-sm font-semibold resize-none" />
-              </div>
-
-              {/* Background Selector */}
-              <div className="p-4 bg-muted/30 border border-border/40 rounded-xl space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe Latar Belakang Canvas</Label>
-                  <Select value={bannerBgType} onValueChange={(val: any) => setBannerBgType(val)}>
-                    <SelectTrigger className="h-10 bg-background rounded-lg font-bold text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="image" className="font-semibold text-xs">Gambar Latar Kustom (Unggah)</SelectItem>
-                      <SelectItem value="solid" className="font-semibold text-xs">Warna Solid Tunggal</SelectItem>
-                      <SelectItem value="gradient" className="font-semibold text-xs">Warna Gradasi Modern</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {bannerBgType === 'image' && (
-                  <div className="flex gap-3 items-center animate-in fade-in duration-200">
-                    <div className="w-16 h-12 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0">
-                      {bannerImage && !bannerImage.startsWith('preset:') ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
-                    </div>
-                    <div className="flex-1">
-                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, false)} />
-                      <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-border/60" onClick={() => fileInputRef.current?.click()}>Pilih File Latar</Button>
-                      <p className="text-[9px] text-muted-foreground mt-1">Rasio optimal 21:9.</p>
+                  {/* Overlay Upload */}
+                  <div className="p-4 bg-muted/30 border border-border/40 rounded-xl space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Unggah Foto Produk PNG Transparan</Label>
+                    <div className="flex gap-4 items-center">
+                      <div className="w-16 h-16 rounded-xl border border-dashed border-border/60 bg-muted/10 flex items-center justify-center overflow-hidden shrink-0">
+                        {overlayImage ? <img src={overlayImage} alt="Overlay" className="w-full h-full object-contain" /> : <Gift className="w-5 h-5 text-muted-foreground/40" />}
+                      </div>
+                      <div className="flex-1">
+                        <input ref={overlayInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={e => handleImageSelect(e, true)} />
+                        <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-primary/30 text-primary hover:bg-primary/10" onClick={() => overlayInputRef.current?.click()}>Pilih PNG Produk</Button>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {bannerBgType === 'solid' && (
-                  <div className="flex gap-3 items-center animate-in fade-in duration-200">
-                    <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-14 h-11 p-1 cursor-pointer rounded-lg border-border/60 shrink-0" />
-                    <div className="flex-1">
-                      <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-xs font-bold uppercase font-mono" />
+                  <div className={cn("grid gap-4", bannerType === 'custom' ? "grid-cols-2" : "grid-cols-1")}>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Teks Tombol Aksi</Label>
+                      <Input value={bannerButtonText} onChange={e => setBannerButtonText(e.target.value)} placeholder="Beli Sekarang" className="h-10 bg-background rounded-xl font-semibold text-xs" />
                     </div>
+                    {bannerType === 'custom' && (
+                      <div className="space-y-1 animate-in fade-in duration-200">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tautan Web (Link URL)</Label>
+                        <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://instagram.com/..." className="h-10 bg-background rounded-xl font-semibold text-xs" />
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {bannerBgType === 'gradient' && (
-                  <div className="space-y-2 animate-in fade-in duration-200">
-                    <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-xs font-bold font-mono" />
-                    <div className="w-full h-8 rounded-lg border border-border/60" style={{ background: bannerBgGradient }} />
-                    <p className="text-[9px] text-muted-foreground">Tulis sintaks gradasi CSS. Contoh: <code>linear-gradient(to right, #1e3c72, #2a5298)</code></p>
+                  <div className="flex items-center justify-between p-3 bg-muted/40 border border-border/50 rounded-xl mt-4">
+                    <div className="flex flex-col">
+                      <Label htmlFor="banner-active" className="text-xs font-bold cursor-pointer">Terbitkan Banner</Label>
+                      <span className="text-[9px] text-muted-foreground">Aktifkan untuk menampilkan ke beranda customer.</span>
+                    </div>
+                    <Switch id="banner-active" checked={bannerIsActive} onCheckedChange={setBannerIsActive} className="data-[state=checked]:bg-green-500 scale-90" />
                   </div>
-                )}
-              </div>
-
-              {/* Overlay Upload */}
-              <div className="p-4 bg-muted/30 border border-border/40 rounded-xl space-y-3">
-                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tambahkan Foto Produk Transparan (PNG / WebP)</Label>
-                <div className="flex gap-4 items-center">
-                  <div className="w-16 h-16 rounded-xl border border-dashed border-border/60 bg-muted/10 flex items-center justify-center overflow-hidden shrink-0">
-                    {overlayImage ? <img src={overlayImage} alt="Overlay" className="w-full h-full object-contain" /> : <Gift className="w-5 h-5 text-muted-foreground/40" />}
-                  </div>
-                  <div className="flex-1">
-                    <input ref={overlayInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={e => handleImageSelect(e, true)} />
-                    <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-primary/30 text-primary hover:bg-primary/10" onClick={() => overlayInputRef.current?.click()}>Unggah PNG Transparan</Button>
-                    <p className="text-[9px] text-muted-foreground mt-1">Sangat disarankan gambar tanpa latar belakang agar membaur rapi.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Teks Tombol Aksi</Label>
-                  <Input value={bannerButtonText} onChange={e => setBannerButtonText(e.target.value)} placeholder="Beli Sekarang" className="h-10 bg-background rounded-xl font-semibold text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tautan Web (Link URL)</Label>
-                  <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://instagram.com/..." className="h-10 bg-background rounded-xl font-semibold text-xs" />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 bg-muted/40 border border-border/50 rounded-xl mt-4">
-                <div className="flex flex-col">
-                  <Label htmlFor="banner-active" className="text-sm font-bold cursor-pointer">Status Terbit</Label>
-                  <span className="text-[10px] text-muted-foreground">Aktifkan untuk langsung menampilkan ke beranda pelanggan.</span>
-                </div>
-                <Switch id="banner-active" checked={bannerIsActive} onCheckedChange={setBannerIsActive} className="data-[state=checked]:bg-green-500 scale-90" />
-              </div>
+               </div>
             </div>
 
           </div>
