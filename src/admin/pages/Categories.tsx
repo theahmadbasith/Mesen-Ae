@@ -20,6 +20,7 @@ export default function Categories() {
   const [catName, setCatName] = useState('');
   const [catIcon, setCatIcon] = useState('📦');
   const [catColor, setCatColor] = useState('#3b82f6');
+  const [catNeedsKitchen, setCatNeedsKitchen] = useState(true);
   const [isSavingCat, setIsSavingCat] = useState(false);
 
   const openCatAdd = () => {
@@ -27,6 +28,7 @@ export default function Categories() {
     setCatName('');
     setCatIcon('📦');
     setCatColor('#3b82f6');
+    setCatNeedsKitchen(true);
     setCatDialog(true);
   };
 
@@ -35,6 +37,7 @@ export default function Categories() {
     setCatName(c.name);
     setCatIcon(c.icon);
     setCatColor(c.color);
+    setCatNeedsKitchen(c.needsKitchen ?? true);
     setCatDialog(true);
   };
 
@@ -54,9 +57,9 @@ export default function Categories() {
     setIsSavingCat(true);
     try {
       if (catEditId) {
-        await dbUpdate('categories', catEditId, { name: catName, icon: catIcon, color: catColor });
+        await dbUpdate('categories', catEditId, { name: catName, icon: catIcon, color: catColor, needsKitchen: catNeedsKitchen });
       } else {
-        await dbInsert('categories', { name: catName, icon: catIcon, color: catColor, createdAt: new Date().toISOString() });
+        await dbInsert('categories', { name: catName, icon: catIcon, color: catColor, needsKitchen: catNeedsKitchen, createdAt: new Date().toISOString() });
       }
       setCatDialog(false);
       toast.success('Kategori berhasil disimpan');
@@ -70,8 +73,10 @@ export default function Categories() {
   return (
     <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       
-      {/* Action Header */}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-muted-foreground">
+          {categories?.length ?? 0} kategori terdaftar.
+        </p>
         <Button onClick={openCatAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
           <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
           Tambah Kategori
@@ -109,9 +114,20 @@ export default function Categories() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-foreground">{c.name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
-                  <p className="text-xs text-muted-foreground">Warna Indikator</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-0.5 rounded text-[10px] font-bold">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    <span className="uppercase tracking-wider text-muted-foreground">Tema Kategori</span>
+                  </div>
+                  {c.needsKitchen !== false ? (
+                    <div className="bg-amber-100/50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 dark:border-amber-500/20 uppercase tracking-wider">
+                      ♨️ Masuk Dapur
+                    </div>
+                  ) : (
+                    <div className="bg-slate-100/50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 uppercase tracking-wider">
+                      🛍️ Retail (Non-Dapur)
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -168,9 +184,28 @@ export default function Categories() {
                       type="color"
                       value={catColor}
                       onChange={(e) => setCatColor(e.target.value)}
-                      className="h-10 w-full p-1 cursor-pointer"
+                      className="h-10 w-full p-1 cursor-pointer rounded-lg border-border/50"
                     />
                   </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 border border-border/50 bg-muted/30 rounded-xl mt-2">
+                <div className="space-y-0.5 pr-4">
+                  <Label className="text-sm font-bold text-foreground">Disiapkan di Dapur</Label>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    Bila aktif, pesanan produk ini akan muncul di layar Dapur Koki. Matikan untuk produk ecer/rokok.
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={catNeedsKitchen}
+                      onChange={(e) => setCatNeedsKitchen(e.target.checked)}
+                    />
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                  </label>
                 </div>
               </div>
             </div>

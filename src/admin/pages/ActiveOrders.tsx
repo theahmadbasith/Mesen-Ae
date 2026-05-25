@@ -11,9 +11,10 @@ import {
   Printer,
   Trash2,
   Clock,
+  CheckCircle2,
 } from 'lucide-react';
 
-import { useDbQuery, dbDelete, Transaction } from '@/hooks/db-hooks';
+import { useDbQuery, dbDelete, dbUpdate, Transaction } from '@/hooks/db-hooks';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,15 @@ export default function ActiveOrders() {
   const confirmCancel = (bill: Transaction) => {
     setBillToCancel(bill);
     setCancelConfirmOpen(true);
+  };
+
+  const handleMarkDone = async (bill: Transaction) => {
+    try {
+      await dbUpdate('transactions', bill.id!, { kitchenStatus: 'diantarkan' });
+      toast.success('Pesanan ritel diselesaikan!');
+    } catch (e) {
+      toast.error('Gagal menyelesaikan pesanan');
+    }
   };
 
   const handleCancel = async () => {
@@ -185,13 +195,23 @@ export default function ActiveOrders() {
                     </Button>
                   )}
                   {bill.status === 'lunas' ? (
-                    <Button 
-                      className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
-                      onClick={() => navigate('/admin/kitchen')}
-                    >
-                      Buka Dapur
-                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
+                    bill.needsKitchen === false ? (
+                      <Button 
+                        className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
+                        onClick={() => handleMarkDone(bill)}
+                      >
+                        Tandai Selesai
+                        <CheckCircle2 className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
+                        onClick={() => navigate('/admin/kitchen')}
+                      >
+                        Buka Dapur
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </Button>
+                    )
                   ) : (
                     <Button 
                       className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"

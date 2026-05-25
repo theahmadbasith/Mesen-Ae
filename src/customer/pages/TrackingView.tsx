@@ -246,13 +246,34 @@ export default function TrackingView({
   }, [allTxs, allItems, customerName]);
 
   // Steps definition
-  const stepsList: Step[] = [
-    { id: 'diproses', title: 'Pesanan Diterima', desc: 'Kasir telah menerima pesanan Anda', icon: ClipboardList },
-    { id: 'dimasak', title: 'Sedang Dimasak', desc: 'Koki kami sedang menyiapkan hidangan', icon: ChefHat },
-    { id: 'disiapkan', title: 'Sedang Disiapkan', desc: 'Pesanan sedang dikemas atau diplating', icon: PackageOpen },
-    { id: 'siap', title: 'Pesanan Siap', desc: 'Menunggu pelayan mengantar ke meja', icon: BellRing },
-    { id: 'diantarkan', title: 'Selesai', desc: 'Selamat menikmati pesanan Anda!', icon: CheckCircle2 },
-  ];
+  const stepsList: Step[] = React.useMemo(() => {
+    const isAmbil = storeSettings?.deliveryMode === 'ambil';
+    const hasKitchen = liveTx?.needs_kitchen !== false && liveTx?.needsKitchen !== false;
+
+    const steps: Step[] = [
+      { id: 'diproses', title: 'Pesanan Diterima', desc: 'Kasir telah menerima pesanan Anda', icon: ClipboardList }
+    ];
+
+    if (hasKitchen) {
+      steps.push({ id: 'dimasak', title: 'Sedang Dimasak', desc: 'Koki kami sedang menyiapkan pesanan', icon: ChefHat });
+    }
+
+    steps.push({ id: 'disiapkan', title: 'Sedang Disiapkan', desc: 'Pesanan sedang dikemas atau disiapkan', icon: PackageOpen });
+
+    if (isAmbil) {
+      if (hasKitchen) {
+        steps.push({ id: 'siap', title: 'Pesanan Siap', desc: 'Pesanan Anda sudah siap, silakan ke kasir', icon: BellRing });
+      }
+      steps.push({ id: 'diantarkan', title: 'Selesai', desc: 'Pesanan telah Anda ambil. Terima kasih!', icon: CheckCircle2 });
+    } else {
+      if (hasKitchen) {
+        steps.push({ id: 'siap', title: 'Pesanan Siap', desc: 'Menunggu pelayan mengantar ke meja', icon: BellRing });
+      }
+      steps.push({ id: 'diantarkan', title: 'Selesai', desc: 'Sedang diantar ke meja. Selamat menikmati!', icon: CheckCircle2 });
+    }
+    
+    return steps;
+  }, [storeSettings?.deliveryMode, liveTx?.needs_kitchen, liveTx?.needsKitchen]);
 
   const currentStatus = (liveTx?.kitchen_status || liveTx?.kitchenStatus || 'diproses').toLowerCase();
   let currentStepIndex = stepsList.findIndex(s => s.id === currentStatus);

@@ -327,6 +327,8 @@ export default function Kasir() {
 
     const now = new Date();
 
+    const txNeedsKitchen = cart.some(c => categories.find(cat => cat.id === c.product.categoryId)?.needsKitchen !== false);
+
     const txPayload = {
       subtotal,
       discount_type: txDiscountType,
@@ -336,6 +338,7 @@ export default function Kasir() {
       customer_name: customerName.trim() || null,
       table_number: tableNumber.trim() || null,
       remarks: remarks.trim() || null,
+      needs_kitchen: txNeedsKitchen,
       date: now.toISOString(),
     };
 
@@ -512,6 +515,8 @@ export default function Kasir() {
     const finalPaymentAmount = finalPayments.reduce((sum, p) => sum + p.amount, 0);
     const primaryMethodId = finalPayments.length > 0 ? finalPayments[finalPayments.length - 1].methodId : 0;
 
+    const txNeedsKitchen = cart.some(c => categories.find(cat => cat.id === c.product.categoryId)?.needsKitchen !== false);
+
     const txPayload = {
       subtotal,
       discount_type: txDiscountType,
@@ -525,6 +530,7 @@ export default function Kasir() {
       profit: totalProfit,
       customer_name: customerName.trim() || null,
       table_number: tableNumber.trim() || null,
+      needs_kitchen: txNeedsKitchen,
     };
 
     const itemRecords = cart.map(c => ({

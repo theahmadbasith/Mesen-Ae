@@ -198,6 +198,7 @@ export default function Pengaturan() {
   const [storePhone,  setStorePhone]    = useState('');
   const [storeLogo,   setStoreLogo]     = useState<string | undefined>();
   const [receiptFooter, setReceiptFooter] = useState('');
+  const [deliveryMode, setDeliveryMode] = useState<'ambil' | 'diantar'>('diantar');
   const [isSavingStore, setIsSavingStore] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
@@ -209,6 +210,7 @@ export default function Pengaturan() {
     setStorePhone(storeSettings?.phone ?? '');
     setStoreLogo(storeSettings?.logo);
     setReceiptFooter(storeSettings?.receiptFooter ?? 'Terima kasih atas kunjungan Anda!');
+    setDeliveryMode(storeSettings?.deliveryMode ?? 'diantar');
     setStoreDialog(true);
   };
 
@@ -233,6 +235,7 @@ export default function Pengaturan() {
         storeName: storeName.trim(), address: storeAddr.trim(),
         phone: storePhone.trim(), logo: finalLogoUrl || undefined,
         receiptFooter: receiptFooter.trim(), tables: storeSettings?.tables ?? [],
+        deliveryMode
       };
       
       if (storeSettings?.id) {
@@ -761,6 +764,37 @@ export default function Pengaturan() {
               <Label className="text-xs flex items-center gap-1.5"><Receipt className="w-3.5 h-3.5" />Footer Struk</Label>
               <Input value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih atas kunjungan Anda!" />
               <p className="text-[10px] text-muted-foreground">Teks di bagian bawah struk belanja.</p>
+            </div>
+
+            <div className="space-y-2 p-3 border border-border/50 bg-muted/20 rounded-xl">
+              <Label className="text-xs font-bold text-foreground">Sistem Penjualan (Pesanan di Tempat)</Label>
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                Pilih apakah pelanggan harus mengambil pesanan sendiri saat siap, atau pelayan mengantarkannya ke meja.
+              </p>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMode('diantar')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all",
+                    deliveryMode === 'diantar' ? "border-primary bg-primary/10 text-primary" : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <UtensilsCrossed className="w-5 h-5 mb-1.5" />
+                  <span className="text-xs font-semibold">Diantar ke Meja</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMode('ambil')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all",
+                    deliveryMode === 'ambil' ? "border-primary bg-primary/10 text-primary" : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <PackageIcon className="w-5 h-5 mb-1.5" />
+                  <span className="text-xs font-semibold">Ambil Sendiri</span>
+                </button>
+              </div>
             </div>
 
 

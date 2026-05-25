@@ -7,6 +7,7 @@ export function mapCategory(r: Record<string, unknown>) {
     name: r.name as string,
     color: r.color as string,
     icon: r.icon as string,
+    needsKitchen: r.needs_kitchen === undefined ? true : (r.needs_kitchen as boolean),
     createdAt: new Date(r.created_at as string)
   };
 }
@@ -106,6 +107,7 @@ export function mapTransaction(r: Record<string, unknown>) {
     customerName: r.customer_name as string | undefined,
     tableNumber: r.table_number as string | undefined,
     remarks: r.remarks as string | undefined,
+    needsKitchen: r.needs_kitchen as boolean | undefined,
     openedAt: r.opened_at ? new Date(r.opened_at as string) : undefined,
     closedAt: r.closed_at ? new Date(r.closed_at as string) : undefined,
   };
@@ -139,7 +141,8 @@ export function mapStoreSettings(s: Record<string, unknown>) {
     onboardingDone: s.onboarding_done as boolean,
     themeColor: s.theme_color as string,
     logo: s.logo as string,
-    tables: s.tables as string[]
+    tables: s.tables as string[],
+    deliveryMode: (s.delivery_mode as 'ambil' | 'diantar') || 'diantar'
   };
 }
 
@@ -170,7 +173,7 @@ export function mapVoucher(v: Record<string, unknown>) {
 // ── Mapper: camelCase (TypeScript) → snake_case (Google Sheets) ──────────
 
 export function toDatabaseCategory(d: Record<string, unknown>) {
-  return { id: d.id, name: d.name, color: d.color, icon: d.icon, created_at: d.createdAt };
+  return { id: d.id, name: d.name, color: d.color, icon: d.icon, needs_kitchen: d.needsKitchen, created_at: d.createdAt };
 }
 
 export function toDatabaseVoucher(d: Record<string, unknown>) {
@@ -223,6 +226,7 @@ export function toDatabaseTransaction(d: Record<string, unknown>) {
     date: d.date, receipt_number: d.receiptNumber, status: d.status, kitchen_status: d.kitchenStatus ?? null,
     order_number: d.orderNumber ?? null, customer_name: d.customerName ?? null,
     table_number: d.tableNumber ?? null, remarks: d.remarks ?? null,
+    needs_kitchen: d.needsKitchen ?? null,
     opened_at: d.openedAt ?? null, closed_at: d.closedAt ?? null,
   };
 }
@@ -246,7 +250,8 @@ export function toDatabaseStoreSettings(d: Record<string, unknown>) {
     onboarding_done: d.onboardingDone,
     theme_color: d.themeColor,
     logo: d.logo,
-    tables: d.tables
+    tables: d.tables,
+    delivery_mode: d.deliveryMode
   };
 }
 

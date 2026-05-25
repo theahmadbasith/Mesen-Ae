@@ -69,7 +69,7 @@ export default function Kitchen() {
   const receiptItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []).filter((i) => receiptTx && i.transactionId === receiptTx.id);
   
   const processingBills = allBills
-    .filter(t => t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending')
+    .filter(t => t.needsKitchen !== false && t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending')
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // Live clock for the header
@@ -132,10 +132,10 @@ export default function Kitchen() {
         };
       case 'siap': 
         return { 
-          label: 'Siap Diantar', 
+          label: storeSettings?.deliveryMode === 'ambil' ? 'Bisa Diambil' : 'Siap Diantar', 
           badge: 'bg-green-100 text-green-700 border-green-200',
           btn: 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20',
-          action: 'Tandai Diantar',
+          action: storeSettings?.deliveryMode === 'ambil' ? 'Tandai Diambil' : 'Tandai Diantar',
           icon: <CheckCircle2 className="w-4 h-4 mr-2" />
         };
       default: 
