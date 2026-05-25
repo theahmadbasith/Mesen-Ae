@@ -16,29 +16,26 @@ export async function uploadToCloudinary(
     }
 
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-    const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+    const paramsToSign = { folder: bucket };
+    let signature = '';
+    let timestamp = '';
+    let apiKey = '';
 
-    if (!cloudName || !apiKey || !apiSecret) {
-      console.error("Cloudinary env variables missing.");
-      throw new Error("Konfigurasi Cloudinary (Env API Keys) belum diatur! Gambar gagal diunggah.");
+    try {
+      const signRes = await fetch('/api/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paramsToSign })
+      });
+      const signData = await signRes.json();
+      if (!signRes.ok) throw new Error(signData.error);
+      signature = signData.signature;
+      timestamp = signData.timestamp;
+      apiKey = signData.apiKey;
+    } catch (err: any) {
+      console.error("Failed to get cloudinary signature:", err);
+      throw new Error("Gagal mendapatkan signature upload.");
     }
-
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const params: Record<string, string> = {
-      folder: bucket,
-      timestamp: timestamp,
-    };
-
-    const sortedKeys = Object.keys(params).sort();
-    const sortedParamsStr = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
-    const strToSign = sortedParamsStr + apiSecret;
-    
-    const encoder = new TextEncoder();
-    const data = encoder.encode(strToSign);
-    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     const formData = new FormData();
     formData.append('file', fileToUpload);
@@ -84,28 +81,26 @@ export async function deleteFromCloudinary(url: string | null | undefined): Prom
     const publicId = lastDotIndex !== -1 ? publicIdWithExtension.substring(0, lastDotIndex) : publicIdWithExtension;
 
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-    const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+    const paramsToSign = { public_id: publicId };
+    let signature = '';
+    let timestamp = '';
+    let apiKey = '';
 
-    if (!cloudName || !apiKey || !apiSecret) {
+    try {
+      const signRes = await fetch('/api/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paramsToSign })
+      });
+      const signData = await signRes.json();
+      if (!signRes.ok) throw new Error(signData.error);
+      signature = signData.signature;
+      timestamp = signData.timestamp;
+      apiKey = signData.apiKey;
+    } catch (err: any) {
+      console.error("Failed to get cloudinary signature:", err);
       return false;
     }
-
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const params: Record<string, string> = {
-      public_id: publicId,
-      timestamp: timestamp,
-    };
-
-    const sortedKeys = Object.keys(params).sort();
-    const sortedParamsStr = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
-    const strToSign = sortedParamsStr + apiSecret;
-    
-    const encoder = new TextEncoder();
-    const data = encoder.encode(strToSign);
-    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     const formData = new FormData();
     formData.append('public_id', publicId);

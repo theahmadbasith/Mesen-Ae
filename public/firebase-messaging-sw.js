@@ -1,7 +1,4 @@
-// firebase-messaging-sw.js — Firebase Cloud Messaging Service Worker (Resmi)
-// File ini WAJIB berada di root /public/ agar diakses di URL /firebase-messaging-sw.js
-// Dijalankan oleh browser di latar belakang OS, bahkan ketika browser ditutup
-
+// firebase-messaging-sw.js — Firebase Cloud Messaging Service Worker
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
@@ -17,41 +14,40 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// ─── BACKGROUND MESSAGE HANDLER ───────────────────────────────────────────────
+// Intercept push event untuk custom tampilan dan vibrasi keras
 self.addEventListener('push', function(event) {
-  // Hentikan Firebase dari menampilkan notifikasi default
+  // Hentikan Firebase dari menampilkan notifikasi default agar kita bisa override vibrasinya
   event.stopImmediatePropagation();
   
   let payload = {};
-  try {
-    payload = event.data.json();
-  } catch (e) {
-    console.error('Failed to parse push data', e);
-    return;
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch (e) {
+      console.error('Failed to parse push data', e);
+      return;
+    }
   }
 
-  // Jika payload dari FCM, data notifikasi mungkin ada di payload.notification atau payload.data
   const title = payload.notification?.title || payload.data?.title || payload.title || 'MesenAe';
   const body  = payload.notification?.body  || payload.data?.body  || payload.body || '';
   const url   = payload.data?.url || payload.url || '/';
 
-  const notificationOptions = {
+  const options = {
     body,
-    icon:  '/logo.png',
+    icon: '/logo.png',
     badge: '/logo.png',
-    // Pola getar keras dan berulang
+    // Pola getar keras dan berulang untuk HP
     vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
-    tag: 'mesenae-' + (payload.data?.orderId || Date.now()),
+    data: { url },
     renotify: true,
     requireInteraction: true,
-    data: { url },
+    tag: 'mesenae-notification'
   };
 
-  event.waitUntil(self.registration.showNotification(title, notificationOptions));
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// ─── NOTIFICATION CLICK HANDLER ───────────────────────────────────────────────
-// Buka / fokuskan tab aplikasi saat notifikasi diklik
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';

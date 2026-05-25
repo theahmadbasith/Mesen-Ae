@@ -419,6 +419,13 @@ export default function Kasir() {
         }
 
         toast.success(`Bill ${receiptNumber} disimpan!`);
+
+        // Notifikasi Push ke Admin/Dapur
+        sendPushToRole('admin', {
+          title: 'Pesanan Baru Masuk! 🚀',
+          body:  `Pesanan Kasir (${receiptNumber}) untuk meja ${tableNumber || 'Bawa Pulang'} menunggu diproses.`,
+          url:   '/admin/kitchen',
+        }).catch(console.error);
       }
     }
 
@@ -621,6 +628,13 @@ export default function Kasir() {
         url:   '/?view=tracking',
       }).catch(console.error);
 
+      // Notifikasi Push ke Admin/Dapur: Pesanan Lunas Siap Masak
+      sendPushToRole('admin', {
+        title: 'Pesanan Masuk & Lunas! 🚀',
+        body:  `Pesanan (${finalTx.receiptNumber}) untuk meja ${finalTx.tableNumber || 'Bawa Pulang'} telah lunas dan siap dimasak.`,
+        url:   '/admin/kitchen',
+      }).catch(console.error);
+
       toast.success(`Transaksi berhasil!`);
       setReceiptOpen(true);
 
@@ -672,6 +686,13 @@ export default function Kasir() {
           title: 'Pembayaran Dikonfirmasi! 🎉',
           body:  `Pesanan Anda (${receiptNumber}) telah lunas dan sedang disiapkan.`,
           url:   '/?view=tracking',
+        }).catch(console.error);
+
+        // Notifikasi Push ke Admin/Dapur: Pesanan Baru Siap Masak
+        sendPushToRole('admin', {
+          title: 'Pesanan Baru Masuk & Lunas! 🚀',
+          body:  `Pesanan (${receiptNumber}) untuk meja ${txData.table_number || 'Bawa Pulang'} telah lunas dan siap dimasak.`,
+          url:   '/admin/kitchen',
         }).catch(console.error);
 
         toast.success(`Transaksi berhasil! ${receiptNumber}`);

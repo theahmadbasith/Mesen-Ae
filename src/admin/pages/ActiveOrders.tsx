@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { useDbQuery, dbDelete, dbUpdate, Transaction } from '@/hooks/db-hooks';
+import { sendPushToRole } from '@/lib/fcm';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +68,14 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const handleMarkDone = async (bill: Transaction) => {
     try {
       await dbUpdate('transactions', bill.id!, { kitchenStatus: 'diantarkan' });
+      
+      // Notifikasi ke customer bahwa pesanan ritel sudah siap/selesai
+      sendPushToRole('customer', {
+        title: 'Pesanan Siap! 🍽️',
+        body:  `Pesanan Anda (${bill.receiptNumber}) sudah selesai dan bisa diambil/diantar.`,
+        url:   '/?view=tracking',
+      }).catch(console.error);
+
       toast.success('Pesanan ritel diselesaikan!');
     } catch (e) {
       toast.error('Gagal menyelesaikan pesanan');

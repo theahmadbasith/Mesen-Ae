@@ -1,7 +1,8 @@
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
 import { type Product, type Category } from '@/hooks/db-hooks';
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X, ImageIcon, ZoomIn, ScanBarcode, Loader2, Tag, Layers, QrCode } from 'lucide-react';
+import { ProductsSkeleton } from '@/admin/components/SkeletonLoaders';
 import { compressImage } from '@/lib/image-utils';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import PhotoCropModal from '@/admin/components/PhotoCropModal';
@@ -62,6 +63,20 @@ export default function Produk() {
     categories?.forEach(c => map.set(String(c.id!), c));
     return map;
   }, [categories]);
+
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // If we have data, we are no longer loading
+    if ((products && products.length > 0) || (categories && categories.length > 0)) {
+      setLoading(false);
+    }
+    // Timeout fallback for empty database (prevent infinite skeleton)
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [products?.length, categories?.length]);
 
   const getCategoryName = useCallback((catId: string | number) => categoryMap.get(String(catId))?.name ?? '-', [categoryMap]);
   const getCategoryColor = useCallback((catId: string | number) => categoryMap.get(String(catId))?.color ?? '#999', [categoryMap]);
@@ -164,7 +179,11 @@ export default function Produk() {
   return (
     <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       
-      {/* Action Header */}
+      {loading ? (
+        <ProductsSkeleton />
+      ) : (
+        <>
+          {/* Action Header */}
       <div className="flex justify-end">
         <Button onClick={openAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
           <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
@@ -294,8 +313,10 @@ export default function Produk() {
           ))}
         </div>
       )}
+      </>
+      )}
 
-      {/* Modal Add/Edit Product */}
+      {/* Dialog Form Tambah / Edit Product */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl rounded-[2rem] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 border-border/60 shadow-2xl">
           <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10 shrink-0">
