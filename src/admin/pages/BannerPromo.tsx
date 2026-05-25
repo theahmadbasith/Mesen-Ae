@@ -165,8 +165,9 @@ export interface PromoBanner {
   overlayFlipX?: boolean;
 }
 
-function DraggableItem({ pos, isDragging, onPointerDown, children, type, isSelected }: any) {
+function DraggableItem({ pos, isDragging, onPointerDown, children, type, isSelected, snapInfo }: any) {
   const transform = type === 'overlay' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)';
+  const isActive = isDragging || isSelected;
   
   return (
     <div 
@@ -182,13 +183,50 @@ function DraggableItem({ pos, isDragging, onPointerDown, children, type, isSelec
       }}
       onPointerDown={onPointerDown}
       className={cn(
-        "select-none z-40 touch-none whitespace-nowrap flex shrink-0 cursor-grab active:cursor-grabbing group transition-[box-shadow,transform] duration-75",
-        (isDragging || isSelected) && "z-50",
-        type === 'overlay' && (isDragging || isSelected) && "ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900/50 rounded-lg",
-        type !== 'overlay' && (isDragging || isSelected) && "after:absolute after:-inset-2 after:border-2 after:border-cyan-400/80 after:border-dashed after:rounded-md",
-        isDragging && "scale-[1.02]"
+        "select-none z-40 touch-none whitespace-nowrap flex shrink-0 cursor-grab active:cursor-grabbing group",
+        isActive && "z-50",
+        isDragging && "scale-[1.02] transition-transform duration-75"
       )}
     >
+      {/* Bounding Box Mode */}
+      {type === 'overlay' && isActive && (
+        <div 
+          className="absolute -inset-2 rounded-xl pointer-events-none z-[-1]"
+          style={{
+            boxShadow: isDragging 
+              ? '0 0 0 2px #22d3ee, 0 0 15px 3px rgba(34,211,238,0.4), 0 0 30px 6px rgba(34,211,238,0.15)' 
+              : '0 0 0 2px #22d3ee, 0 0 8px 2px rgba(34,211,238,0.25)',
+            transition: 'box-shadow 0.15s ease'
+          }}
+        />
+      )}
+      {type !== 'overlay' && isActive && (
+        <div 
+          className="absolute -inset-2 pointer-events-none z-[-1] rounded-md"
+          style={{
+            border: '2px dashed #22d3ee',
+            boxShadow: isDragging 
+              ? '0 0 8px 1px rgba(34,211,238,0.3)' 
+              : '0 0 4px 1px rgba(34,211,238,0.15)',
+            transition: 'box-shadow 0.15s ease'
+          }}
+        >
+          {/* Corner handles */}
+          <div className="absolute -top-1 -left-1 w-2 h-2 bg-cyan-400 rounded-full shadow-sm" />
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full shadow-sm" />
+          <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-cyan-400 rounded-full shadow-sm" />
+          <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full shadow-sm" />
+        </div>
+      )}
+      
+      {/* Position label tooltip */}
+      {isDragging && (
+        <div 
+          className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900/90 text-cyan-300 text-[9px] font-mono font-bold px-2 py-0.5 rounded-md whitespace-nowrap pointer-events-none z-[60] backdrop-blur-sm border border-cyan-500/30"
+        >
+          {Math.round(pos.x)}%, {Math.round(pos.y)}%
+        </div>
+      )}
       {children}
     </div>
   )
@@ -244,7 +282,9 @@ export default function App() {
     );
   }
 
-  // --- CANVA-STYLE DRAG & DROP ENGINE ---
+  // --- CANVA-STYLE DRAG & DROP ENGINE (ENHANCED) ---
+  // Sistem Offset Drag: titik sentuh awal dicatat, delta dihitung dari titik awal,
+  // ditambahkan ke posisi elemen sebelumnya. Elemen bergeser natural tanpa loncat.
   const handleDragStart = (e: React.PointerEvent<HTMLDivElement>, target: 'title' | 'desc' | 'overlay' | 'button') => {
     e.preventDefault();
     e.stopPropagation();
@@ -258,36 +298,52 @@ export default function App() {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
 
+    // Offset Drag: catat titik sentuh awal (mouse/finger)
     const startMouseX = e.clientX;
     const startMouseY = e.clientY;
 
-    let initialX = target === 'title' ? titlePos.x : target === 'desc' ? descPos.x : target === 'overlay' ? overlayPos.x : buttonPos.x;
-    let initialY = target === 'title' ? titlePos.y : target === 'desc' ? descPos.y : target === 'overlay' ? overlayPos.y : buttonPos.y;
+    // Catat posisi elemen sebelum drag dimulai
+    const initialX = target === 'title' ? titlePos.x : target === 'desc' ? descPos.x : target === 'overlay' ? overlayPos.x : buttonPos.x;
+    const initialY = target === 'title' ? titlePos.y : target === 'desc' ? descPos.y : target === 'overlay' ? overlayPos.y : buttonPos.y;
 
     let currentX = initialX;
     let currentY = initialY;
+    let wasSnappedX = false;
+    let wasSnappedY = false;
 
+    // Ambil referensi guide lines
     const guideV = document.getElementById('guide-v');
     const guideH = document.getElementById('guide-h');
+    const guideLabelV = document.getElementById('guide-label-v');
+    const guideLabelH = document.getElementById('guide-label-h');
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
+      // Hitung delta: seberapa jauh jari bergeser dari titik awal
       const deltaXPercent = ((moveEvent.clientX - startMouseX) / rect.width) * 100;
       const deltaYPercent = ((moveEvent.clientY - startMouseY) / rect.height) * 100;
 
+      // Tambahkan delta ke posisi elemen sebelumnya (OFFSET-BASED, bukan posisi kursor langsung)
       let rawX = initialX + deltaXPercent;
       let rawY = initialY + deltaYPercent;
 
+      // Auto-Snap (Magnet Alignment) dengan threshold ketat
       let snappedX = false;
       let snappedY = false;
-      const snapThresholdX = 2; 
-      const snapThresholdY = 4; 
+      let snapValX = 0;
+      let snapValY = 0;
+      const snapThresholdX = 2.5; // ~2-4% akurasi horizontal
+      const snapThresholdY = 3;   // ~2-4% akurasi vertikal
 
-      const snapPointsX = target === 'overlay' ? [10, 25, 50, 75, 90] : [8, 25, 50, 90]; 
-      const snapPointsY = [15, 25, 50, 75, 85];
+      // Snap points: pusat (50%), pinggiran (8/10/90), dan kuartal (25/75)
+      const snapPointsX = target === 'overlay' 
+        ? [5, 10, 15, 20, 25, 33, 50, 67, 75, 80, 85, 90, 95] 
+        : [5, 8, 10, 15, 20, 25, 33, 50, 67, 75, 80, 85, 90, 95];
+      const snapPointsY = [5, 10, 15, 20, 25, 33, 50, 67, 75, 80, 85, 90, 95];
 
       for (const snap of snapPointsX) {
         if (Math.abs(rawX - snap) < snapThresholdX) {
           rawX = snap;
+          snapValX = snap;
           snappedX = true;
           break;
         }
@@ -296,20 +352,30 @@ export default function App() {
       for (const snap of snapPointsY) {
         if (Math.abs(rawY - snap) < snapThresholdY) {
           rawY = snap;
+          snapValY = snap;
           snappedY = true;
           break;
         }
       }
 
+      // Clamp ke batas kanvas
       rawX = Math.max(0, Math.min(100, rawX));
       rawY = Math.max(0, Math.min(100, rawY));
 
       currentX = rawX;
       currentY = rawY;
 
+      // Update posisi elemen secara langsung (bypass React state untuk performa)
       el.style.left = `${rawX}%`;
       el.style.top = `${rawY}%`;
 
+      // Tampilkan koordinat tooltip
+      const tooltip = el.querySelector('.drag-tooltip') as HTMLDivElement | null;
+      if (tooltip) {
+        tooltip.textContent = `${Math.round(rawX)}%, ${Math.round(rawY)}%`;
+      }
+
+      // Smart Visual Guides: garis cyan menyala saat snap aktif
       if (guideV) {
         guideV.style.opacity = snappedX ? '1' : '0';
         guideV.style.left = `${rawX}%`;
@@ -318,7 +384,26 @@ export default function App() {
         guideH.style.opacity = snappedY ? '1' : '0';
         guideH.style.top = `${rawY}%`;
       }
+      // Label posisi pada guide
+      if (guideLabelV) {
+        guideLabelV.style.opacity = snappedX ? '1' : '0';
+        guideLabelV.style.left = `${rawX}%`;
+        guideLabelV.textContent = `${snapValX}%`;
+      }
+      if (guideLabelH) {
+        guideLabelH.style.opacity = snappedY ? '1' : '0';
+        guideLabelH.style.top = `${rawY}%`;
+        guideLabelH.textContent = `${snapValY}%`;
+      }
 
+      // Haptic feedback: getaran ringan saat snap (mobile)
+      if ((snappedX && !wasSnappedX) || (snappedY && !wasSnappedY)) {
+        try { navigator?.vibrate?.(8); } catch(_) {}
+      }
+      wasSnappedX = snappedX;
+      wasSnappedY = snappedY;
+
+      // Reposisi floating toolbar overlay agar tidak tertutupi
       if (target === 'overlay') {
         const toolbar = el.querySelector('.floating-toolbar') as HTMLDivElement | null;
         if (toolbar) {
@@ -340,9 +425,13 @@ export default function App() {
       
       setDragTarget(null);
       
+      // Sembunyikan semua guide lines
       if (guideV) guideV.style.opacity = '0';
       if (guideH) guideH.style.opacity = '0';
+      if (guideLabelV) guideLabelV.style.opacity = '0';
+      if (guideLabelH) guideLabelH.style.opacity = '0';
 
+      // Commit posisi final ke React state
       if (target === 'title') setTitlePos({ x: currentX, y: currentY });
       else if (target === 'desc') setDescPos({ x: currentX, y: currentY });
       else if (target === 'overlay') setOverlayPos({ x: currentX, y: currentY });
@@ -752,9 +841,38 @@ export default function App() {
                   containerType: 'inline-size'
                 }}
               >
-                {/* --- SMART GUIDES (CANVA STYLE) --- */}
-                <div id="guide-v" className="absolute top-0 bottom-0 w-[1px] bg-cyan-400 z-30 pointer-events-none opacity-0 transition-opacity duration-150 shadow-[0_0_4px_rgba(34,211,238,0.8)]" style={{ left: '50%' }} />
-                <div id="guide-h" className="absolute left-0 right-0 h-[1px] bg-cyan-400 z-30 pointer-events-none opacity-0 transition-opacity duration-150 shadow-[0_0_4px_rgba(34,211,238,0.8)]" style={{ top: '50%' }} />
+                {/* --- SMART VISUAL GUIDES (CANVA STYLE) --- */}
+                {/* Vertical guide - garis cyan menyala saat snap horizontal */}
+                <div 
+                  id="guide-v" 
+                  className="absolute top-0 bottom-0 z-[35] pointer-events-none opacity-0" 
+                  style={{ left: '50%', transition: 'opacity 0.1s ease' }}
+                >
+                  <div className="absolute inset-0 w-[1px] bg-cyan-400" style={{ boxShadow: '0 0 6px 1px rgba(34,211,238,0.6), 0 0 12px 3px rgba(34,211,238,0.25)' }} />
+                  <div className="absolute inset-0 w-[3px] -translate-x-[1px] bg-cyan-400/20" />
+                </div>
+                {/* Horizontal guide - garis cyan menyala saat snap vertikal */}
+                <div 
+                  id="guide-h" 
+                  className="absolute left-0 right-0 z-[35] pointer-events-none opacity-0" 
+                  style={{ top: '50%', transition: 'opacity 0.1s ease' }}
+                >
+                  <div className="absolute inset-0 h-[1px] bg-cyan-400" style={{ boxShadow: '0 0 6px 1px rgba(34,211,238,0.6), 0 0 12px 3px rgba(34,211,238,0.25)' }} />
+                  <div className="absolute inset-0 h-[3px] -translate-y-[1px] bg-cyan-400/20" />
+                </div>
+                {/* Guide Labels - angka % yang muncul di tepi kanvas */}
+                <div 
+                  id="guide-label-v" 
+                  className="absolute bottom-1 z-[36] pointer-events-none opacity-0 -translate-x-1/2 bg-cyan-500 text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded" 
+                  style={{ left: '50%', transition: 'opacity 0.1s ease', boxShadow: '0 0 6px rgba(34,211,238,0.5)' }}
+                />
+                <div 
+                  id="guide-label-h" 
+                  className="absolute right-1 z-[36] pointer-events-none opacity-0 -translate-y-1/2 bg-cyan-500 text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded" 
+                  style={{ top: '50%', transition: 'opacity 0.1s ease', boxShadow: '0 0 6px rgba(34,211,238,0.5)' }}
+                />
+                {/* Crosshair titik tengah kanvas (selalu tampil samar) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white/15 pointer-events-none z-[34]" />
 
                 {bannerBgType === 'image' && bannerImage ? (
                   <div className="absolute inset-0 z-0 select-none pointer-events-none">

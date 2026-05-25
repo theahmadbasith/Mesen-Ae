@@ -51,9 +51,9 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
     const items = allTxItems.filter((i: any) => i.transactionId === bill.id);
     if (items.length === 0) return true;
     return items.some((item: any) => {
-      const prod = products.find((p: any) => p.id === item.productId || p.id?.toString() === item.productId?.toString());
+      const prod = products.find((p: any) => String(p.id) === String(item.productId));
       if (!prod) return true;
-      const cat = categories.find((c: any) => c.id === prod.categoryId || c.id?.toString() === prod.categoryId?.toString());
+      const cat = categories.find((c: any) => String(c.id) === String(prod.categoryId));
       return !cat || cat.needsKitchen !== false;
     });
   };

@@ -59,6 +59,7 @@ export default function Kasir() {
   const [editingTxId, setEditingTxId] = useState<number | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutDataCache, setCheckoutDataCache] = useState<any>(null);
   const [midtransPaymentType, setMidtransPaymentType] = useState<'qris' | 'transfer' | 'e-wallet' | 'lainnya' | null>(null);
   const [txDiscountType, setTxDiscountType] = useState<'percentage' | 'nominal' | null>(null);
   const [txDiscountValue, setTxDiscountValue] = useState('');
@@ -211,7 +212,7 @@ export default function Kasir() {
   const total = useMemo(() => Math.max(0, subtotal - txDiscountAmount) + taxAndService, [subtotal, txDiscountAmount, taxAndService]);
   const totalPaidSoFar = useMemo(() => payments.reduce((sum, p) => sum + p.amount, 0), [payments]);
   const totalProfit = useMemo(() => {
-    return cart.reduce((sum, item) => sum + (item.product.price - item.product.hpp) * item.qty, 0) - txDiscountAmount;
+    return cart.reduce((sum, item) => sum + ((Number(item.product.price) || 0) - (Number(item.product.hpp) || 0)) * item.qty, 0) - (txDiscountAmount || 0);
   }, [cart, txDiscountAmount]);
 
   // ==========================================
@@ -342,7 +343,7 @@ export default function Kasir() {
 
     const now = new Date();
 
-    const txNeedsKitchen = cart.some(c => categories.find(cat => cat.id === c.product.categoryId)?.needsKitchen !== false);
+    const txNeedsKitchen = cart.some(c => categories.find(cat => String(cat.id) === String(c.product.categoryId))?.needsKitchen !== false);
 
     const txPayload = {
       subtotal,
@@ -547,7 +548,7 @@ export default function Kasir() {
       }
 
       const finalPaymentAmount = finalPayments.reduce((sum, p) => sum + p.amount, 0);
-      const txNeedsKitchen = cart.some(c => categories.find(cat => cat.id === c.product.categoryId)?.needsKitchen !== false);
+      const txNeedsKitchen = cart.some(c => categories.find(cat => String(cat.id) === String(c.product.categoryId))?.needsKitchen !== false);
 
       const txPayload = {
         subtotal,
@@ -1234,6 +1235,7 @@ export default function Kasir() {
           setRemarks(data.remarks);
           
           if (data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
+            setCheckoutDataCache(data);
             setCheckoutOpen(false);
             setMidtransPaymentType(data.paymentMethodCategory as 'qris' | 'transfer' | 'e-wallet' | 'lainnya');
           } else {
@@ -1440,7 +1442,7 @@ export default function Kasir() {
         customerName={customerName}
         onSuccess={() => {
           setMidtransPaymentType(null);
-          processCheckoutToDb();
+          processCheckoutToDb(checkoutDataCache);
         }}
         onPending={() => {
           setMidtransPaymentType(null);

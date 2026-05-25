@@ -97,51 +97,50 @@ export default function Categories() {
           </div>
         </Card>
       ) : (
-        <Card className="border border-border/50 shadow-sm bg-card overflow-hidden">
-          {categories.map((c, i) => (
-            <div
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {categories.map((c) => (
+            <Card
               key={c.id}
-              className={cn(
-                'flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors',
-                i < categories.length - 1 && 'border-b border-border/40'
-              )}
+              className="group border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 bg-card hover:-translate-y-1 overflow-hidden"
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm border border-black/5 dark:border-white/5"
-                style={{ backgroundColor: c.color + '20', color: c.color }}
-              >
-                {c.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-foreground">{c.name}</p>
-                  {c.needsKitchen !== false ? (
-                    <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full text-[9px] font-bold border border-amber-500/20 uppercase tracking-wider">
-                      Dapur
-                    </span>
-                  ) : (
-                    <span className="bg-slate-500/10 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full text-[9px] font-bold border border-slate-500/20 uppercase tracking-wider">
-                      Ritel
-                    </span>
-                  )}
+              <div className="p-5 flex items-start gap-4">
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-inner border border-black/5 dark:border-white/5 transition-transform group-hover:scale-110 duration-300"
+                  style={{ backgroundColor: c.color + '15', color: c.color }}
+                >
+                  {c.icon}
+                </div>
+                <div className="flex-1 min-w-0 pt-1">
+                  <p className="text-base font-bold text-foreground truncate">{c.name}</p>
+                  <div className="mt-2">
+                    {c.needsKitchen !== false ? (
+                      <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-md text-[10px] font-bold border border-amber-500/20 uppercase tracking-wider">
+                        Dapur
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-md text-[10px] font-bold border border-slate-500/20 uppercase tracking-wider">
+                        Ritel
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" onClick={() => openCatEdit(c)}>
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg" onClick={() => deleteCat(c.id!)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg" onClick={() => openCatEdit(c)}>
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg" onClick={() => deleteCat(c.id!)}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+            </Card>
           ))}
-        </Card>
+        </div>
       )}
 
       {/* Dialog Kategori */}
       <Dialog open={catDialog} onOpenChange={setCatDialog}>
-        <DialogContent className="max-w-[360px] rounded-2xl p-0 overflow-hidden bg-background border-border shadow-xl">
+        <DialogContent className="max-w-[420px] sm:max-w-[500px] rounded-2xl p-0 overflow-hidden bg-background border-border shadow-xl">
           <div className="bg-primary/5 p-5 border-b border-border/40">
             <DialogHeader>
               <DialogTitle className="text-base font-bold">{catEditId ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
