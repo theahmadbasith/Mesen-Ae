@@ -28,6 +28,7 @@ const OrdersManager = lazy(() => import("./pages/OrdersManager"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
 const Vouchers = lazy(() => import("./pages/Vouchers"));
 const BannerPromo = lazy(() => import("./pages/BannerPromo"));
+const BarcodePrint = lazy(() => import("./pages/BarcodePrint"));
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -154,6 +155,13 @@ export default function AdminApp() {
           <AdminOnlyRoute>
             <Suspense fallback={<PageSkeleton />}>
               <StockOutPage />
+            </Suspense>
+          </AdminOnlyRoute>
+        } />
+        <Route path="barcode" element={
+          <AdminOnlyRoute>
+            <Suspense fallback={<PageSkeleton />}>
+              <BarcodePrint />
             </Suspense>
           </AdminOnlyRoute>
         } />

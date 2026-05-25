@@ -215,6 +215,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                       { to: "/admin/supplier", label: "Supplier" },
                       { to: "/admin/stock-in", label: "Stok Masuk" },
                       { to: "/admin/stock-out", label: "Stok Keluar" },
+                      { to: "/admin/barcode", label: "Cetak Barcode Produk" },
                     ].map((item) => (
                       <NavLink 
                         key={item.to} 
