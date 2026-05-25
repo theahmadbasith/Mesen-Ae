@@ -1291,15 +1291,6 @@ export default function Kasir() {
                     {nom >= 1000 ? `${(nom / 1000)}K` : nom}
                   </button>
                 ))}
-                {[2, 3, 4].map(split => (
-                  <button
-                    key={`split-${split}`}
-                    onClick={() => { setPaymentAmount(Math.ceil(remainingToPay / split).toString()); setIsQuickAdding(false); }}
-                    className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs font-semibold text-amber-600 hover:bg-amber-500/10 active:scale-95 transition-all"
-                  >
-                    1/{split} Bill
-                  </button>
-                ))}
                 <button
                   onClick={() => { setPaymentAmount(remainingToPay.toString()); setIsQuickAdding(false); }}
                   className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"
@@ -1307,7 +1298,23 @@ export default function Kasir() {
                   Uang Pas
                 </button>
               </div>
-              <div className="flex gap-2">
+
+              <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Opsi Bagi Tagihan (Split Bill)</p>
+                <div className="flex gap-2">
+                  {[2, 3, 4, 5].map(split => (
+                    <button
+                      key={`split-${split}`}
+                      onClick={() => { setPaymentAmount(Math.ceil(remainingToPay / split).toString()); setIsQuickAdding(false); }}
+                      className="flex-1 h-9 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs font-semibold text-amber-700 hover:bg-amber-500/10 active:scale-95 transition-all"
+                    >
+                      Bagi {split}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
                 <button
                   onClick={() => { setPaymentAmount('0'); setIsQuickAdding(false); }}
                   className="flex-1 text-xs text-muted-foreground hover:text-destructive border border-border rounded-lg py-2 transition-colors"
