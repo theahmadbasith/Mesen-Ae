@@ -15,7 +15,8 @@ import {
   ChevronRight,
   LogOut,
   ClipboardList,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Barcode
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -32,7 +33,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
     return paths.some(p => location.pathname.startsWith(p));
   });
   const [isPromoOpen, setIsPromoOpen] = useState(() => {
-    const paths = ["/admin/qr-menu", "/admin/banners", "/admin/vouchers"];
+    const paths = ["/admin/qr-menu", "/admin/banners", "/admin/vouchers", "/admin/barcode"];
     return paths.some(p => location.pathname.startsWith(p));
   });
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -215,7 +216,6 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                       { to: "/admin/supplier", label: "Supplier" },
                       { to: "/admin/stock-in", label: "Stok Masuk" },
                       { to: "/admin/stock-out", label: "Stok Keluar" },
-                      { to: "/admin/barcode", label: "Cetak Barcode Produk" },
                     ].map((item) => (
                       <NavLink 
                         key={item.to} 
@@ -272,6 +272,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                       { to: "/admin/qr-code", label: "QR Code Meja", icon: QrCode },
                       { to: "/admin/banner", label: "Banner Promo", icon: ImageIcon },
                       { to: "/admin/vouchers", label: "Kode Voucher", icon: Ticket },
+                      { to: "/admin/barcode", label: "Cetak Barcode", icon: Barcode },
                     ].map((item) => (
                       <NavLink 
                         key={item.to} 
