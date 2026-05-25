@@ -87,6 +87,7 @@ export default function Kasir() {
   const [voucherApplied, setVoucherApplied] = useState<Voucher | null>(null);
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutDataCache, setCheckoutDataCache] = useState<any>(null);
 
   // Variant selection state
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
@@ -1434,7 +1435,8 @@ export default function Kasir() {
         customerName={customerName}
         onSuccess={() => {
           setMidtransPaymentType(null);
-          processCheckoutToDb();
+          processCheckoutToDb(checkoutDataCache || undefined);
+          setCheckoutDataCache(null);
         }}
         onPending={() => {
           setMidtransPaymentType(null);
