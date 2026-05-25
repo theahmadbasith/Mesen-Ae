@@ -8,15 +8,18 @@ import {
   Warehouse, 
   BarChart3,
   Layers,
-  Activity
+  Activity,
+  Share2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import { format, subDays, startOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 import { useDbQuery } from '@/hooks/db-hooks';
+import StockReportShareModal from '@/admin/components/StockReportShareModal';
 
 const REASON_LABELS: Record<string, string> = {
   rusak: 'Rusak',
@@ -30,13 +33,19 @@ const REASON_LABELS: Record<string, string> = {
 
 export default function StockReport() {
   const [period, setPeriod] = useState<'7' | '30'>('7');
+  const [shareOpen, setShareOpen] = useState(false);
   const days = Number(period);
   const since = startOfDay(subDays(new Date(), days));
 
+  const storeSettings = useDbQuery<any>('storeSettings')?.[0];
+
   // Database Hooks
   const products = useDbQuery<any>('products') || [];
-  const stockIns = (useDbQuery<any>('stockIns') || []).filter(si => new Date(si.date) >= since);
-  const stockOuts = (useDbQuery<any>('stockOuts') || []).filter(so => new Date(so.date) >= since);
+  const allStockIns = useDbQuery<any>('stockIns') || [];
+  const allStockOuts = useDbQuery<any>('stockOuts') || [];
+  
+  const stockIns = allStockIns.filter(si => new Date(si.date) >= since);
+  const stockOuts = allStockOuts.filter(so => new Date(so.date) >= since);
 
   // Perhitungan Ringkasan (Summary)
   const totalStockIn = stockIns.reduce((sum, si) => sum + si.quantity, 0);
@@ -86,10 +95,77 @@ export default function StockReport() {
 
   const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
 
+  const handleGenerateReport = async (startDate: string, endDate: string) => {
+    const start = startOfDay(new Date(startDate));
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const filteredStockIns = allStockIns.filter(si => {
+      const d = new Date(si.date); return d >= start && d <= end;
+    });
+    const filteredStockOuts = allStockOuts.filter(so => {
+      const d = new Date(so.date); return d >= start && d <= end;
+    });
+
+    const totIn = filteredStockIns.reduce((sum, si) => sum + si.quantity, 0);
+    const totInVal = filteredStockIns.reduce((sum, si) => sum + (si.totalPrice || 0), 0);
+    const totOut = filteredStockOuts.reduce((sum, so) => sum + so.quantity, 0);
+    const currStok = products.reduce((sum, p) => sum + (p.stock || 0), 0);
+
+    const lowProd = products.filter(p => p.stock > 0 && p.stock <= 5);
+    const outProd = products.filter(p => p.stock === 0);
+
+    const reasonMap = filteredStockOuts.reduce((acc, so) => {
+      const reasonKey = so.reason ? so.reason.trim() : 'Lainnya';
+      acc[reasonKey] = (acc[reasonKey] || 0) + so.quantity;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const dayMap: Record<string, { stockIn: number; stockOut: number }> = {};
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      dayMap[format(cursor, 'dd/MM')] = { stockIn: 0, stockOut: 0 };
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    filteredStockIns.forEach(si => {
+      const key = format(new Date(si.date), 'dd/MM');
+      if (dayMap[key]) dayMap[key].stockIn += si.quantity;
+    });
+    filteredStockOuts.forEach(so => {
+      const key = format(new Date(so.date), 'dd/MM');
+      if (dayMap[key]) dayMap[key].stockOut += so.quantity;
+    });
+    const chart = Object.entries(dayMap).map(([date, data]) => ({ date, ...data }));
+
+    return {
+      storeName: storeSettings?.storeName ?? 'Toko Saya',
+      startDate,
+      endDate,
+      totalStockIn: totIn,
+      totalStockInValue: totInVal,
+      totalStockOut: totOut,
+      currentStock: currStok,
+      stockOutByReason: reasonMap,
+      lowStockProducts: lowProd,
+      outOfStockProducts: outProd,
+      chartData: chart,
+      themeHue: storeSettings?.themeColor ?? '25'
+    };
+  };
+
   return (
     <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center gap-4">
+        <Button
+          size="sm"
+          className="h-9 gap-1.5 shrink-0"
+          onClick={() => setShareOpen(true)}
+        >
+          <Share2 className="w-4 h-4" />
+          Invoice Stok
+        </Button>
+
         {/* Pengatur Periode Waktu */}
         <Tabs value={period} onValueChange={v => setPeriod(v as '7' | '30')} className="w-full sm:w-auto">
           <TabsList className="grid grid-cols-2 w-full sm:w-[200px] rounded-xl bg-muted p-1">
@@ -269,6 +345,14 @@ export default function StockReport() {
           </CardContent>
         </Card>
       )}
+
+      {/* Share Modal */}
+      <StockReportShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        onGenerate={handleGenerateReport as any}
+        storeName={storeSettings?.storeName ?? 'Toko Saya'}
+      />
     </div>
   );
 }

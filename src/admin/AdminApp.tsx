@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Cashier = lazy(() => import("./pages/Cashier"));
 const Products = lazy(() => import("./pages/Products"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Categories = lazy(() => import("./pages/Categories"));
 const Settings = lazy(() => import("./pages/Settings"));
 const SupplierPage = lazy(() => import("./pages/Supplier"));
 const StockInPage = lazy(() => import("./pages/StockIn"));
@@ -119,6 +120,13 @@ export default function AdminApp() {
           <AdminOnlyRoute>
             <Suspense fallback={<ProductsSkeleton />}>
               <Products />
+            </Suspense>
+          </AdminOnlyRoute>
+        } />
+        <Route path="categories" element={
+          <AdminOnlyRoute>
+            <Suspense fallback={<PageSkeleton />}>
+              <Categories />
             </Suspense>
           </AdminOnlyRoute>
         } />

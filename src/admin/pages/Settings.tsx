@@ -14,7 +14,7 @@ import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,15 +34,14 @@ import { cn } from '@/lib/utils';
 /* ─────────────────────────────────────────────────────────────────────────────
    TAB CONFIG
 ───────────────────────────────────────────────────────────────────────────── */
-type Tab = 'toko' | 'pembayaran' | 'kategori' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
+type Tab = 'toko' | 'pembayaran' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
 
 interface TabItem { id: Tab; label: string; icon: React.ReactNode }
 
 const TABS: TabItem[] = [
   { id: 'toko',       label: 'Info Toko',    icon: <Store className="w-4 h-4" /> },
   { id: 'pembayaran', label: 'Pembayaran',   icon: <CreditCard className="w-4 h-4" /> },
-  { id: 'kategori',  label: 'Kategori',     icon: <Tag className="w-4 h-4" /> },
-  { id: 'pengguna',  label: 'Akses Staf',   icon: <Users className="w-4 h-4" /> },
+  { id: 'pengguna',  label: 'Akses Pengguna',   icon: <Users className="w-4 h-4" /> },
   { id: 'tampilan',  label: 'Tampilan',     icon: <Paintbrush className="w-4 h-4" /> },
   { id: 'data',      label: 'Data & Backup', icon: <Database className="w-4 h-4" /> },
   { id: 'tentang',   label: 'Tentang',      icon: <Settings className="w-4 h-4" /> },
@@ -156,12 +155,29 @@ function StockLink({ to, icon, label, description }: {
 export default function Pengaturan() {
   const storeSettings   = useDbQuery<StoreSettings>('storeSettings')?.[0];
   const paymentMethods  = useDbQuery<PaymentMethod>('paymentMethods');
-  const categories      = useDbQuery<Category>('categories');
   const users           = useDbQuery<User>('users');
 
 
-  /* ── Active Tab ── */
-  const [activeTab, setActiveTab] = useState<Tab>('toko');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab) || 'toko';
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  // Sync tab with URL
+  useEffect(() => {
+    if (activeTab !== 'toko') {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [activeTab, setSearchParams]);
+
+  // Listen to URL changes from Sidebar
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') as Tab;
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   /* ── Theme ── */
   const [themeHue, setThemeHue] = useState(storeSettings?.themeColor ?? '25');
@@ -438,59 +454,6 @@ export default function Pengaturan() {
                         <Edit2 className="w-3.5 h-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => deletePm(pm.id!)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </SettingCard>
-            )}
-          </Section>
-        )}
-
-        {/* ══════════════ KATEGORI ══════════════ */}
-        {activeTab === 'kategori' && (
-          <Section
-            title="Kategori Produk"
-            description={`${categories?.length ?? 0} kategori terdaftar.`}
-            action={
-              <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={openCatAdd}>
-                <Plus className="w-3.5 h-3.5" /> Tambah
-              </Button>
-            }
-          >
-            {!categories?.length ? (
-              <SettingCard>
-                <div className="flex flex-col items-center py-10 text-center text-muted-foreground gap-2">
-                  <Tag className="w-8 h-8 opacity-25" />
-                  <p className="text-sm">Belum ada kategori produk</p>
-                  <Button size="sm" variant="outline" className="mt-1 gap-1.5 text-xs h-8" onClick={openCatAdd}>
-                    <Plus className="w-3.5 h-3.5" /> Tambah Sekarang
-                  </Button>
-                </div>
-              </SettingCard>
-            ) : (
-              <SettingCard>
-                {categories.map((c, i) => (
-                  <div
-                    key={c.id}
-                    className={cn('flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors', i < categories.length - 1 && 'border-b border-border/50')}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0"
-                      style={{ backgroundColor: c.color + '20' }}
-                    >
-                      {c.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{c.name}</p>
-                      <p className="text-xs text-muted-foreground">Kategori produk</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openCatEdit(c)}>
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => deleteCat(c.id!)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -840,50 +803,6 @@ export default function Pengaturan() {
             </div>
             <Button className="w-full" onClick={savePm} disabled={!pmName.trim() || isSavingPm}>
               {isSavingPm ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Category Dialog ── */}
-      <Dialog open={catDialog} onOpenChange={setCatDialog}>
-        <DialogContent className="max-w-sm rounded-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{catEditId ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Nama Kategori</Label>
-              <Input value={catName} onChange={e => setCatName(e.target.value)} placeholder="Contoh: Snack, Minuman" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Ikon</Label>
-              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                {EMOJI_OPTIONS.map(e => (
-                  <button
-                    key={e}
-                    onClick={() => setCatIcon(e)}
-                    className={cn(
-                      'w-9 h-9 rounded-lg text-base flex items-center justify-center border transition-colors',
-                      catIcon === e ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80'
-                    )}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Warna Label</Label>
-              <div className="flex items-center gap-3">
-                <Input type="color" value={catColor} onChange={e => setCatColor(e.target.value)} className="h-10 w-16 p-1 cursor-pointer" />
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ backgroundColor: catColor + '20', color: catColor }}>
-                  {catIcon} {catName || 'Preview'}
-                </div>
-              </div>
-            </div>
-            <Button className="w-full" onClick={saveCat} disabled={!catName.trim() || isSavingCat}>
-              {isSavingCat ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Kategori'}
             </Button>
           </div>
         </DialogContent>

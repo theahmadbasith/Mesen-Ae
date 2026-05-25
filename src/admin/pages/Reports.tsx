@@ -9,8 +9,10 @@ import { format, subDays, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import ReportShareModal from '@/admin/components/ReportShareModal';
 import type { MesenAeReportData } from '@/admin/components/ReportPrint';
+import StockReport from './StockReport';
 
 export default function Laporan() {
+  const [activeTab, setActiveTab] = useState<'penjualan' | 'stok'>('penjualan');
   const [period, setPeriod] = useState<'7' | '30'>('7');
   const [shareOpen, setShareOpen] = useState(false);
   const days = Number(period);
@@ -147,18 +149,30 @@ export default function Laporan() {
   };
 
   return (
-    <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
-      {/* Action Header */}
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          className="h-9 gap-1.5"
-          onClick={() => setShareOpen(true)}
-        >
-          <Share2 className="w-4 h-4" />
-          Invoice
-        </Button>
+    <div className="mx-auto w-full">
+      {/* Master Tabs Navbar */}
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3">
+        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'penjualan' | 'stok')}>
+          <TabsList className="grid grid-cols-2 w-full max-w-sm mx-auto h-11 p-1 rounded-xl bg-muted/70">
+            <TabsTrigger value="penjualan" className="rounded-lg font-bold text-sm">Laporan Penjualan</TabsTrigger>
+            <TabsTrigger value="stok" className="rounded-lg font-bold text-sm">Laporan Stok</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+
+      {activeTab === 'penjualan' && (
+        <div className="px-4 pt-4 pb-24 space-y-6 w-full animate-in fade-in duration-300">
+          {/* Action Header */}
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={() => setShareOpen(true)}
+            >
+              <Share2 className="w-4 h-4" />
+              Invoice Penjualan
+            </Button>
+          </div>
 
       <Tabs value={period} onValueChange={v => setPeriod(v as '7' | '30')}>
         <TabsList className="w-full">
@@ -288,13 +302,20 @@ export default function Laporan() {
         </CardContent>
       </Card>
 
-      {/* Share Modal */}
-      <ReportShareModal
-        isOpen={shareOpen}
-        onClose={() => setShareOpen(false)}
-        onGenerate={handleGenerateReport}
-        storeName={storeSettings?.storeName ?? 'Toko Saya'}
-      />
+        <ReportShareModal
+          isOpen={shareOpen}
+          onClose={() => setShareOpen(false)}
+          onGenerate={handleGenerateReport}
+          storeName={storeSettings?.storeName ?? 'Toko Saya'}
+        />
+        </div>
+      )}
+
+      {activeTab === 'stok' && (
+        <div className="animate-in fade-in duration-300">
+          <StockReport />
+        </div>
+      )}
     </div>
   );
 }

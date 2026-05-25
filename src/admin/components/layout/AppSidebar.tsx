@@ -56,7 +56,11 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   const storeSettingsList = useDbQuery<any>('storeSettings') ?? [];
   const storeSettings = storeSettingsList[0] || null;
 
-  const openBillsCount = (useDbQuery<any>('transactions') || []).filter((t: any) => t.status === 'open').length;
+  const openBillsCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
+    const isUnpaid = t.status === 'belum lunas' || t.status === 'open';
+    const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+    return isUnpaid || isPaidButCooking;
+  }).length;
   const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending').length;
 
   const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
@@ -208,10 +212,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                   <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
                     {[
                       { to: "/admin/products", label: "Daftar Produk" },
+                      { to: "/admin/categories", label: "Kategori" },
                       { to: "/admin/supplier", label: "Supplier" },
                       { to: "/admin/stock-in", label: "Stok Masuk" },
                       { to: "/admin/stock-out", label: "Stok Keluar" },
-                      { to: "/admin/stock-report", label: "Laporan Stok" },
                     ].map((item) => (
                       <NavLink 
                         key={item.to} 
@@ -231,14 +235,14 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
               </div>
             </div>
 
-            {/* Menu Dropdown Pemasaran */}
+            {/* Menu Dropdown Marketing */}
             <div className="mb-0.5">
               <button
                 onClick={() => {
                   if (isCollapsed) setIsCollapsed(false);
                   setIsPromoOpen(!isPromoOpen);
                 }}
-                title={isCollapsed ? "Pemasaran" : undefined}
+                title={isCollapsed ? "Marketing" : undefined}
                 className={cn(
                   "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
                   isCollapsed ? "justify-center" : "gap-3",
@@ -248,7 +252,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 <Ticket className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
                 {!isCollapsed && (
                   <>
-                    <span className="flex-1 text-left truncate">Pemasaran</span>
+                    <span className="flex-1 text-left truncate">Marketing</span>
                     <ChevronDown className={cn(
                       "w-4 h-4 shrink-0 transition-transform duration-300", 
                       isPromoOpen ? "rotate-180 text-white" : "text-slate-500"
@@ -287,7 +291,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 </div>
               </div>
             </div>
-            <NavItem to="/admin/reports" icon={FileText} label="Laporan Penjualan" />
+            <NavItem to="/admin/reports" icon={FileText} label="Laporan Bisnis" />
             <NavItem to="/admin/settings" icon={Settings} label="Pengaturan Sistem" />
           </>
         )}
