@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ShoppingBag, ChevronRight, Database, AlertCircle } from 'lucide-react';
+import { requestForToken } from '@/lib/fcm';
 
 // Pastikan module-module ini sudah mendukung atau memiliki deklarasi TypeScript
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -76,9 +77,7 @@ export default function CustomerApp() {
   // Daftarkan FCM token saat customerName tersedia
   useEffect(() => {
     if (!customerName) return;
-    import('@/lib/fcm').then(({ requestForToken }) => {
-      requestForToken('customer', customerName).catch(console.error);
-    });
+    requestForToken('customer', customerName).catch(console.error);
   }, [customerName]);
 
   // Ambil view awal dari URL jika ada

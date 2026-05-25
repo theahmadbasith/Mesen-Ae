@@ -3,6 +3,7 @@ import { Check, Receipt as ReceiptIcon, Home, ChefHat } from 'lucide-react';
 import Receipt from '../../components/Receipt';
 import { useDbQuery, StoreSettings } from '@/hooks/db-hooks';
 import { FORMAT_IDR } from '@/lib/utils';
+import { requestForToken } from '@/lib/fcm';
 
 // ==========================================
 // Tipe Data & Interfaces (TypeScript)
@@ -46,12 +47,10 @@ export default function SuccessView({ setView, finalOrderData }: SuccessViewProp
     window.scrollTo(0, 0);
     
     // Minta izin notifikasi (FCM) secara elegan setelah berhasil pesan
-    import('@/lib/fcm').then(({ requestForToken }) => {
-      const custName = finalOrderData?.transaction?.customer_name || 'Tamu';
-      requestForToken('customer', custName).then(token => {
-        if (token) console.log('Customer Opt-In Push Notification');
-      });
-    });
+    const custName = finalOrderData?.transaction?.customer_name || 'Tamu';
+    requestForToken('customer', custName).then(token => {
+      if (token) console.log('Customer Opt-In Push Notification');
+    }).catch(console.error);
   }, [finalOrderData]);
 
   if (!finalOrderData) return null;
