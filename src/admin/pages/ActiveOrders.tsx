@@ -22,6 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import Receipt from '@/components/Receipt';
 import { FORMAT_IDR } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import PaymentModal from '@/admin/components/PaymentModal';
+import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
 
 export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?: () => void } = {}) {
   const navigate = useNavigate();
@@ -29,9 +31,16 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [billToCancel, setBillToCancel] = useState<Transaction | null>(null);
 
+  // Payment states
+  const [payingBill, setPayingBill] = useState<Transaction | null>(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [midtransPaymentType, setMidtransPaymentType] = useState<'qris' | 'transfer' | 'e-wallet' | 'lainnya' | null>(null);
+  const [checkoutDataCache, setCheckoutDataCache] = useState<any>(null);
+
   // Queries
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
   const allTxItems = useDbQuery<any>('transactionItems') || [];
+  const paymentMethods = useDbQuery<any>('paymentMethods') || [];
   const openBills = (useDbQuery<Transaction>('transactions') || []).filter(
     (t) => {
       const isUnpaid = t.status === 'belum lunas' || t.status === 'open';
@@ -92,6 +101,51 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
       toast.success('Pesanan ritel diselesaikan!');
     } catch (e) {
       toast.error('Gagal menyelesaikan pesanan');
+    }
+  };
+
+  const processCheckoutToDb = async (bill: Transaction, data: any) => {
+    setIsCheckingOut(true);
+    try {
+      const finalTax = data.taxAndService;
+      const finalTotal = data.total;
+      const finalChange = data.change;
+      const finalPayments = data.finalPayments;
+      const primaryMethodId = data.primaryMethodId;
+      const finalPaymentAmount = finalPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+
+      const txPayload = {
+        tax_and_service: finalTax,
+        total: finalTotal,
+        payment_method_id: primaryMethodId,
+        payment_amount: finalPaymentAmount,
+        payments: finalPayments,
+        change: finalChange,
+        customer_name: data.customerName || null,
+        table_number: data.tableNumber || null,
+        remarks: data.remarks || null,
+        status: 'lunas',
+        kitchen_status: bill.needsKitchen === false ? null : 'diproses',
+        closed_at: new Date().toISOString(),
+      };
+
+      await dbUpdate('transactions', bill.id!, txPayload);
+
+      // Send push notification if it goes to kitchen
+      if (bill.needsKitchen !== false) {
+        sendPushToRole('admin', {
+          title: 'Pesanan Lunas! 🚀',
+          body: `Pesanan (${bill.receiptNumber}) dari Kasir untuk ${data.tableNumber ? 'Meja ' + data.tableNumber : 'Bawa Pulang'} sudah dibayar dan siap diproses.`,
+          url: '/admin/kitchen',
+        }).catch(console.error);
+      }
+
+      toast.success('Pembayaran berhasil disimpan!');
+      setPayingBill(null);
+    } catch (e: any) {
+      toast.error('Gagal menyimpan pembayaran: ' + e.message);
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -243,9 +297,9 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                   ) : (
                     <Button 
                       className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
-                      onClick={() => navigate('/admin/cashier', { state: { loadBillId: bill.id } })}
+                      onClick={() => setPayingBill(bill)}
                     >
-                      Buka Kasir
+                      Bayar
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </Button>
                   )}
@@ -289,6 +343,51 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {payingBill && (
+        <PaymentModal
+          open={!!payingBill}
+          onOpenChange={(open) => !open && setPayingBill(null)}
+          baseTotal={payingBill.total}
+          initialCustomerName={payingBill.customerName || ''}
+          initialTableNumber={payingBill.tableNumber || ''}
+          initialRemarks={payingBill.remarks || ''}
+          initialPayments={payingBill.payments || []}
+          paymentMethods={paymentMethods}
+          isCheckingOut={isCheckingOut}
+          onCheckout={(data) => {
+            if (data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
+              setCheckoutDataCache(data);
+              setMidtransPaymentType(data.paymentMethodCategory as any);
+            } else {
+              processCheckoutToDb(payingBill, data);
+            }
+          }}
+        />
+      )}
+
+      {midtransPaymentType && payingBill && checkoutDataCache && (
+        <MidtransPaymentModal
+          isOpen={!!midtransPaymentType}
+          paymentType={midtransPaymentType}
+          amount={checkoutDataCache.total}
+          customerName={checkoutDataCache.customerName}
+          orderId={`TX-${payingBill.id}-${Date.now()}`}
+          onSuccess={() => {
+            setMidtransPaymentType(null);
+            processCheckoutToDb(payingBill, checkoutDataCache);
+          }}
+          onPending={() => {
+            setMidtransPaymentType(null);
+            toast.warning('Pembayaran pending, silakan selesaikan via Midtrans.');
+          }}
+          onError={() => {
+            setMidtransPaymentType(null);
+            toast.error('Pembayaran Midtrans gagal');
+          }}
+          onClose={() => setMidtransPaymentType(null)}
+        />
+      )}
     </div>
   );
 }
