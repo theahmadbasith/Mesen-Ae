@@ -206,6 +206,12 @@ export default function KitchenDisplay() {
     </div>
   );
 
+  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+
+  const toggleRow = (id: number) => {
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   // Group riwayat berdasarkan tanggal
   const dateFormatter = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const timeFormatter = new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -331,58 +337,80 @@ export default function KitchenDisplay() {
                     <table className="w-full text-left min-w-[700px]">
                       <thead className="bg-muted/50 text-xs uppercase text-muted-foreground font-extrabold border-b border-border">
                         <tr>
-                          <th className="px-5 py-3.5 w-32">Waktu / Struk</th>
-                          <th className="px-5 py-3.5 w-32">Nomor Meja</th>
-                          <th className="px-5 py-3.5">Detail Pesanan</th>
-                          <th className="px-5 py-3.5 w-32 text-center">Status</th>
-                          <th className="px-5 py-3.5 w-16 text-center">Aksi</th>
+                          <th className="px-5 py-3.5 w-32 whitespace-nowrap">Waktu / Struk</th>
+                          <th className="px-5 py-3.5 w-32 whitespace-nowrap">Nomor Meja</th>
+                          <th className="px-5 py-3.5 whitespace-nowrap">Detail Pesanan</th>
+                          <th className="px-5 py-3.5 w-32 text-center whitespace-nowrap">Status</th>
+                          <th className="px-5 py-3.5 w-16 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/50 text-sm">
                         {bills.map(bill => {
                           const isCancelled = bill.status === 'batal';
                           const timeStr = timeFormatter.format(new Date(bill.date)).replace('.', ':');
+                          const isExpanded = !!expandedRows[bill.id!];
                           
                           return (
-                            <tr key={bill.id} className="hover:bg-muted/30 transition-colors">
-                              <td className="px-5 py-4 align-top">
-                                <div className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {timeStr}
-                                </div>
-                                <div className="font-mono text-[11px] font-semibold text-muted-foreground">{bill.receiptNumber}</div>
-                              </td>
-                              <td className="px-5 py-4 align-top">
-                                {bill.tableNumber ? (
-                                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-sm py-1 font-bold">Meja {bill.tableNumber}</Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-muted text-muted-foreground text-xs py-1">Bawa Pulang</Badge>
-                                )}
-                              </td>
-                              <td className="px-5 py-4 align-top">
-                                <KitchenItemsList transactionId={bill.id!} compact={true} />
-                              </td>
-                              <td className="px-5 py-4 align-top text-center">
-                                <Badge className={cn(
-                                  "font-bold text-[10px] uppercase tracking-wider",
-                                  isCancelled 
-                                    ? "bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/20" 
-                                    : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"
-                                )} variant="outline">
-                                  {isCancelled ? 'Dibatalkan' : 'Selesai'}
-                                </Badge>
-                              </td>
-                              <td className="px-5 py-4 align-top text-center">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-9 w-9 hover:bg-primary/10 hover:text-primary rounded-xl text-muted-foreground border border-transparent hover:border-primary/20 shadow-sm" 
-                                  onClick={() => setReceiptTx(bill)} 
-                                  title="Print Tiket"
-                                >
-                                  <Printer className="w-4 h-4" />
-                                </Button>
-                              </td>
-                            </tr>
+                            <React.Fragment key={bill.id}>
+                              <tr 
+                                onClick={() => toggleRow(bill.id!)}
+                                className="hover:bg-muted/30 transition-colors cursor-pointer group"
+                              >
+                                <td className="px-5 py-4 align-middle whitespace-nowrap">
+                                  <div className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {timeStr}
+                                  </div>
+                                  <div className="font-mono text-[11px] font-semibold text-muted-foreground">{bill.receiptNumber}</div>
+                                </td>
+                                <td className="px-5 py-4 align-middle whitespace-nowrap">
+                                  {bill.tableNumber ? (
+                                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-sm py-1 font-bold">Meja {bill.tableNumber}</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="bg-muted text-muted-foreground text-xs py-1">Bawa Pulang</Badge>
+                                  )}
+                                </td>
+                                <td className="px-5 py-4 align-middle whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors border border-border px-2.5 py-1.5 rounded-lg bg-background">
+                                    {isExpanded ? 'Tutup Detail ▴' : 'Lihat Detail ▾'}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 align-middle text-center whitespace-nowrap">
+                                  <Badge className={cn(
+                                    "font-bold text-[10px] uppercase tracking-wider",
+                                    isCancelled 
+                                      ? "bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/20" 
+                                      : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"
+                                  )} variant="outline">
+                                    {isCancelled ? 'Dibatalkan' : 'Selesai'}
+                                  </Badge>
+                                </td>
+                                <td className="px-5 py-4 align-middle text-center whitespace-nowrap">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-9 w-9 hover:bg-primary/10 hover:text-primary rounded-xl text-muted-foreground border border-transparent hover:border-primary/20 shadow-sm" 
+                                    onClick={(e) => { e.stopPropagation(); setReceiptTx(bill); }} 
+                                    title="Print Tiket"
+                                  >
+                                    <Printer className="w-4 h-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                              {/* Expanded Dropdown Content */}
+                              {isExpanded && (
+                                <tr className="bg-muted/10">
+                                  <td colSpan={5} className="px-5 py-4 border-t-0 border-b border-border">
+                                    <div className="bg-card rounded-2xl p-5 border border-border shadow-inner ml-2 mr-2">
+                                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <UtensilsCrossed className="w-3.5 h-3.5" />
+                                        Rincian Pesanan
+                                      </p>
+                                      <KitchenItemsList transactionId={bill.id!} compact={false} />
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
                           );
                         })}
                       </tbody>
