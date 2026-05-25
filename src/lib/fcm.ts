@@ -16,7 +16,7 @@ export const requestForToken = async (role: 'admin' | 'customer', name: string) 
     if (permission === 'granted') {
       const registration = await navigator.serviceWorker.ready;
       
-      const publicVapidKey = 'BOS-76i4DY8yREaNKWdh3xkqKkPTVLibbvSroA2rAkOxJlfY7HhF2YDzuIryY4D_5Ky-nQhehNBLBcL7IBt-TNQ';
+      const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID;
       
       // Convert VAPID key to Uint8Array
       const urlBase64ToUint8Array = (base64String: string) => {
