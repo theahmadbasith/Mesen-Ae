@@ -75,7 +75,7 @@ export default function PaymentModal({
       setPaymentAmount('0'); // Set default to 0, let the effect below update it to total if needed.
       setIsQuickAdding(false);
     }
-  }, [open, initialCustomerName, initialTableNumber, initialRemarks, initialPayments, paymentMethods]);
+  }, [open]);
 
   const taxAndService = useMemo(() => {
     const currentMethod = paymentMethods?.find(m => m.id!.toString() === paymentMethodId);
