@@ -592,14 +592,14 @@ export default function Kasir() {
         date: openBillObj ? openBillObj.date : new Date().toISOString(),
         receipt_number: openBillObj ? openBillObj.receiptNumber : `TX${editingTxId}`,
         status: 'lunas',
-        kitchen_status: 'diproses',
+        kitchen_status: txNeedsKitchen ? 'diproses' : null,
         closed_at: new Date().toISOString(),
       });
 
       await db.from('transactions').update({
         ...txPayload,
         status: 'lunas',
-        kitchen_status: 'diproses',
+        kitchen_status: txNeedsKitchen ? 'diproses' : null,
         closed_at: new Date().toISOString(),
       }).eq('id', editingTxId);
 
@@ -639,12 +639,14 @@ export default function Kasir() {
         url:   '/?view=tracking',
       }).catch(console.error);
 
-      // Notifikasi Push ke Admin/Dapur: Pesanan Lunas Siap Masak
-      sendPushToRole('admin', {
-        title: 'Pesanan Masuk & Lunas! 🚀',
-        body:  `Pesanan (${finalTx.receiptNumber}) untuk meja ${finalTx.tableNumber || 'Bawa Pulang'} telah lunas dan siap dimasak.`,
-        url:   '/admin/kitchen',
-      }).catch(console.error);
+      // Notifikasi Push ke Admin/Dapur: Pesanan Lunas Siap Masak (hanya jika butuh dapur)
+      if (txNeedsKitchen) {
+        sendPushToRole('admin', {
+          title: 'Pesanan Masuk & Lunas! 🚀',
+          body:  `Pesanan (${finalTx.receiptNumber}) untuk meja ${finalTx.tableNumber || 'Bawa Pulang'} telah lunas dan siap dimasak.`,
+          url:   '/admin/kitchen',
+        }).catch(console.error);
+      }
 
       toast.success(`Transaksi berhasil!`);
       setReceiptOpen(true);
@@ -658,7 +660,7 @@ export default function Kasir() {
         date: new Date().toISOString(),
         receipt_number: receiptNumber,
         status: 'lunas',
-        kitchen_status: 'diproses',
+        kitchen_status: txNeedsKitchen ? 'diproses' : null,
       };
 
       const { data: newTx } = await db.from('transactions').insert([txData]).select('id').single();
@@ -699,12 +701,14 @@ export default function Kasir() {
           url:   '/?view=tracking',
         }).catch(console.error);
 
-        // Notifikasi Push ke Admin/Dapur: Pesanan Baru Siap Masak
-        sendPushToRole('admin', {
-          title: 'Pesanan Baru Masuk & Lunas! 🚀',
-          body:  `Pesanan (${receiptNumber}) untuk meja ${txData.table_number || 'Bawa Pulang'} telah lunas dan siap dimasak.`,
-          url:   '/admin/kitchen',
-        }).catch(console.error);
+        // Notifikasi Push ke Admin/Dapur: Pesanan Baru Siap Masak (hanya jika butuh dapur)
+        if (txNeedsKitchen) {
+          sendPushToRole('admin', {
+            title: 'Pesanan Baru Masuk & Lunas! 🚀',
+            body:  `Pesanan (${receiptNumber}) untuk meja ${txData.table_number || 'Bawa Pulang'} telah lunas dan siap dimasak.`,
+            url:   '/admin/kitchen',
+          }).catch(console.error);
+        }
 
         toast.success(`Transaksi berhasil! ${receiptNumber}`);
         setReceiptOpen(true);

@@ -108,25 +108,21 @@ export default function Categories() {
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm border border-black/5 dark:border-white/5"
-                style={{ backgroundColor: c.color + '20' }}
+                style={{ backgroundColor: c.color + '20', color: c.color }}
               >
                 {c.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">{c.name}</p>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-0.5 rounded text-[10px] font-bold">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
-                    <span className="uppercase tracking-wider text-muted-foreground">Tema Kategori</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-foreground">{c.name}</p>
                   {c.needsKitchen !== false ? (
-                    <div className="bg-amber-100/50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 dark:border-amber-500/20 uppercase tracking-wider">
-                      ♨️ Masuk Dapur
-                    </div>
+                    <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full text-[9px] font-bold border border-amber-500/20 uppercase tracking-wider">
+                      Dapur
+                    </span>
                   ) : (
-                    <div className="bg-slate-100/50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 uppercase tracking-wider">
-                      🛍️ Retail (Non-Dapur)
-                    </div>
+                    <span className="bg-slate-500/10 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full text-[9px] font-bold border border-slate-500/20 uppercase tracking-wider">
+                      Ritel
+                    </span>
                   )}
                 </div>
               </div>
@@ -148,52 +144,70 @@ export default function Categories() {
         <DialogContent className="max-w-[360px] rounded-2xl p-0 overflow-hidden bg-background border-border shadow-xl">
           <div className="bg-primary/5 p-5 border-b border-border/40">
             <DialogHeader>
-              <DialogTitle className="text-lg">{catEditId ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
-              <DialogDescription className="text-xs">
+              <DialogTitle className="text-base font-bold">{catEditId ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
+              <DialogDescription className="text-[11px] mt-1">
                 {catEditId ? 'Ubah rincian kategori yang sudah ada.' : 'Buat kategori baru untuk produk Anda.'}
               </DialogDescription>
             </DialogHeader>
           </div>
-          <form onSubmit={saveCat} className="p-5 space-y-5">
-            <div className="space-y-4">
+          <form onSubmit={saveCat} className="p-5 space-y-4">
+            <div className="space-y-3.5">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Nama Kategori</Label>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nama Kategori</Label>
                 <Input
                   value={catName}
                   onChange={(e) => setCatName(e.target.value)}
                   placeholder="Cth: Makanan Berat"
-                  className="h-10"
+                  className="h-10 text-sm rounded-xl"
                   required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Emoji / Ikon</Label>
-                  <Input
-                    value={catIcon}
-                    onChange={(e) => setCatIcon(e.target.value)}
-                    placeholder="🍔"
-                    className="h-10 text-center text-lg"
-                    maxLength={2}
-                  />
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Emoji / Ikon</Label>
+                  <div className="flex flex-col gap-2">
+                    <Input
+                      value={catIcon}
+                      onChange={(e) => setCatIcon(e.target.value)}
+                      placeholder="📦"
+                      className="h-10 text-center text-lg rounded-xl font-bold"
+                      maxLength={2}
+                    />
+                    <div className="flex flex-wrap gap-1 max-h-[70px] overflow-y-auto no-scrollbar border border-border/50 p-1.5 rounded-lg bg-muted/20">
+                      {['📦', '🍔', '🍕', '🍜', '🥤', '☕', '🧁', '🍦', '🏷️', '🚬', '🧼', '🧹', '📱', '🛒', '🛍️', '🍺'].map(emoji => (
+                        <button
+                          type="button"
+                          key={emoji}
+                          onClick={() => setCatIcon(emoji)}
+                          className={cn(
+                            "w-6 h-6 flex items-center justify-center text-xs rounded-md transition-all hover:bg-muted active:scale-90",
+                            catIcon === emoji ? "bg-primary/20 border border-primary/45 font-bold" : "bg-muted/40 border border-transparent"
+                          )}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Warna Tema</Label>
-                  <div className="flex items-center gap-2">
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Warna Tema</Label>
+                  <div className="flex flex-col gap-2">
                     <Input
                       type="color"
                       value={catColor}
                       onChange={(e) => setCatColor(e.target.value)}
-                      className="h-10 w-full p-1 cursor-pointer rounded-lg border-border/50"
+                      className="h-10 w-full p-1 cursor-pointer rounded-xl border-border/50"
                     />
+                    <p className="text-[10px] text-muted-foreground leading-normal mt-0.5">Warna ini digunakan untuk latar belakang ikon.</p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between p-3 border border-border/50 bg-muted/30 rounded-xl mt-2">
+              <div className="flex items-center justify-between p-3 border border-border/50 bg-muted/20 rounded-xl mt-2">
                 <div className="space-y-0.5 pr-4">
-                  <Label className="text-sm font-bold text-foreground">Disiapkan di Dapur</Label>
-                  <p className="text-xs text-muted-foreground leading-snug">
-                    Bila aktif, pesanan produk ini akan muncul di layar Dapur Koki. Matikan untuk produk ecer/rokok.
+                  <Label className="text-xs font-bold text-foreground">Disiapkan di Dapur</Label>
+                  <p className="text-[10px] text-muted-foreground leading-normal">
+                    Bila aktif, pesanan produk ini akan muncul di layar Dapur Koki.
                   </p>
                 </div>
                 <div className="shrink-0 flex items-center">
@@ -210,7 +224,7 @@ export default function Categories() {
               </div>
             </div>
             <div className="pt-2">
-              <Button type="submit" className="w-full h-11 font-bold text-sm" disabled={isSavingCat}>
+              <Button type="submit" className="w-full h-11 font-bold text-sm rounded-xl" disabled={isSavingCat}>
                 {isSavingCat ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Kategori'}
               </Button>
             </div>

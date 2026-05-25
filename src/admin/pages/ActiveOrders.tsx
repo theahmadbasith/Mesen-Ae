@@ -41,6 +41,23 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
   const allTxItems = useDbQuery<any>('transactionItems') || [];
   const paymentMethods = useDbQuery<any>('paymentMethods') || [];
+  const categories = useDbQuery<any>('categories') || [];
+  const products = useDbQuery<any>('products') || [];
+
+  const getBillNeedsKitchen = (bill: Transaction) => {
+    if (bill.needsKitchen !== undefined && bill.needsKitchen !== null) {
+      return bill.needsKitchen;
+    }
+    const items = allTxItems.filter((i: any) => i.transactionId === bill.id);
+    if (items.length === 0) return true;
+    return items.some((item: any) => {
+      const prod = products.find((p: any) => p.id === item.productId || p.id?.toString() === item.productId?.toString());
+      if (!prod) return true;
+      const cat = categories.find((c: any) => c.id === prod.categoryId || c.id?.toString() === prod.categoryId?.toString());
+      return !cat || cat.needsKitchen !== false;
+    });
+  };
+
   const openBills = (useDbQuery<Transaction>('transactions') || []).filter(
     (t) => {
       const isUnpaid = t.status === 'belum lunas' || t.status === 'open';
@@ -125,14 +142,14 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         table_number: data.tableNumber || null,
         remarks: data.remarks || null,
         status: 'lunas',
-        kitchen_status: bill.needsKitchen === false ? null : 'diproses',
+        kitchen_status: getBillNeedsKitchen(bill) ? 'diproses' : null,
         closed_at: new Date().toISOString(),
       };
 
       await dbUpdate('transactions', bill.id!, txPayload);
 
       // Send push notification if it goes to kitchen
-      if (bill.needsKitchen !== false) {
+      if (getBillNeedsKitchen(bill)) {
         sendPushToRole('admin', {
           title: 'Pesanan Lunas! 🚀',
           body: `Pesanan (${bill.receiptNumber}) dari Kasir untuk ${data.tableNumber ? 'Meja ' + data.tableNumber : 'Bawa Pulang'} sudah dibayar dan siap diproses.`,
@@ -277,7 +294,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                     </Button>
                   )}
                   {bill.status === 'lunas' ? (
-                    bill.needsKitchen === false ? (
+                    !getBillNeedsKitchen(bill) ? (
                       <Button 
                         className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
                         onClick={() => handleMarkDone(bill)}
