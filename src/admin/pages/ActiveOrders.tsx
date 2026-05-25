@@ -49,11 +49,22 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   React.useEffect(() => {
     if (openBills.length > prevBillsCountRef.current) {
       if (Notification.permission === 'granted') {
-        new Notification('Pesanan Baru Masuk! 🔔', {
+        const title = 'Pesanan Baru Masuk! 🔔';
+        const options = {
           body: 'Ada pesanan pelanggan baru yang harus segera disiapkan di dapur.',
           icon: '/icon-192.png',
           vibrate: [200, 100, 200, 100, 400],
-        });
+        };
+        
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(title, options);
+          }).catch(() => {
+            try { new Notification(title, options); } catch(e) { console.error(e); }
+          });
+        } else {
+          try { new Notification(title, options); } catch(e) { console.error(e); }
+        }
       }
     }
     prevBillsCountRef.current = openBills.length;
