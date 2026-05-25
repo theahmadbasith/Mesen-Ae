@@ -18,26 +18,36 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ─── BACKGROUND MESSAGE HANDLER ───────────────────────────────────────────────
-// Dipanggil saat notifikasi masuk & browser/tab TIDAK aktif / DITUTUP
-messaging.onBackgroundMessage(function(payload) {
-  const title = payload.notification?.title || payload.data?.title || 'MesenAe';
-  const body  = payload.notification?.body  || payload.data?.body  || '';
-  const url   = payload.data?.url || '/';
+self.addEventListener('push', function(event) {
+  // Hentikan Firebase dari menampilkan notifikasi default
+  event.stopImmediatePropagation();
+  
+  let payload = {};
+  try {
+    payload = event.data.json();
+  } catch (e) {
+    console.error('Failed to parse push data', e);
+    return;
+  }
+
+  // Jika payload dari FCM, data notifikasi mungkin ada di payload.notification atau payload.data
+  const title = payload.notification?.title || payload.data?.title || payload.title || 'MesenAe';
+  const body  = payload.notification?.body  || payload.data?.body  || payload.body || '';
+  const url   = payload.data?.url || payload.url || '/';
 
   const notificationOptions = {
     body,
     icon:  '/logo.png',
     badge: '/logo.png',
-    // Pola getar pager restoran: panjang-pendek berulang
+    // Pola getar keras dan berulang
     vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
-    // tag unik per-pesanan agar setiap event memicu getar baru
     tag: 'mesenae-' + (payload.data?.orderId || Date.now()),
-    renotify: true,          // paksa getar ulang meskipun tag sama
-    requireInteraction: true, // jangan hilang otomatis — tunggu user aksi
+    renotify: true,
+    requireInteraction: true,
     data: { url },
   };
 
-  return self.registration.showNotification(title, notificationOptions);
+  event.waitUntil(self.registration.showNotification(title, notificationOptions));
 });
 
 // ─── NOTIFICATION CLICK HANDLER ───────────────────────────────────────────────
