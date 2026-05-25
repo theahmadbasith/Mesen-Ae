@@ -193,7 +193,21 @@ export default function Kasir() {
       : txDiscountType === 'nominal' ? Number(txDiscountValue) || 0 : 0;
   }, [subtotal, txDiscountType, txDiscountValue]);
 
-  const total = useMemo(() => Math.max(0, subtotal - txDiscountAmount), [subtotal, txDiscountAmount]);
+  const taxAndService = useMemo(() => {
+    const currentMethod = paymentMethods?.find(m => m.id!.toString() === paymentMethodId);
+    if (!currentMethod) return 0;
+    
+    const baseTotal = Math.max(0, subtotal - txDiscountAmount);
+    
+    if (currentMethod.category === 'qris') return Math.round(baseTotal * 0.007);
+    if (currentMethod.category === 'e-wallet') return Math.round(baseTotal * 0.02);
+    if (currentMethod.category === 'transfer') return 4000;
+    if (currentMethod.category === 'lainnya') return Math.round(baseTotal * 0.03);
+    
+    return 0;
+  }, [paymentMethodId, paymentMethods, subtotal, txDiscountAmount]);
+
+  const total = useMemo(() => Math.max(0, subtotal - txDiscountAmount) + taxAndService, [subtotal, txDiscountAmount, taxAndService]);
   const totalPaidSoFar = useMemo(() => payments.reduce((sum, p) => sum + p.amount, 0), [payments]);
   const totalProfit = useMemo(() => {
     return cart.reduce((sum, item) => sum + (item.product.price - item.product.hpp) * item.qty, 0) - txDiscountAmount;
@@ -334,6 +348,7 @@ export default function Kasir() {
       discount_type: txDiscountType,
       discount_value: Number(txDiscountValue) || 0,
       discount_amount: txDiscountAmount,
+      tax_and_service: taxAndService,
       total,
       customer_name: customerName.trim() || null,
       table_number: tableNumber.trim() || null,
@@ -522,6 +537,7 @@ export default function Kasir() {
       discount_type: txDiscountType,
       discount_value: Number(txDiscountValue) || 0,
       discount_amount: txDiscountAmount,
+      tax_and_service: taxAndService,
       total,
       payment_method_id: primaryMethodId,
       payment_amount: finalPaymentAmount,
@@ -1271,8 +1287,15 @@ export default function Kasir() {
                   </p>
                 )}
               </div>
-              <div className="h-12 flex items-center justify-center rounded-md border border-input bg-background text-lg font-bold text-center px-3">
-                {currentPaidAmount > 0 ? `Rp ${currentPaidAmount.toLocaleString('id-ID')}` : 'Rp 0'}
+              {taxAndService > 0 && (
+                <div className="flex justify-between items-center text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md">
+                  <span>Biaya Layanan Midtrans:</span>
+                  <span className="font-bold">+Rp {taxAndService.toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              <div className="h-12 flex items-center justify-between rounded-md border border-input bg-background text-lg font-bold px-3">
+                <span className="text-sm font-normal text-muted-foreground">Total Tagihan: <span className="font-bold text-foreground">Rp {total.toLocaleString('id-ID')}</span></span>
+                <span>{currentPaidAmount > 0 ? `Bayar: Rp ${currentPaidAmount.toLocaleString('id-ID')}` : 'Bayar: Rp 0'}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map(nom => (
