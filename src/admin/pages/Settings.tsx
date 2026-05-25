@@ -407,12 +407,18 @@ export default function Pengaturan() {
                     : <Store className="w-6 h-6 text-muted-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{storeSettings?.storeName || 'Toko Saya'}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm truncate">{storeSettings?.storeName || 'Toko Saya'}</p>
+                    <Badge variant={storeSettings?.deliveryMode === 'ambil' ? 'secondary' : 'default'} className="text-[10px] h-5 px-1.5 font-bold">
+                      {storeSettings?.deliveryMode === 'ambil' ? 'Ambil Sendiri' : 'Pesan Antar'}
+                    </Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{storeSettings?.address || 'Alamat belum diatur'}</p>
                   <p className="text-xs text-muted-foreground">{storeSettings?.phone || 'Telepon belum diatur'}</p>
                 </div>
               </div>
-              <SettingRow last label="Footer Struk" description={storeSettings?.receiptFooter || '–'} />
+              <SettingRow label="Footer Struk" description={storeSettings?.receiptFooter || '–'} />
+              <SettingRow last label="Sistem Penjualan" description={storeSettings?.deliveryMode === 'ambil' ? 'Pelanggan mengambil pesanan sendiri ke kasir / meja penjemputan.' : 'Pelanggan memesan dari meja dan pesanan akan diantar.'} />
             </SettingCard>
 
 
