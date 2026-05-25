@@ -193,7 +193,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
       return {
         title: 'Kategori Produk',
         description: 'Kelola jenis dan pengelompokan menu.',
-        icon: <Tag className="w-5 h-5 text-primary" />
+        icon: <TagIcon className="w-5 h-5 text-primary" />
       };
     }
     if (pathname.includes('/admin/supplier')) {

@@ -791,7 +791,7 @@ export default function Pengaturan() {
                     deliveryMode === 'ambil' ? "border-primary bg-primary/10 text-primary" : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <PackageIcon className="w-5 h-5 mb-1.5" />
+                  <Package className="w-5 h-5 mb-1.5" />
                   <span className="text-xs font-semibold">Ambil Sendiri</span>
                 </button>
               </div>
