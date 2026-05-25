@@ -24,7 +24,8 @@ const StockInPage = lazy(() => import("./pages/StockIn"));
 const StockOutPage = lazy(() => import("./pages/StockOut"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const StockReport = lazy(() => import("./pages/StockReport"));
-const OrdersManager = lazy(() => import("./pages/OrdersManager"));
+const ActiveOrders = lazy(() => import("./pages/ActiveOrders"));
+const Kitchen = lazy(() => import("./pages/Kitchen"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
 const Vouchers = lazy(() => import("./pages/Vouchers"));
 const BannerPromo = lazy(() => import("./pages/BannerPromo"));
@@ -47,43 +48,43 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return <Navigate to="/login" replace />;
     }
   } catch (e) {
-    // If it's a legacy 'true', let it pass
-    if (authString !== 'true') {
-      return <Navigate to="/login" replace />;
-    }
+    localStorage.removeItem('admin_auth');
+    return <Navigate to="/login" replace />;
   }
   
   return <>{children}</>;
 };
 
-// Role Guard Wrapper
+// Admin Only Route Wrapper (or cashier if allowed)
 const AdminOnlyRoute = ({ children, allowedForUser = false }: { children: React.ReactNode, allowedForUser?: boolean }) => {
   const authString = localStorage.getItem('admin_auth');
+  if (!authString) return <Navigate to="/login" replace />;
+  
   try {
-    const auth = JSON.parse(authString || '{}');
-    
-    // Check expiration even in Role Guard just to be safe
-    if (auth.expiresAt && Date.now() > auth.expiresAt) {
-      localStorage.removeItem('admin_auth');
-      return <Navigate to="/login" replace />;
+    const auth = JSON.parse(authString);
+    if (auth.role === 'admin' || allowedForUser) {
+      return <>{children}</>;
     }
-
-    if (auth.role === 'user' && !allowedForUser) return <Navigate to="/admin/kitchen" replace />;
-  } catch (e) {
-    // legacy
-  }
-  return <>{children}</>;
+  } catch (e) {}
+  
+  return <Navigate to="/admin" replace />;
 };
 
 export default function AdminApp() {
-  useEffect(() => {
-    // Request token for admin
-    requestForToken('admin', 'admin_user').then((token) => {
-      if (token) console.log('Admin FCM Ready');
-    });
+  const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
+  const role = authData.role || 'admin';
+  const name = authData.name || 'Admin';
 
-    // Token diminta hanya saat login atau aksi eksplisit
-  }, []);
+  // Request notification permission on mount
+  useEffect(() => {
+    if (role && name) {
+      requestForToken('admin', name).then(token => {
+        if (token) {
+          console.log('Web push token updated successfully');
+        }
+      });
+    }
+  }, [role, name]);
 
   return (
     <Routes>
@@ -105,7 +106,14 @@ export default function AdminApp() {
         <Route path="orders" element={
           <AdminOnlyRoute allowedForUser>
             <Suspense fallback={<PageSkeleton />}>
-              <OrdersManager />
+              <ActiveOrders />
+            </Suspense>
+          </AdminOnlyRoute>
+        } />
+        <Route path="kitchen" element={
+          <AdminOnlyRoute allowedForUser>
+            <Suspense fallback={<PageSkeleton />}>
+              <Kitchen />
             </Suspense>
           </AdminOnlyRoute>
         } />

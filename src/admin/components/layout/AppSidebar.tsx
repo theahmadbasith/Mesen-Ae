@@ -16,7 +16,16 @@ import {
   LogOut,
   ClipboardList,
   Image as ImageIcon,
-  Barcode
+  Barcode,
+  ChefHat,
+  FolderTree,
+  Truck,
+  PlusCircle,
+  MinusCircle,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  TrendingUp,
+  Clock
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -28,14 +37,27 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   const location = useLocation();
+  
+  const [isOrdersOpen, setIsOrdersOpen] = useState(() => {
+    const paths = ["/admin/orders", "/admin/kitchen"];
+    return paths.some(p => location.pathname.startsWith(p));
+  });
+  
   const [isProductsOpen, setIsProductsOpen] = useState(() => {
-    const paths = ["/admin/products", "/admin/supplier", "/admin/stock-in", "/admin/stock-out", "/admin/stock-report"];
+    const paths = ["/admin/products", "/admin/categories", "/admin/supplier", "/admin/stock-in", "/admin/stock-out"];
     return paths.some(p => location.pathname.startsWith(p));
   });
+  
   const [isPromoOpen, setIsPromoOpen] = useState(() => {
-    const paths = ["/admin/qr-menu", "/admin/banners", "/admin/vouchers", "/admin/barcode"];
+    const paths = ["/admin/qr-code", "/admin/banner", "/admin/vouchers", "/admin/barcode"];
     return paths.some(p => location.pathname.startsWith(p));
   });
+
+  const [isReportsOpen, setIsReportsOpen] = useState(() => {
+    const paths = ["/admin/reports", "/admin/stock-report"];
+    return paths.some(p => location.pathname.startsWith(p));
+  });
+
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (isMobile) return false;
     return localStorage.getItem('mesenae_sidebar_collapsed') === 'true';
@@ -48,9 +70,21 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   }, [isCollapsed, isMobile]);
 
   useEffect(() => {
-    const paths = ["/admin/products", "/admin/supplier", "/admin/stock-in", "/admin/stock-out", "/admin/stock-report"];
-    if (paths.some(p => location.pathname.startsWith(p))) {
+    const productsPaths = ["/admin/products", "/admin/categories", "/admin/supplier", "/admin/stock-in", "/admin/stock-out"];
+    if (productsPaths.some(p => location.pathname.startsWith(p))) {
       setIsProductsOpen(true);
+    }
+    const ordersPaths = ["/admin/orders", "/admin/kitchen"];
+    if (ordersPaths.some(p => location.pathname.startsWith(p))) {
+      setIsOrdersOpen(true);
+    }
+    const promoPaths = ["/admin/qr-code", "/admin/banner", "/admin/vouchers", "/admin/barcode"];
+    if (promoPaths.some(p => location.pathname.startsWith(p))) {
+      setIsPromoOpen(true);
+    }
+    const reportsPaths = ["/admin/reports", "/admin/stock-report"];
+    if (reportsPaths.some(p => location.pathname.startsWith(p))) {
+      setIsReportsOpen(true);
     }
   }, [location.pathname]);
 
@@ -62,7 +96,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
     const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
     return isUnpaid || isPaidButCooking;
   }).length;
-  const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending').length;
+  
+  const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
+    return t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+  }).length;
 
   const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
   const role = authData.role || 'admin';
@@ -169,7 +206,68 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
         <NavGroupLabel>Operasional</NavGroupLabel>
         {role === 'admin' && <NavItem to="/admin" exact icon={LayoutDashboard} label="Dashboard" />}
         {role === 'admin' && <NavItem to="/admin/cashier" icon={ShoppingCart} label="Kasir (POS)" />}
-        <NavItem to="/admin/orders" icon={ClipboardList} label="Pesanan & Dapur" badge={openBillsCount} />
+        
+        {/* Menu Dropdown Pesanan & Dapur */}
+        <div className="mb-0.5">
+          <button
+            onClick={() => {
+              if (isCollapsed) setIsCollapsed(false);
+              setIsOrdersOpen(!isOrdersOpen);
+            }}
+            title={isCollapsed ? "Pesanan & Dapur" : undefined}
+            className={cn(
+              "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
+              isCollapsed ? "justify-center" : "gap-3",
+              isOrdersOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
+            )}
+          >
+            <ClipboardList className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
+            {!isCollapsed && (
+              <>
+                <span className="flex-1 text-left truncate">Pesanan & Dapur</span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 shrink-0 transition-transform duration-300", 
+                  isOrdersOpen ? "rotate-180 text-white" : "text-slate-500"
+                )} />
+              </>
+            )}
+          </button>
+          
+          {/* Isi Dropdown Pesanan */}
+          <div className={cn(
+            "grid transition-all duration-300 ease-in-out",
+            isOrdersOpen && !isCollapsed ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+          )}>
+            <div className="overflow-hidden">
+              <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
+                {[
+                  { to: "/admin/orders", label: "Pesanan Aktif", icon: Clock, badge: openBillsCount },
+                  { to: "/admin/kitchen", label: "Dapur (Kitchen)", icon: ChefHat, badge: processingCount },
+                ].map((item) => (
+                  <NavLink 
+                    key={item.to} 
+                    to={item.to} 
+                    className={({isActive}) => cn(
+                      "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none relative", 
+                      isActive 
+                        ? "text-white font-bold bg-primary/20" 
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <item.icon className="w-3.5 h-3.5" />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge > 0 && (
+                      <Badge className="bg-primary text-primary-foreground border-none text-[8px] h-4 px-1 rounded-full min-w-[16px] flex justify-center items-center font-bold ml-1">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <NavItem to="/admin/history" icon={History} label="Riwayat Transaksi" />
         
         {/* Grup 2: Manajemen */}
@@ -211,22 +309,23 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 <div className="overflow-hidden">
                   <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
                     {[
-                      { to: "/admin/products", label: "Daftar Produk" },
-                      { to: "/admin/categories", label: "Kategori" },
-                      { to: "/admin/supplier", label: "Supplier" },
-                      { to: "/admin/stock-in", label: "Stok Masuk" },
-                      { to: "/admin/stock-out", label: "Stok Keluar" },
+                      { to: "/admin/products", label: "Daftar Produk", icon: Package },
+                      { to: "/admin/categories", label: "Kategori", icon: FolderTree },
+                      { to: "/admin/supplier", label: "Supplier", icon: Truck },
+                      { to: "/admin/stock-in", label: "Stok Masuk", icon: PlusCircle },
+                      { to: "/admin/stock-out", label: "Stok Keluar", icon: MinusCircle },
                     ].map((item) => (
                       <NavLink 
                         key={item.to} 
                         to={item.to} 
                         className={({isActive}) => cn(
-                          "block py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none", 
+                          "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none", 
                           isActive 
                             ? "text-white font-bold bg-primary/20" 
                             : "text-slate-400 hover:text-white hover:bg-white/5"
                         )}
                       >
+                        <item.icon className="w-3.5 h-3.5" />
                         {item.label}
                       </NavLink>
                     ))}
@@ -292,7 +391,63 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 </div>
               </div>
             </div>
-            <NavItem to="/admin/reports" icon={FileText} label="Laporan Bisnis" />
+
+            {/* Menu Dropdown Laporan */}
+            <div className="mb-0.5">
+              <button
+                onClick={() => {
+                  if (isCollapsed) setIsCollapsed(false);
+                  setIsReportsOpen(!isReportsOpen);
+                }}
+                title={isCollapsed ? "Laporan Bisnis" : undefined}
+                className={cn(
+                  "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
+                  isCollapsed ? "justify-center" : "gap-3",
+                  isReportsOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <FileText className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1 text-left truncate">Laporan Bisnis</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 shrink-0 transition-transform duration-300", 
+                      isReportsOpen ? "rotate-180 text-white" : "text-slate-500"
+                    )} />
+                  </>
+                )}
+              </button>
+              
+              {/* Isi Dropdown Laporan */}
+              <div className={cn(
+                "grid transition-all duration-300 ease-in-out",
+                isReportsOpen && !isCollapsed ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+              )}>
+                <div className="overflow-hidden">
+                  <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
+                    {[
+                      { to: "/admin/reports", label: "Laporan Penjualan", icon: TrendingUp },
+                      { to: "/admin/stock-report", label: "Laporan Stok", icon: ArrowDownToLine },
+                    ].map((item) => (
+                      <NavLink 
+                        key={item.to} 
+                        to={item.to} 
+                        className={({isActive}) => cn(
+                          "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none", 
+                          isActive 
+                            ? "text-white font-bold bg-primary/20" 
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <item.icon className="w-3.5 h-3.5" />
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <NavItem to="/admin/settings" icon={Settings} label="Pengaturan Sistem" />
           </>
         )}
