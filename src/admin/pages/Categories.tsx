@@ -101,7 +101,7 @@ export default function Categories() {
           {categories.map((c) => (
             <Card
               key={c.id}
-              className="group border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 bg-card hover:-translate-y-1 overflow-hidden"
+              className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 bg-card overflow-hidden"
             >
               <div className="p-5 flex items-start gap-4">
                 <div

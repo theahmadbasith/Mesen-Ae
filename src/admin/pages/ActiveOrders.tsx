@@ -208,7 +208,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           {openBills.map((bill) => (
             <Card 
               key={bill.id} 
-              className="flex flex-col border-border/60 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out overflow-hidden group"
+              className="flex flex-col border-border/60 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 ease-out overflow-hidden group"
             >
               {/* Card Top / Header */}
               <CardHeader className="p-5 pb-0">

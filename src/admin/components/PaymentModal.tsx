@@ -98,10 +98,11 @@ export default function PaymentModal({
 
   // Auto-fill amount to total if empty and no partial payments
   useEffect(() => {
-    if (open && total > 0 && payments.length === 0 && paymentAmount === '0') {
+    if (open && total > 0 && payments.length === 0 && paymentAmount === '0' && !isQuickAdding) {
       setPaymentAmount(total.toString());
+      setIsQuickAdding(true); // Prevent continuous reset
     }
-  }, [open, total, payments.length, paymentAmount]);
+  }, [open, total, payments.length, paymentAmount, isQuickAdding]);
 
   const handleCheckoutClick = () => {
     if (totalPaidSoFar + currentPaidAmount < total) {
@@ -211,9 +212,20 @@ export default function PaymentModal({
                 <span className="font-bold">+Rp {taxAndService.toLocaleString('id-ID')}</span>
               </div>
             )}
-            <div className="h-12 flex items-center justify-between rounded-md border border-input bg-background text-lg font-bold px-3">
-              <span className="text-sm font-normal text-muted-foreground">Total Tagihan: <span className="font-bold text-foreground">Rp {total.toLocaleString('id-ID')}</span></span>
-              <span>{currentPaidAmount > 0 ? `Bayar: Rp ${currentPaidAmount.toLocaleString('id-ID')}` : 'Bayar: Rp 0'}</span>
+            <div className="h-14 flex items-center justify-between rounded-xl border-2 border-primary/20 bg-background text-lg font-bold px-3 shadow-sm focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+              <span className="text-sm font-normal text-muted-foreground shrink-0 mr-2">Bayar: Rp</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={paymentAmount === '0' ? '' : Number(paymentAmount.replace(/\\D/g, '')).toLocaleString('id-ID')}
+                onChange={e => {
+                  const val = e.target.value.replace(/\\D/g, '');
+                  setPaymentAmount(val || '0');
+                  setIsQuickAdding(true);
+                }}
+                className="w-full h-full bg-transparent border-none outline-none text-right font-black text-xl text-primary placeholder:text-muted-foreground/30"
+                placeholder={total.toLocaleString('id-ID')}
+              />
             </div>
             <div className="flex flex-wrap gap-1.5">
               {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map(nom => (

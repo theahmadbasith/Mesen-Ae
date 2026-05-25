@@ -124,7 +124,7 @@ export default function Vouchers() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
               {vouchers.map((v, idx) => (
                 <Card key={v.id} className={cn(
-                  "group relative overflow-hidden border-0 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[1.5rem] flex flex-col",
+                  "group relative overflow-hidden border-0 shadow-md hover:shadow-xl hover:border-primary/40 transition-all duration-300 rounded-[1.5rem] flex flex-col",
                   v.isActive 
                     ? "bg-gradient-to-br from-card via-card to-primary/5 dark:from-card dark:to-primary/10 ring-1 ring-primary/20" 
                     : "bg-muted opacity-70 grayscale-[0.4] ring-1 ring-border/50"

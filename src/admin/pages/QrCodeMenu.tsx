@@ -437,7 +437,7 @@ export default function QrCodeMenu() {
               ) : (
                 <>
                   {/* Visualisasi Standee/Print Preview */}
-                  <div className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 mb-8 relative border border-border/50 transform transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10">
+                  <div className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 mb-8 relative border border-border/50 transform transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
                     <div className="text-center mb-6">
                       <h4 className="font-bold text-gray-900 uppercase tracking-widest text-sm mb-1">
                         {storeSettings?.storeName || 'Toko Kami'}
