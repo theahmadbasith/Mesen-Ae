@@ -35,6 +35,9 @@ export default function BarcodePrint() {
   const [customPrice, setCustomPrice] = useState('');
   const [customQuantity, setCustomQuantity] = useState('1');
 
+  // Search DB State
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Print Ref
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
@@ -206,8 +209,17 @@ export default function BarcodePrint() {
           <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-foreground">
             <Search className="w-4 h-4" /> Pilih dari Database
           </h3>
+          <Input 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari nama produk..." 
+            className="h-9 mb-3"
+          />
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-            {products.map(p => (
+            {products
+              .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .slice(0, 5)
+              .map(p => (
               <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background/50 hover:bg-accent/30 transition-colors">
                 <div className="min-w-0 flex-1 mr-3">
                   <p className="text-sm font-bold truncate">{p.name}</p>

@@ -68,7 +68,8 @@ export default function Produk() {
 
   const openAdd = () => {
     setEditProduct(null);
-    setName(''); setSku(''); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode(''); setPhoto(undefined); setVariants([]);
+    const generatedSku = `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
+    setName(''); setSku(generatedSku); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode(''); setPhoto(undefined); setVariants([]);
     setDialogOpen(true);
   };
 
@@ -123,7 +124,7 @@ export default function Produk() {
         variants,
         barcode: barcode.trim() || undefined,
         photo: finalPhotoUrl || undefined,
-        sku: sku.trim() || '', 
+        sku: sku.trim() || `SKU-${Math.floor(100000 + Math.random() * 900000)}`, 
         updatedAt: new Date().toISOString(),
       };
 

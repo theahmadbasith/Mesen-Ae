@@ -8,7 +8,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Paintbrush, UploadCloud
+  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 

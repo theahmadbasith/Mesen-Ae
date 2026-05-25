@@ -15,6 +15,9 @@ import {
   LayoutDashboard, 
   ShoppingCart, 
   ClipboardList, 
+  Store, 
+  Calculator, 
+  Clock, 
   UtensilsCrossed, 
   History, 
   Package, 
@@ -23,6 +26,11 @@ import {
   FileText, 
   Settings,
   Menu,
+  KeyRound,
+  CheckCircle,
+  ArrowDownToLine,
+  Printer,
+  Tag as TagIcon,
   Image as ImageIcon,
   Moon, 
   Sun, 
@@ -179,6 +187,34 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
         title: 'Pengaturan Sistem',
         description: 'Konfigurasi info toko, meja, dan preferensi aplikasi.',
         icon: <Settings className="w-5 h-5 text-primary" />
+      };
+    }
+    if (pathname.includes('/admin/categories')) {
+      return {
+        title: 'Kategori Produk',
+        description: 'Kelola jenis dan pengelompokan menu.',
+        icon: <Tag className="w-5 h-5 text-primary" />
+      };
+    }
+    if (pathname.includes('/admin/supplier')) {
+      return {
+        title: 'Data Supplier',
+        description: 'Kelola daftar pemasok bahan baku Anda.',
+        icon: <Package className="w-5 h-5 text-primary" />
+      };
+    }
+    if (pathname.includes('/admin/stock-in') || pathname.includes('/admin/stock-out')) {
+      return {
+        title: 'Manajemen Stok',
+        description: 'Catat dan awasi pergerakan barang.',
+        icon: <ArrowDownToLine className="w-5 h-5 text-primary" />
+      };
+    }
+    if (pathname.includes('/admin/barcode')) {
+      return {
+        title: 'Cetak Barcode & Label',
+        description: 'Desain dan cetak label harga atau barcode.',
+        icon: <Printer className="w-5 h-5 text-primary" />
       };
     }
     return {
