@@ -68,26 +68,13 @@ export default function Categories() {
   };
 
   return (
-    <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300 max-w-4xl">
-      {/* Header */}
-      <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
-        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-          <Tag className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-extrabold tracking-tight">Kategori Produk</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Kelola jenis dan kelompok produk toko Anda
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">
-          {categories?.length ?? 0} kategori terdaftar.
-        </p>
-        <Button size="sm" className="gap-1.5 h-9" onClick={openCatAdd}>
-          <Plus className="w-4 h-4" /> Tambah Kategori
+    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+      
+      {/* Action Header */}
+      <div className="flex justify-end">
+        <Button onClick={openCatAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
+          <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
+          Tambah Kategori
         </Button>
       </div>
 
