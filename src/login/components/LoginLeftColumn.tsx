@@ -48,7 +48,7 @@ export default function LoginLeftColumn() {
           {[
             { icon: '💼', title: 'Admin & Kasir POS', desc: 'Kelola laporan penjualan, stok, supplier, dan kasir penjualan' },
             { icon: '🍳', title: 'Layar Dapur (KDS)', desc: 'Monitor antrean pesanan masakan real-time untuk koki' },
-            { icon: '☁️', title: 'Google Sheet Database', desc: 'Integrasi cloud database aman, instan, dan mudah dikustomisasi' },
+            { icon: '☁️', title: 'Firebase Firestore', desc: 'Integrasi cloud database aman, real-time tersinkron, dan tangguh' },
           ].map((item, idx) => (
             <div key={idx} className="flex items-start gap-4 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl p-4 border border-zinc-800/60">
               <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-lg shrink-0">

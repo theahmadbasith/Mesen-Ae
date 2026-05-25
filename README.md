@@ -93,19 +93,20 @@ Perangkat lunak ini dikembangkan tanpa satupun dead-code, 100% divalidasi dengan
 ```text
 MesenAe/
 ├── src/
-│   ├── admin/              # Panel Administrasi, Kasir, Dapur, Laporan, Pengaturan Lengkap
-│   │   ├── components/     # Komponen penunjang kasir, struk, dan dialog modal scrollable
-│   │   └── pages/          # Halaman Dashboard, Cashier, Vouchers, Kitchen, Settings, dll.
-│   ├── customer/           # Panel Menu Mandiri Pelanggan (Self-Service Ordering Page)
-│   │   └── pages/          # CartView, LandingView, HistoryView, SuccessView, TrackingView
+│   ├── admin/              # Panel Utama Administrasi, Laporan, & Pengaturan
+│   ├── kitchen/            # Modul Layar Dapur (KDS) Terintegrasi
+│   ├── login/              # Portal Autentikasi Sistem Terpusat
 │   ├── hooks/              # Custom React Hooks & Real-time Firestore Listeners (db-hooks.ts)
-│   ├── lib/                # Konfigurasi utilitas (Firebase Config, Password Hashing, Image Utils)
+│   ├── lib/                # Konfigurasi utilitas (Firebase Config, Push Notification, utils)
 │   ├── App.tsx             # Entry Point Router Utama Aplikasi
 │   └── index.css           # Token Desain & Styling Global
-├── public/                 # Aset Publik (Logo, PWA Manifest Icons)
+├── public/                 # Aset Publik (Logo, Service Worker FCM, PWA Icons)
 ├── vite.config.ts          # Konfigurasi PWA Generator & Vite Bundler
 └── package.json            # Daftar Dependencies
 ```
+
+> [!NOTE]
+> **Arsitektur Terpisah (Decoupled):** Aplikasi antarmuka pemesanan mandiri untuk **Pelanggan (Customer)** saat ini telah dipisahkan secara struktural ke repositori/URL mandiri demi menjamin keamanan data kasir, pemuatan awal yang jauh lebih ringan, serta pemisahan *environment* secara total. Anda sedang melihat repositori untuk portal **Admin & Dapur**.
 
 ---
 
