@@ -234,7 +234,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                     ) : (
                         <Button 
                           className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
-                          onClick={onSwitchToKitchen ? onSwitchToKitchen : () => navigate('/kitchen')}
+                          onClick={() => navigate('/admin/kitchen')}
                         >
                           Buka Dapur
                           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />

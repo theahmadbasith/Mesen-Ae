@@ -98,7 +98,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   }).length;
   
   const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
-    return t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+    return t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
   }).length;
 
   const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');

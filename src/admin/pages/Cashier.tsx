@@ -760,28 +760,8 @@ export default function Kasir() {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              {editingTxId && (
-                <Badge variant="secondary" className="text-[10px] font-normal bg-primary/10 text-primary">
-                  Editing Bill
-                </Badge>
-              )}
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 gap-1.5 text-xs relative"
-                onClick={() => setOpenBillsOpen(true)}
-              >
-                <ClipboardList className="w-4 h-4" />
-                Open Bill
-                {openBillsCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 rounded-full flex items-center justify-center text-[10px] px-1 bg-primary text-primary-foreground shadow-md border border-white z-10">
-                    {openBillsCount}
-                  </Badge>
-                )}
-              </Button>
-
             </div>
           </div>
 
@@ -994,15 +974,6 @@ export default function Kasir() {
 
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
-                    className="flex-1 h-12 text-sm font-semibold"
-                    onClick={saveOpenBill}
-                    disabled={cart.length === 0}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Simpan Bill
-                  </Button>
-                  <Button
                     className="flex-1 h-12 text-sm font-semibold"
                     onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                   >
@@ -1011,16 +982,7 @@ export default function Kasir() {
                   </Button>
                 </div>
 
-                {editingTxId && (
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
-                    onClick={handleCancelFromCart}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                    Batalkan Bill Ini
-                  </Button>
-                )}
+
               </div>
             </div>
           )}
@@ -1193,15 +1155,6 @@ export default function Kasir() {
                 {/* Action buttons */}
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
-                    className="flex-1 h-12 text-sm font-semibold"
-                    onClick={saveOpenBill}
-                    disabled={cart.length === 0}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Simpan Bill
-                  </Button>
-                  <Button
                     className="flex-1 h-12 text-sm font-semibold"
                     onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                   >
@@ -1210,28 +1163,13 @@ export default function Kasir() {
                   </Button>
                 </div>
 
-                {editingTxId && (
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
-                    onClick={handleCancelFromCart}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                    Batalkan Bill Ini
-                  </Button>
-                )}
+
               </div>
             </div>
           </SheetContent>
         </Sheet>
       </div>
-      <OpenBillsModal
-        open={openBillsOpen}
-        onOpenChange={setOpenBillsOpen}
-        openBills={openBills}
-        onLoadBill={loadOpenBill}
-        onCancelBill={handleCancelFromList}
-      />
+
 
       {/* Processing Bills Sheet */}
       <ProcessingBillsModal
