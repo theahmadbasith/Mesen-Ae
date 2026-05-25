@@ -974,6 +974,15 @@ export default function Kasir() {
 
                 <div className="flex gap-2">
                   <Button
+                    variant="outline"
+                    className="flex-1 h-12 text-sm font-semibold border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                    onClick={saveOpenBill}
+                    disabled={cart.length === 0}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Simpan Pesanan
+                  </Button>
+                  <Button
                     className="flex-1 h-12 text-sm font-semibold"
                     onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                   >
@@ -1154,6 +1163,15 @@ export default function Kasir() {
 
                 {/* Action buttons */}
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 text-sm font-semibold border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                    onClick={saveOpenBill}
+                    disabled={cart.length === 0}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Simpan Pesanan
+                  </Button>
                   <Button
                     className="flex-1 h-12 text-sm font-semibold"
                     onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
