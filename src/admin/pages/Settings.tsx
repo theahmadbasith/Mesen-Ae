@@ -181,9 +181,9 @@ export default function Pengaturan() {
   }, [searchParams]);
 
   /* ── Theme ── */
-  const [themeHue, setThemeHue] = useState(storeSettings?.themeColor ?? '25');
+  const [themeHue, setThemeHue] = useState(storeSettings?.themeColor ?? '217');
 
-  useEffect(() => { setThemeHue(storeSettings?.themeColor ?? '25'); }, [storeSettings?.themeColor]);
+  useEffect(() => { setThemeHue(storeSettings?.themeColor ?? '217'); }, [storeSettings?.themeColor]);
 
   /* ── Excel States & Refs ── */
   const [isExporting, setIsExporting] = useState(false);

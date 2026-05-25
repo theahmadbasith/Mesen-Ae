@@ -3,24 +3,43 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ActiveOrders from './ActiveOrders';
 import Kitchen from './Kitchen';
 import { ChefHat, ClipboardList } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function OrdersManager() {
   const [activeTab, setActiveTab] = useState<'pesanan' | 'dapur'>('pesanan');
   
   return (
     <div className="mx-auto w-full">
-      {/* Master Tabs Navbar */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3 mb-2">
-        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'pesanan' | 'dapur')}>
-          <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto h-12 p-1.5 rounded-xl bg-muted shadow-sm">
-            <TabsTrigger value="pesanan" className="rounded-lg font-bold text-sm h-full gap-2 transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-              <ClipboardList className="w-4 h-4" /> Pesanan Aktif
-            </TabsTrigger>
-            <TabsTrigger value="dapur" className="rounded-lg font-bold text-sm h-full gap-2 transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-              <ChefHat className="w-4 h-4" /> Dapur (Kitchen)
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Master Tabs Navbar - Menempel di atas */}
+      <div className="flex w-full bg-card border-b border-border -mx-4 md:-mx-6 lg:-mx-8 -mt-4 md:-mt-6 lg:-mt-8 mb-4 md:mb-6 px-4 md:px-6 lg:px-8">
+        <div className="flex w-full">
+          <button 
+            onClick={() => setActiveTab('pesanan')}
+            className={cn(
+              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
+              activeTab === 'pesanan' 
+                ? 'border-primary text-primary bg-primary/5' 
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            <ClipboardList className="w-4 h-4" /> 
+            <span className="hidden sm:inline">Pesanan Aktif</span>
+            <span className="sm:hidden">Pesanan</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('dapur')}
+            className={cn(
+              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
+              activeTab === 'dapur' 
+                ? 'border-primary text-primary bg-primary/5' 
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            <ChefHat className="w-4 h-4" /> 
+            <span className="hidden sm:inline">Dapur (Kitchen)</span>
+            <span className="sm:hidden">Dapur</span>
+          </button>
+        </div>
       </div>
       
       {/* Render Content */}

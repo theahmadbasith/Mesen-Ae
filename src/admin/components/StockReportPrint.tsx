@@ -127,7 +127,7 @@ export default function StockReportPrint({ data }: StockReportPrintProps) {
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
 
-  const theme = hueToHex(data.themeHue ?? '25');
+  const theme = hueToHex(data.themeHue ?? '217');
   const rp = (n: number) => n.toLocaleString('id-ID');
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 

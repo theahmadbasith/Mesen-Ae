@@ -149,7 +149,7 @@ export default function StockReport() {
       lowStockProducts: lowProd,
       outOfStockProducts: outProd,
       chartData: chart,
-      themeHue: storeSettings?.themeColor ?? '25'
+      themeHue: storeSettings?.themeColor ?? '217'
     };
   };
 

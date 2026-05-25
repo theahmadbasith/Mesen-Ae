@@ -4,6 +4,7 @@ import { BarChart3, TrendingUp, ShoppingCart, Package, DollarSign, ArrowDown, Ar
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
@@ -140,7 +141,7 @@ export default function Laporan() {
         marginPercent: margin,
         topProducts: top,
         chartData: chart,
-        themeHue: storeSettings?.themeColor ?? '25',
+        themeHue: storeSettings?.themeColor ?? '217',
       };
     } catch (err) {
       toast.error('Gagal membuat laporan');
@@ -150,14 +151,32 @@ export default function Laporan() {
 
   return (
     <div className="mx-auto w-full">
-      {/* Master Tabs Navbar */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3 mb-4">
-        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'penjualan' | 'stok')}>
-          <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto h-12 p-1.5 rounded-xl bg-muted shadow-sm">
-            <TabsTrigger value="penjualan" className="rounded-lg font-bold text-sm h-full transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Laporan Penjualan</TabsTrigger>
-            <TabsTrigger value="stok" className="rounded-lg font-bold text-sm h-full transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Laporan Stok</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Master Tabs Navbar - Menempel di atas */}
+      <div className="flex w-full bg-card border-b border-border -mx-4 md:-mx-6 lg:-mx-8 -mt-4 md:-mt-6 lg:-mt-8 mb-4 md:mb-6 px-4 md:px-6 lg:px-8">
+        <div className="flex w-full">
+          <button 
+            onClick={() => setActiveTab('penjualan')}
+            className={cn(
+              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
+              activeTab === 'penjualan' 
+                ? 'border-primary text-primary bg-primary/5' 
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            Laporan Penjualan
+          </button>
+          <button 
+            onClick={() => setActiveTab('stok')}
+            className={cn(
+              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
+              activeTab === 'stok' 
+                ? 'border-primary text-primary bg-primary/5' 
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+          >
+            Laporan Stok
+          </button>
+        </div>
       </div>
 
       {activeTab === 'penjualan' && (

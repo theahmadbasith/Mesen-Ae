@@ -17,7 +17,7 @@ export const THEME_COLORS = [
 export function getThemeHSL(hue: string) {
   const preset = THEME_COLORS.find(c => c.hue === hue);
   if (preset) return `${preset.hue} ${preset.saturation} ${preset.lightness}`;
-  return `${hue} 95% 53%`;
+  return `${hue} 91% 60%`;
 }
 
 export function applyThemeColor(hue: string) {
@@ -35,10 +35,13 @@ export function useThemeColor() {
   useEffect(() => {
     if (storeSettings?.themeColor) {
       applyThemeColor(storeSettings.themeColor);
+    } else {
+      // Default fallback if no setting
+      applyThemeColor('217');
     }
   }, [storeSettings?.themeColor]);
 
-  return storeSettings?.themeColor ?? '25';
+  return storeSettings?.themeColor ?? '217';
 }
 
 export async function setThemeColor(hue: string) {
