@@ -52,8 +52,8 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         const title = 'Pesanan Baru Masuk! 🔔';
         const options = {
           body: 'Ada pesanan pelanggan baru yang harus segera disiapkan di dapur.',
-          icon: '/icon-192.png',
-          vibrate: [200, 100, 200, 100, 400],
+          icon: '/logo.png',
+          vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
         };
         
         if ('serviceWorker' in navigator) {
