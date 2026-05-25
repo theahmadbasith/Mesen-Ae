@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       force: false,
     },
-    build: {
+    build: { sourcemap: true,  sourcemap: true, 
       target: 'esnext',
       chunkSizeWarningLimit: 2000,
     },

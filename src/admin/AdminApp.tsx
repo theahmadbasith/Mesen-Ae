@@ -1,5 +1,7 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { requestForToken } from "@/lib/fcm";
+import { toast } from "sonner";
 import AppLayout from "@/admin/components/layout/AppLayout";
 import {
   DashboardSkeleton,
@@ -71,10 +73,6 @@ const AdminOnlyRoute = ({ children, allowedForUser = false }: { children: React.
   }
   return <>{children}</>;
 };
-
-import { useEffect } from "react";
-import { requestForToken } from "@/lib/fcm";
-import { toast } from "sonner";
 
 export default function AdminApp() {
   useEffect(() => {

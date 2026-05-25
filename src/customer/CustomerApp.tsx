@@ -74,11 +74,7 @@ export interface FinalOrderData {
 export default function CustomerApp() {
   useThemeColor();
 
-  // Daftarkan FCM token saat customerName tersedia
-  useEffect(() => {
-    if (!customerName) return;
-    requestForToken('customer', customerName).catch(console.error);
-  }, [customerName]);
+
 
   // Ambil view awal dari URL jika ada
   const getInitialView = (): string => {
@@ -101,6 +97,12 @@ export default function CustomerApp() {
     if (typeof window !== 'undefined') return localStorage.getItem('mesenae_tableNumber') || 'Bawa Pulang';
     return 'Bawa Pulang';
   });
+
+  // Daftarkan FCM token saat customerName tersedia
+  useEffect(() => {
+    if (!customerName) return;
+    requestForToken('customer', customerName).catch(console.error);
+  }, [customerName]);
 
   // Modals
   const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
