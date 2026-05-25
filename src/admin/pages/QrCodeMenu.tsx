@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2 } from 'lucide-react';
+import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2, Link as LinkIcon, Save } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate } from '@/hooks/db-hooks';
@@ -15,6 +15,7 @@ export default function QrCodeMenu() {
   const [activeTable, setActiveTable] = useState<string>('');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tableToDelete, setTableToDelete] = useState<string | null>(null);
+  const [customerUrl, setCustomerUrl] = useState('');
   const qrRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,7 +29,37 @@ export default function QrCodeMenu() {
       if (existingTables.length > 0) setActiveTable(existingTables[0]);
       else setActiveTable('1'); // Default fallback
     }
+    
+    // Set customer URL
+    if (storeSettings.customerUrl) {
+      setCustomerUrl(storeSettings.customerUrl);
+    } else if (!customerUrl) {
+      setCustomerUrl(window.location.origin);
+    }
   }, [storeSettings, activeTable]);
+
+  const handleSaveCustomerUrl = async () => {
+    let url = customerUrl.trim();
+    if (!url) {
+      toast.error('URL Customer tidak boleh kosong');
+      return;
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+      setCustomerUrl(url);
+    }
+    
+    try {
+      if (storeSettings?.id) {
+        await dbUpdate('storeSettings', storeSettings.id, { customerUrl: url });
+        toast.success('URL Customer berhasil disimpan');
+      } else {
+        toast.error('Pengaturan toko belum diinisialisasi');
+      }
+    } catch (e: any) {
+      toast.error('Gagal menyimpan URL Customer');
+    }
+  };
 
   const handleAddTable = async () => {
     if (!newTable.trim()) {
@@ -104,9 +135,11 @@ export default function QrCodeMenu() {
 
   // Optimasi URL generation dengan useMemo
   const generatedUrl = useMemo(() => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/?table=${encodeURIComponent(activeTable || '1')}`;
-  }, [activeTable]);
+    let base = storeSettings?.customerUrl || customerUrl || window.location.origin;
+    if (base.endsWith('/')) base = base.slice(0, -1);
+    if (!base.startsWith('http')) base = 'https://' + base;
+    return `${base}/?table=${encodeURIComponent(activeTable || '1')}`;
+  }, [activeTable, customerUrl, storeSettings?.customerUrl]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedUrl);
@@ -278,19 +311,42 @@ export default function QrCodeMenu() {
               <CardDescription>Tambahkan nomor atau nama meja baru</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-3 mb-6">
-                <Input 
-                  type="text"
-                  placeholder="Contoh: 1, 2, VIP A" 
-                  value={newTable}
-                  onChange={e => setNewTable(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAddTable()}
-                  className="bg-muted/50 focus-visible:bg-background"
-                />
-                <Button onClick={handleAddTable} className="shrink-0 gap-2 font-medium">
-                  <Plus className="w-4 h-4" />
-                  Tambah
-                </Button>
+              <div className="flex flex-col gap-4 mb-6">
+                <div className="flex gap-3 items-end">
+                  <div className="space-y-2 flex-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                      <LinkIcon className="w-3.5 h-3.5" /> URL Aplikasi Customer
+                    </label>
+                    <Input 
+                      type="text"
+                      placeholder="https://mesenae-customer.vercel.app" 
+                      value={customerUrl}
+                      onChange={e => setCustomerUrl(e.target.value)}
+                      className="bg-muted/50 focus-visible:bg-background"
+                    />
+                  </div>
+                  <Button onClick={handleSaveCustomerUrl} variant="outline" className="shrink-0 gap-2 font-medium border-primary/20 hover:bg-primary/5 text-primary">
+                    <Save className="w-4 h-4" />
+                    Simpan
+                  </Button>
+                </div>
+                
+                <div className="w-full h-[1px] bg-border/50 my-1" />
+                
+                <div className="flex gap-3">
+                  <Input 
+                    type="text"
+                    placeholder="Contoh: 1, 2, VIP A" 
+                    value={newTable}
+                    onChange={e => setNewTable(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAddTable()}
+                    className="bg-muted/50 focus-visible:bg-background"
+                  />
+                  <Button onClick={handleAddTable} className="shrink-0 gap-2 font-medium">
+                    <Plus className="w-4 h-4" />
+                    Tambah
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">

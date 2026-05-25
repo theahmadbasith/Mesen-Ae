@@ -98,7 +98,7 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
         icon: <ShoppingCart className="w-5 h-5 text-primary" />
       };
     }
-    if (pathname.includes('/admin/active-orders')) {
+    if (pathname.includes('/admin/orders') || pathname.includes('/admin/active-orders')) {
       return {
         title: 'Pesanan Aktif',
         description: 'Pantau pesanan pelanggan yang sedang berjalan.',
