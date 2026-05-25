@@ -13,6 +13,7 @@ import { sendPushToRole } from '@/lib/fcm';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
+import PaymentModal from '@/admin/components/PaymentModal';
 import ProcessingBillsModal from '@/admin/components/CashierProcessingBillsModal';
 import OpenBillsModal from '@/admin/components/CashierOpenBillsModal';
 import { Card, CardContent } from '@/components/ui/card';
