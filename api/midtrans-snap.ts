@@ -1,4 +1,3 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
 
 interface MidtransSnapResponse {
   token?: string;
@@ -7,7 +6,7 @@ interface MidtransSnapResponse {
   status_message?: string;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ message: `Method ${req.method} not allowed` });

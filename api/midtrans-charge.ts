@@ -1,4 +1,3 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
 
 interface MidtransChargeResponse {
   status_code: string;
@@ -12,7 +11,7 @@ interface MidtransChargeResponse {
   [key: string]: unknown;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: any, res: any) {
   // 1. Validasi Method
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
