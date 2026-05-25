@@ -152,17 +152,17 @@ export default function Laporan() {
   return (
     <div className="mx-auto w-full">
       {/* Master Tabs Navbar */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 px-3 py-2 -mx-4 md:-mx-6 lg:-mx-8 -mt-4 md:-mt-6 lg:-mt-8 mb-4">
-        <div className="flex bg-muted/60 p-1 rounded-full w-full mx-auto shadow-inner">
+      <div className="sticky top-0 z-20 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 md:-mx-6 lg:-mx-8 -mt-2 md:-mt-3 px-4 md:px-6 lg:px-8 pt-2 md:pt-3 pb-3 border-b border-border/20 mb-4">
+        <div className="flex bg-muted/60 p-1 rounded-full w-full mx-auto shadow-inner border border-border/30">
           <button 
             onClick={() => setActiveTab('penjualan')}
-            className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2", activeTab === 'penjualan' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}
+            className={cn("flex-1 py-1.5 text-xs sm:text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2", activeTab === 'penjualan' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30')}
           >
             Laporan Penjualan
           </button>
           <button 
             onClick={() => setActiveTab('stok')}
-            className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2", activeTab === 'stok' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}
+            className={cn("flex-1 py-1.5 text-xs sm:text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2", activeTab === 'stok' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30')}
           >
             Laporan Stok
           </button>
