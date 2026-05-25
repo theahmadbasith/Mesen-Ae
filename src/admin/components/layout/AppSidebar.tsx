@@ -211,14 +211,13 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
         <div className="mb-0.5">
           <button
             onClick={() => {
-              if (isCollapsed) setIsCollapsed(false);
               setIsOrdersOpen(!isOrdersOpen);
             }}
             title={isCollapsed ? "Pesanan & Dapur" : undefined}
             className={cn(
               "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
               isCollapsed ? "justify-center" : "gap-3",
-              isOrdersOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
+              isOrdersOpen ? (isCollapsed ? "bg-white/5 text-white" : "bg-white/5 text-white font-bold") : "text-slate-400 hover:bg-white/5 hover:text-white"
             )}
           >
             <ClipboardList className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
@@ -236,10 +235,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
           {/* Isi Dropdown Pesanan */}
           <div className={cn(
             "grid transition-all duration-300 ease-in-out",
-            isOrdersOpen && !isCollapsed ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+            isOrdersOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
           )}>
             <div className="overflow-hidden">
-              <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
+              <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                 {[
                   { to: "/admin/orders", label: "Pesanan Aktif", icon: Clock, badge: openBillsCount },
                   { to: "/admin/kitchen", label: "Dapur (Kitchen)", icon: ChefHat, badge: processingCount },
@@ -247,17 +246,24 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                   <NavLink 
                     key={item.to} 
                     to={item.to} 
+                    title={isCollapsed ? item.label : undefined}
                     className={({isActive}) => cn(
-                      "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none relative", 
+                      "flex items-center transition-colors outline-none relative", 
+                      isCollapsed 
+                        ? "justify-center p-2 rounded-lg hover:bg-white/10" 
+                        : "gap-2 py-2 px-3 rounded-lg text-xs font-semibold",
                       isActive 
-                        ? "text-white font-bold bg-primary/20" 
+                        ? (isCollapsed ? "text-white bg-primary shadow-sm" : "text-white font-bold bg-primary/20") 
                         : "text-slate-400 hover:text-white hover:bg-white/5"
                     )}
                   >
-                    <item.icon className="w-3.5 h-3.5" />
-                    <span className="flex-1 truncate">{item.label}</span>
+                    <item.icon className={cn(isCollapsed ? "w-4 h-4" : "w-3.5 h-3.5")} />
+                    {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
                     {item.badge > 0 && (
-                      <Badge className="bg-primary text-primary-foreground border-none text-[8px] h-4 px-1 rounded-full min-w-[16px] flex justify-center items-center font-bold ml-1">
+                      <Badge className={cn(
+                        "bg-primary text-primary-foreground border-none font-bold flex justify-center items-center",
+                        isCollapsed ? "absolute -top-1 -right-1 text-[8px] h-3.5 min-w-[14px] px-0.5 rounded-full" : "text-[8px] h-4 px-1 rounded-full min-w-[16px] ml-1"
+                      )}>
                         {item.badge}
                       </Badge>
                     )}
@@ -279,14 +285,13 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
             <div className="mb-0.5">
               <button
                 onClick={() => {
-                  if (isCollapsed) setIsCollapsed(false);
                   setIsProductsOpen(!isProductsOpen);
                 }}
                 title={isCollapsed ? "Inventori" : undefined}
                 className={cn(
                   "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
                   isCollapsed ? "justify-center" : "gap-3",
-                  isProductsOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  isProductsOpen ? (isCollapsed ? "bg-white/5 text-white" : "bg-white/5 text-white font-bold") : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <Package className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
@@ -304,10 +309,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
               {/* Isi Dropdown */}
               <div className={cn(
                 "grid transition-all duration-300 ease-in-out",
-                isProductsOpen && !isCollapsed ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+                isProductsOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
               )}>
                 <div className="overflow-hidden">
-                  <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
+                  <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                     {[
                       { to: "/admin/products", label: "Daftar Produk", icon: Package },
                       { to: "/admin/categories", label: "Kategori", icon: FolderTree },
@@ -318,15 +323,19 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                       <NavLink 
                         key={item.to} 
                         to={item.to} 
+                        title={isCollapsed ? item.label : undefined}
                         className={({isActive}) => cn(
-                          "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none", 
+                          "flex items-center transition-colors outline-none", 
+                          isCollapsed 
+                            ? "justify-center p-2 rounded-lg hover:bg-white/10" 
+                            : "gap-2 py-2 px-3 rounded-lg text-xs font-semibold",
                           isActive 
-                            ? "text-white font-bold bg-primary/20" 
+                            ? (isCollapsed ? "text-white bg-primary shadow-sm" : "text-white font-bold bg-primary/20") 
                             : "text-slate-400 hover:text-white hover:bg-white/5"
                         )}
                       >
-                        <item.icon className="w-3.5 h-3.5" />
-                        {item.label}
+                        <item.icon className={cn(isCollapsed ? "w-4 h-4" : "w-3.5 h-3.5")} />
+                        {!isCollapsed && <span>{item.label}</span>}
                       </NavLink>
                     ))}
                   </div>
@@ -338,14 +347,13 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
             <div className="mb-0.5">
               <button
                 onClick={() => {
-                  if (isCollapsed) setIsCollapsed(false);
                   setIsPromoOpen(!isPromoOpen);
                 }}
                 title={isCollapsed ? "Marketing" : undefined}
                 className={cn(
                   "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
                   isCollapsed ? "justify-center" : "gap-3",
-                  isPromoOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  isPromoOpen ? (isCollapsed ? "bg-white/5 text-white" : "bg-white/5 text-white font-bold") : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <Ticket className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
@@ -363,10 +371,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
               {/* Isi Dropdown Pemasaran */}
               <div className={cn(
                 "grid transition-all duration-300 ease-in-out",
-                isPromoOpen && !isCollapsed ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+                isPromoOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
               )}>
                 <div className="overflow-hidden">
-                  <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
+                  <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                     {[
                       { to: "/admin/qr-code", label: "QR Code Meja", icon: QrCode },
                       { to: "/admin/banner", label: "Banner Promo", icon: ImageIcon },
@@ -376,15 +384,19 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                       <NavLink 
                         key={item.to} 
                         to={item.to} 
+                        title={isCollapsed ? item.label : undefined}
                         className={({isActive}) => cn(
-                          "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none", 
+                          "flex items-center transition-colors outline-none", 
+                          isCollapsed 
+                            ? "justify-center p-2 rounded-lg hover:bg-white/10" 
+                            : "gap-2 py-2 px-3 rounded-lg text-xs font-semibold",
                           isActive 
-                            ? "text-white font-bold bg-primary/20" 
+                            ? (isCollapsed ? "text-white bg-primary shadow-sm" : "text-white font-bold bg-primary/20") 
                             : "text-slate-400 hover:text-white hover:bg-white/5"
                         )}
                       >
-                        <item.icon className="w-3.5 h-3.5" />
-                        {item.label}
+                        <item.icon className={cn(isCollapsed ? "w-4 h-4" : "w-3.5 h-3.5")} />
+                        {!isCollapsed && <span>{item.label}</span>}
                       </NavLink>
                     ))}
                   </div>
@@ -396,14 +408,13 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
             <div className="mb-0.5">
               <button
                 onClick={() => {
-                  if (isCollapsed) setIsCollapsed(false);
                   setIsReportsOpen(!isReportsOpen);
                 }}
                 title={isCollapsed ? "Laporan Bisnis" : undefined}
                 className={cn(
                   "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
                   isCollapsed ? "justify-center" : "gap-3",
-                  isReportsOpen && !isCollapsed ? "bg-white/5 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  isReportsOpen ? (isCollapsed ? "bg-white/5 text-white" : "bg-white/5 text-white font-bold") : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <FileText className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
@@ -421,10 +432,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
               {/* Isi Dropdown Laporan */}
               <div className={cn(
                 "grid transition-all duration-300 ease-in-out",
-                isReportsOpen && !isCollapsed ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+                isReportsOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
               )}>
                 <div className="overflow-hidden">
-                  <div className="ml-5 space-y-1 border-l border-white/10 pl-3 py-1">
+                  <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                     {[
                       { to: "/admin/reports", label: "Laporan Penjualan", icon: TrendingUp },
                       { to: "/admin/stock-report", label: "Laporan Stok", icon: ArrowDownToLine },
@@ -432,15 +443,19 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                       <NavLink 
                         key={item.to} 
                         to={item.to} 
+                        title={isCollapsed ? item.label : undefined}
                         className={({isActive}) => cn(
-                          "flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-colors outline-none", 
+                          "flex items-center transition-colors outline-none", 
+                          isCollapsed 
+                            ? "justify-center p-2 rounded-lg hover:bg-white/10" 
+                            : "gap-2 py-2 px-3 rounded-lg text-xs font-semibold",
                           isActive 
-                            ? "text-white font-bold bg-primary/20" 
+                            ? (isCollapsed ? "text-white bg-primary shadow-sm" : "text-white font-bold bg-primary/20") 
                             : "text-slate-400 hover:text-white hover:bg-white/5"
                         )}
                       >
-                        <item.icon className="w-3.5 h-3.5" />
-                        {item.label}
+                        <item.icon className={cn(isCollapsed ? "w-4 h-4" : "w-3.5 h-3.5")} />
+                        {!isCollapsed && <span>{item.label}</span>}
                       </NavLink>
                     ))}
                   </div>
