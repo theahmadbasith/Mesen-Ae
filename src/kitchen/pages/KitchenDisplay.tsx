@@ -58,6 +58,24 @@ function KitchenItemsList({ transactionId, compact = false }: { transactionId: n
   );
 }
 
+function KitchenItemSummary({ transactionId, isExpanded }: { transactionId: number, isExpanded: boolean }) {
+  const allItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []);
+  const items = allItems.filter((i) => i.transactionId === transactionId);
+  
+  const summary = items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
+  
+  return (
+    <div className="flex items-center justify-between gap-3 min-w-[250px]">
+      <div className="max-w-[180px] lg:max-w-[350px] truncate text-xs font-bold text-foreground" title={summary}>
+        {summary || 'Memuat pesanan...'}
+      </div>
+      <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors border border-border px-2 py-1 rounded bg-background shadow-sm">
+        {isExpanded ? 'Tutup ▴' : 'Detail ▾'}
+      </span>
+    </div>
+  );
+}
+
 const KITCHEN_STEPS = ['diproses', 'dimasak', 'disiapkan', 'siap', 'diantarkan'] as const;
 
 export default function KitchenDisplay() {
@@ -65,6 +83,11 @@ export default function KitchenDisplay() {
   const [activeTab, setActiveTab] = useState<'aktif' | 'riwayat'>('aktif');
   const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+
+  const toggleRow = (id: number) => {
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
   
   const storeSettings = useDbQuery<StoreSettings>('storeSettings')?.[0];
   const allBills = useDbQuery<Transaction>('transactions') || [];
@@ -205,12 +228,6 @@ export default function KitchenDisplay() {
       </div>
     </div>
   );
-
-  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
-
-  const toggleRow = (id: number) => {
-    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   // Group riwayat berdasarkan tanggal
   const dateFormatter = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -370,9 +387,7 @@ export default function KitchenDisplay() {
                                   )}
                                 </td>
                                 <td className="px-5 py-4 align-middle whitespace-nowrap">
-                                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors border border-border px-2.5 py-1.5 rounded-lg bg-background">
-                                    {isExpanded ? 'Tutup Detail ▴' : 'Lihat Detail ▾'}
-                                  </span>
+                                  <KitchenItemSummary transactionId={bill.id!} isExpanded={isExpanded} />
                                 </td>
                                 <td className="px-5 py-4 align-middle text-center whitespace-nowrap">
                                   <Badge className={cn(
