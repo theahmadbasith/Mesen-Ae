@@ -43,8 +43,8 @@ export default function Dashboard() {
   // Show skeleton while loading
   if (storeSettings === undefined) return <DashboardSkeleton />;
 
-  const totalSales = todayTransactions?.reduce((sum, t) => sum + t.total, 0) ?? 0;
-  const totalProfit = todayTransactions?.reduce((sum, t) => sum + t.profit, 0) ?? 0;
+  const totalSales = todayTransactions?.reduce((sum, t) => sum + (Number(t.total) || 0), 0) ?? 0;
+  const totalProfit = todayTransactions?.reduce((sum, t) => sum + (Number(t.profit) || 0), 0) ?? 0;
   const txCount = todayTransactions?.length ?? 0;
 
 

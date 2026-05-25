@@ -145,7 +145,7 @@ export default function PaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[500px] w-[95vw] max-h-[90vh] rounded-xl flex flex-col p-0 overflow-hidden border border-border/60 shadow-2xl">
+      <DialogContent className="max-w-[500px] md:max-w-[700px] lg:max-w-[800px] w-[95vw] max-h-[90vh] rounded-xl flex flex-col p-0 overflow-hidden border border-border/60 shadow-2xl">
         <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10 shrink-0">
           <DialogTitle>Pembayaran</DialogTitle>
         </DialogHeader>
@@ -157,7 +157,7 @@ export default function PaymentModal({
 
           <div className="space-y-1.5">
             <p className="text-sm font-medium">Metode Pembayaran</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {paymentMethods?.map(pm => {
                 const isSelected = paymentMethodId === pm.id!.toString();
                 const icons: Record<string, React.ReactNode> = {
@@ -227,7 +227,7 @@ export default function PaymentModal({
                 placeholder={total.toLocaleString('id-ID')}
               />
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-2">
               {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map(nom => (
                 <button
                   key={nom}
@@ -239,14 +239,14 @@ export default function PaymentModal({
                       setPaymentAmount(prev => String((Number(prev) || 0) + nom));
                     }
                   }}
-                  className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-border bg-muted/50 text-xs font-semibold text-foreground hover:bg-primary/10 hover:border-primary hover:text-primary active:scale-95 transition-all"
+                  className="h-10 rounded-lg border border-border bg-muted/50 text-xs font-semibold text-foreground hover:bg-primary/10 hover:border-primary hover:text-primary active:scale-95 transition-all"
                 >
                   {nom >= 1000 ? `${(nom / 1000)}K` : nom}
                 </button>
               ))}
               <button
                 onClick={() => { setPaymentAmount(remainingToPay.toString()); setIsQuickAdding(false); }}
-                className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"
+                className="h-10 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"
               >
                 Uang Pas
               </button>
@@ -254,12 +254,12 @@ export default function PaymentModal({
 
             <div className="mt-3 space-y-1.5 border-t border-border pt-3">
               <p className="text-xs font-semibold text-muted-foreground mb-1">Opsi Bagi Tagihan (Split Bill)</p>
-              <div className="flex gap-2">
-                {[2, 3, 4, 5].map(split => (
+              <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                {[2, 3, 4, 5, 6, 7, 8, 9].map(split => (
                   <button
                     key={`split-${split}`}
                     onClick={() => { setPaymentAmount(Math.ceil(remainingToPay / split).toString()); setIsQuickAdding(false); }}
-                    className="flex-1 h-9 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs font-semibold text-amber-700 hover:bg-amber-500/10 active:scale-95 transition-all"
+                    className="h-9 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs font-semibold text-amber-700 hover:bg-amber-500/10 active:scale-95 transition-all"
                   >
                     Bagi {split}
                   </button>
