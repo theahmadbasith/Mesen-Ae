@@ -43,11 +43,17 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
     (i: any) => receiptTx && i.transactionId === receiptTx.id
   );
 
-  // Smart Trigger: Bunyikan notifikasi saat ada pesanan baru
+  // Smart Trigger: Bunyikan notifikasi native saat ada pesanan baru
   const prevBillsCountRef = React.useRef(openBills.length);
   React.useEffect(() => {
     if (openBills.length > prevBillsCountRef.current) {
-      toast.success('🔔 Pesanan Baru Masuk!');
+      if (Notification.permission === 'granted') {
+        new Notification('Pesanan Baru Masuk! 🔔', {
+          body: 'Ada pesanan pelanggan baru yang harus segera disiapkan di dapur.',
+          icon: '/icon-192.png',
+          vibrate: [200, 100, 200, 100, 400],
+        });
+      }
     }
     prevBillsCountRef.current = openBills.length;
   }, [openBills.length]);
