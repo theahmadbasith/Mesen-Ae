@@ -152,17 +152,17 @@ export default function Laporan() {
   return (
     <div className="mx-auto w-full">
       {/* Master Tabs Navbar */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3 mb-4">
-        <div className="flex bg-muted/40 p-1.5 rounded-2xl w-full border border-border/60 shadow-sm shrink-0">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 px-3 py-2 -mx-4 md:-mx-6 lg:-mx-8 -mt-4 md:-mt-6 lg:-mt-8 mb-4">
+        <div className="flex bg-muted/60 p-1 rounded-full w-full mx-auto shadow-inner">
           <button 
             onClick={() => setActiveTab('penjualan')}
-            className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2", activeTab === 'penjualan' ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
+            className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2", activeTab === 'penjualan' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}
           >
             Laporan Penjualan
           </button>
           <button 
             onClick={() => setActiveTab('stok')}
-            className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2", activeTab === 'stok' ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
+            className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2", activeTab === 'stok' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}
           >
             Laporan Stok
           </button>
