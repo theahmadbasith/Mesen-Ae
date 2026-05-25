@@ -806,19 +806,54 @@ export default function BannerPromo() {
                     )}
 
                     {bannerBgType === 'solid' && (
-                      <div className="flex gap-3 items-center animate-in fade-in duration-200">
-                        <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-14 h-11 p-1 cursor-pointer rounded-lg border-border/60 shrink-0" />
-                        <div className="flex-1">
-                          <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-xs font-bold uppercase font-mono" />
+                      <div className="space-y-3 animate-in fade-in duration-200">
+                        <div className="flex flex-wrap gap-2">
+                          {['#0F172A', '#3B82F6', '#EF4444', '#EAB308', '#10B981', '#8B5CF6', '#F97316', '#64748B'].map(color => (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => setBannerBgColor(color)}
+                              className={cn("w-8 h-8 rounded-full border-2 transition-transform hover:scale-110", bannerBgColor.toUpperCase() === color ? 'border-primary shadow-md scale-110' : 'border-transparent')}
+                              style={{ backgroundColor: color }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex gap-3 items-center">
+                          <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-14 h-11 p-1 cursor-pointer rounded-lg border-border/60 shrink-0" />
+                          <div className="flex-1">
+                            <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-xs font-bold uppercase font-mono" />
+                          </div>
                         </div>
                       </div>
                     )}
 
                     {bannerBgType === 'gradient' && (
-                      <div className="space-y-2 animate-in fade-in duration-200">
-                        <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-xs font-bold font-mono" />
-                        <div className="w-full h-8 rounded-lg border border-border/60" style={{ background: bannerBgGradient }} />
-                        <p className="text-[9px] text-muted-foreground">CSS: <code>linear-gradient(to right, #1e3c72, #2a5298)</code></p>
+                      <div className="space-y-3 animate-in fade-in duration-200">
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            'linear-gradient(to bottom right, #3b82f6, #9333ea)',
+                            'linear-gradient(to bottom right, #ef4444, #f97316)',
+                            'linear-gradient(to bottom right, #0f2027, #2c5364)',
+                            'linear-gradient(to right, #11998e, #38ef7d)',
+                            'linear-gradient(to right, #ff9966, #ff5e62)',
+                            'linear-gradient(to right, #8e2de2, #4a00e0)'
+                          ].map(grad => (
+                            <button
+                              key={grad}
+                              type="button"
+                              onClick={() => setBannerBgGradient(grad)}
+                              className={cn("w-12 h-8 rounded-md border-2 transition-transform hover:scale-105", bannerBgGradient === grad ? 'border-primary shadow-md scale-105' : 'border-transparent')}
+                              style={{ background: grad }}
+                              title={grad}
+                            />
+                          ))}
+                        </div>
+                        <div className="space-y-2">
+                          <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-xs font-bold font-mono" />
+                          <div className="w-full h-8 rounded-lg border border-border/60" style={{ background: bannerBgGradient }} />
+                          <p className="text-[9px] text-muted-foreground">Bisa diisi kustom warna gradien CSS, contoh: <code>linear-gradient(to right, #1e3c72, #2a5298)</code></p>
+                        </div>
                       </div>
                     )}
                   </div>
