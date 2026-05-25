@@ -472,16 +472,16 @@ export default function BannerPromo() {
                     </div>
                   )}
 
-                  <div style={{ position: 'absolute', left: `${b.titlePos?.x ?? 8}%`, top: `${b.titlePos?.y ?? 30}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70%] max-w-[280px]">
-                     <span className="bg-white/20 text-[9px] px-2 py-0.5 rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-1.5">
+                  <div style={{ position: 'absolute', left: `${b.titlePos?.x ?? 8}%`, top: `${b.titlePos?.y ?? 30}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw]">
+                     <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-[1.5cqw]">
                         {b.type === 'voucher' ? 'Promo Voucher' : b.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
                      </span>
-                     <h4 className="font-black text-base sm:text-lg leading-tight line-clamp-1 drop-shadow-sm">{b.title}</h4>
+                     <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm">{b.title}</h4>
                   </div>
                   
-                  <div style={{ position: 'absolute', left: `${b.descPos?.x ?? 8}%`, top: `${b.descPos?.y ?? 70}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70%] max-w-[280px]">
-                     <p className="text-[10px] sm:text-xs text-slate-100 line-clamp-2 leading-snug font-medium drop-shadow-sm">{b.description}</p>
-                     <div className="mt-2 text-[9px] sm:text-[10px] bg-white text-slate-900 font-extrabold px-3 py-1 rounded-md self-start inline-block shadow-sm">
+                  <div style={{ position: 'absolute', left: `${b.descPos?.x ?? 8}%`, top: `${b.descPos?.y ?? 70}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
+                     <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">{b.description}</p>
+                     <div className="mt-[1.5cqw] text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto inline-block">
                         {b.buttonText || 'Lihat Detail'}
                      </div>
                   </div>
@@ -682,11 +682,11 @@ export default function BannerPromo() {
                   onPointerDown={(e: any) => handleDragStart(e, 'title')}
                   type="title"
                 >
-                  <div className="w-[200px] sm:w-[320px] cursor-grab active:cursor-grabbing">
-                    <span className="text-[8px] sm:text-[9px] px-2 py-0.5 rounded bg-white/20 backdrop-blur-md font-bold mb-1 inline-block uppercase tracking-wider border border-white/10 shadow-sm pointer-events-none">
+                  <div className="w-[70cqw] max-w-[75cqw] cursor-grab active:cursor-grabbing">
+                    <span className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded bg-white/20 backdrop-blur-md font-bold mb-[1.5cqw] inline-block uppercase tracking-wider border border-white/10 shadow-sm pointer-events-none">
                       Promo Spesial
                     </span>
-                    <h4 className="font-black text-sm sm:text-xl leading-tight line-clamp-1 drop-shadow-md pointer-events-none">
+                    <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-md pointer-events-none">
                       {bannerTitle || 'Judul Penawaran'}
                     </h4>
                   </div>
@@ -699,11 +699,11 @@ export default function BannerPromo() {
                   onPointerDown={(e: any) => handleDragStart(e, 'desc')}
                   type="desc"
                 >
-                  <div className="w-[200px] sm:w-[320px] cursor-grab active:cursor-grabbing">
-                    <p className="text-[10px] sm:text-xs text-slate-100 font-semibold line-clamp-2 leading-snug drop-shadow-sm mb-1.5 pointer-events-none">
+                  <div className="w-[70cqw] max-w-[75cqw] cursor-grab active:cursor-grabbing">
+                    <p className="text-[2.8cqw] text-slate-100 font-semibold line-clamp-3 leading-[1.3] drop-shadow-sm mb-[1.5cqw] pointer-events-none m-0">
                       {bannerDesc || 'Tulis deskripsi promo produk Anda di sini...'}
                     </p>
-                    <button className="bg-white text-slate-900 text-[8px] sm:text-[9px] font-extrabold px-3 py-1 rounded-md shadow-md pointer-events-none">
+                    <button className="bg-white text-slate-900 text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-md pointer-events-none mt-[1.5cqw]">
                       {bannerButtonText || 'Lihat Detail'}
                     </button>
                   </div>

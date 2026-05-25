@@ -80,19 +80,19 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
       )}
 
       {/* LAYER 3: TITLE BOX */}
-      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70%] max-w-[280px]">
-        <span className="bg-white/20 text-[9px] px-2 py-0.5 rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-1.5">
+      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw]">
+        <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-[1.5cqw]">
           {banner.type === 'voucher' ? 'Promo Voucher' : banner.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
         </span>
-        <h4 className="font-black text-base sm:text-lg leading-tight line-clamp-1 drop-shadow-sm">
+        <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm">
           {banner.title}
         </h4>
       </div>
 
       {/* LAYER 4: DESCRIPTION BOX */}
       {banner.description && (
-        <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70%] max-w-[280px] pointer-events-none">
-          <p className="text-[10px] sm:text-xs text-slate-100 line-clamp-2 leading-snug font-medium drop-shadow-sm m-0">
+        <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
+          <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">
             {banner.description}
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
                 else window.location.href = banner.link;
               } else if (onAction) onAction();
             }}
-            className="mt-2 text-[9px] sm:text-[10px] bg-white text-slate-900 font-extrabold px-3 py-1 rounded-md shadow-sm pointer-events-auto hover:bg-slate-100 active:scale-95 transition-all"
+            className="text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto hover:bg-slate-100 active:scale-95 transition-all"
           >
             {banner.buttonText || 'Lihat Detail'}
           </button>
