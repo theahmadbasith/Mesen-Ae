@@ -11,35 +11,42 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import KitchenReceiptModal from '../components/KitchenReceiptModal';
 
 // ── KOMPONEN ITEM PESANAN ──
-function KitchenItemsList({ transactionId }: { transactionId: number }) {
+function KitchenItemsList({ transactionId, compact = false }: { transactionId: number, compact?: boolean }) {
   const allItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []);
   const items = allItems.filter((i) => i.transactionId === transactionId);
   
   return (
-    <div className="space-y-0 mt-2">
+    <div className={cn("mt-2", compact ? "space-y-1.5" : "space-y-0")}>
       {items.map((item, index) => (
         <div key={item.id} className={cn(
-          "flex items-start gap-3 py-3",
-          index !== items.length - 1 && "border-b border-dashed border-border"
+          "flex items-start gap-3",
+          !compact && "py-3",
+          (!compact && index !== items.length - 1) && "border-b border-dashed border-border"
         )}>
-          {/* Quantity Badge - LEBIH BESAR */}
-          <div className="bg-primary/20 text-primary border border-primary/30 font-black text-lg min-w-9 h-9 px-2 rounded-lg flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-            {item.quantity}
+          {/* Quantity Badge */}
+          <div className={cn(
+            "flex items-center justify-center shrink-0 font-black rounded-lg text-primary border border-primary/30",
+            compact ? "bg-primary/10 text-sm min-w-7 h-7 px-1.5 shadow-sm" : "bg-primary/20 text-lg min-w-9 h-9 px-2 shadow-sm mt-0.5"
+          )}>
+            {item.quantity}x
           </div>
           
-          {/* Item Details - LEBIH BESAR */}
+          {/* Item Details */}
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="font-extrabold text-foreground text-base leading-snug">{item.productName}</span>
+            <span className={cn("font-extrabold text-foreground leading-snug", compact ? "text-sm" : "text-base")}>{item.productName}</span>
             
             {item.selectedVariants && item.selectedVariants.length > 0 && (
-              <span className="text-xs font-semibold text-muted-foreground mt-0.5">
-                + {item.selectedVariants.map((v: any) => v.optionName).join(', ')}
+              <span className={cn("font-semibold text-muted-foreground", compact ? "text-xs" : "text-xs mt-0.5")}>
+                {item.selectedVariants.map((v: any) => v.optionName).join(', ')}
               </span>
             )}
             
             {item.notes && (
-              <div className="inline-flex mt-1.5">
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md leading-tight border border-amber-500/20">
+              <div className={cn("inline-flex", compact ? "mt-0.5" : "mt-1.5")}>
+                <span className={cn(
+                  "font-bold text-amber-600 dark:text-amber-500 bg-amber-500/10 rounded border border-amber-500/20 leading-tight",
+                  compact ? "text-xs px-1.5 py-0.5" : "text-xs px-2 py-1"
+                )}>
                   📝 {item.notes}
                 </span>
               </div>
@@ -199,51 +206,18 @@ export default function KitchenDisplay() {
     </div>
   );
 
-  const HistoryTicket = ({ bill }: { bill: Transaction }) => {
-    const isCancelled = bill.status === 'batal';
-    
-    return (
-      <Card className="border-border shadow-md flex flex-col bg-card/80 rounded-2xl overflow-hidden opacity-90 hover:opacity-100 transition-opacity">
-        <div className={cn("px-4 py-3 flex flex-col gap-2 relative border-b border-border/50", isCancelled ? "bg-red-500/10 dark:bg-red-950/20" : "bg-emerald-500/10 dark:bg-emerald-950/20")}>
-          <div className="flex justify-between items-start">
-            <Badge variant="outline" className="bg-background/80 backdrop-blur text-foreground font-mono text-xs font-bold border-border/50 px-2 py-1">
-              {bill.receiptNumber}
-            </Badge>
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/50 rounded-md text-muted-foreground hover:text-foreground shadow-sm bg-background/20 backdrop-blur" onClick={() => setReceiptTx(bill)} title="Print Tiket">
-              <Printer className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="flex justify-between items-end">
-            <div>
-              {bill.tableNumber ? (
-                <div className="flex flex-col leading-none">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Nomor Meja</span>
-                  <span className="text-2xl font-black text-foreground">Meja {bill.tableNumber}</span>
-                </div>
-              ) : (
-                <div className="flex flex-col leading-none">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tipe Pesanan</span>
-                  <span className="text-lg font-black text-foreground">Bawa Pulang</span>
-                </div>
-              )}
-            </div>
-            
-            <div className={cn(
-              "flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md border shadow-sm",
-              isCancelled ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-            )}>
-              {isCancelled ? 'DIBATALKAN' : 'SELESAI'}
-            </div>
-          </div>
-        </div>
-        <CardContent className="p-4 flex-1 flex flex-col bg-card/50">
-          <div className="flex-1 opacity-75 grayscale-[20%]">
-            <KitchenItemsList transactionId={bill.id!} />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
+  // Group riwayat berdasarkan tanggal
+  const dateFormatter = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const timeFormatter = new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  const groupedHistory = billsRiwayat.reduce((groups: Record<string, Transaction[]>, bill) => {
+    const dateStr = dateFormatter.format(new Date(bill.date));
+    if (!groups[dateStr]) {
+      groups[dateStr] = [];
+    }
+    groups[dateStr].push(bill);
+    return groups;
+  }, {});
 
   return (
     <div className="flex-1 h-full flex flex-col gap-4">
@@ -331,8 +305,8 @@ export default function KitchenDisplay() {
         
       </div>
       ) : (
-        /* RIWAYAT GRID */
-        <div className="flex-1 overflow-y-auto bg-muted/20 rounded-3xl border border-border/50 p-6 custom-scrollbar shadow-inner">
+        /* RIWAYAT LIST GROUPED BY DATE */
+        <div className="flex-1 overflow-y-auto bg-card rounded-3xl border border-border shadow-sm p-4 sm:p-6 custom-scrollbar">
           {billsRiwayat.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 opacity-50">
               <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4 border border-border">
@@ -341,9 +315,80 @@ export default function KitchenDisplay() {
               <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Belum ada riwayat pesanan</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-2">
-              {billsRiwayat.map(bill => (
-                <HistoryTicket key={bill.id} bill={bill} />
+            <div className="space-y-8 pb-4">
+              {Object.entries(groupedHistory).map(([dateLabel, bills]) => (
+                <div key={dateLabel} className="space-y-4">
+                  {/* Date Header */}
+                  <div className="flex items-center gap-3 border-b border-border pb-2">
+                    <h3 className="text-sm font-black text-foreground uppercase tracking-wider">{dateLabel}</h3>
+                    <Badge variant="secondary" className="text-[10px] font-bold">
+                      {bills.length} Pesanan
+                    </Badge>
+                  </div>
+                  
+                  {/* Table View */}
+                  <div className="rounded-xl border border-border overflow-x-auto bg-card/50 shadow-sm">
+                    <table className="w-full text-left min-w-[700px]">
+                      <thead className="bg-muted/50 text-xs uppercase text-muted-foreground font-extrabold border-b border-border">
+                        <tr>
+                          <th className="px-5 py-3.5 w-32">Waktu / Struk</th>
+                          <th className="px-5 py-3.5 w-32">Nomor Meja</th>
+                          <th className="px-5 py-3.5">Detail Pesanan</th>
+                          <th className="px-5 py-3.5 w-32 text-center">Status</th>
+                          <th className="px-5 py-3.5 w-16 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50 text-sm">
+                        {bills.map(bill => {
+                          const isCancelled = bill.status === 'batal';
+                          const timeStr = timeFormatter.format(new Date(bill.date)).replace('.', ':');
+                          
+                          return (
+                            <tr key={bill.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-5 py-4 align-top">
+                                <div className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {timeStr}
+                                </div>
+                                <div className="font-mono text-[11px] font-semibold text-muted-foreground">{bill.receiptNumber}</div>
+                              </td>
+                              <td className="px-5 py-4 align-top">
+                                {bill.tableNumber ? (
+                                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-sm py-1 font-bold">Meja {bill.tableNumber}</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-muted text-muted-foreground text-xs py-1">Bawa Pulang</Badge>
+                                )}
+                              </td>
+                              <td className="px-5 py-4 align-top">
+                                <KitchenItemsList transactionId={bill.id!} compact={true} />
+                              </td>
+                              <td className="px-5 py-4 align-top text-center">
+                                <Badge className={cn(
+                                  "font-bold text-[10px] uppercase tracking-wider",
+                                  isCancelled 
+                                    ? "bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/20" 
+                                    : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"
+                                )} variant="outline">
+                                  {isCancelled ? 'Dibatalkan' : 'Selesai'}
+                                </Badge>
+                              </td>
+                              <td className="px-5 py-4 align-top text-center">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-9 w-9 hover:bg-primary/10 hover:text-primary rounded-xl text-muted-foreground border border-transparent hover:border-primary/20 shadow-sm" 
+                                  onClick={() => setReceiptTx(bill)} 
+                                  title="Print Tiket"
+                                >
+                                  <Printer className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               ))}
             </div>
           )}
