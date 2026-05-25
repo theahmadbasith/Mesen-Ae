@@ -151,11 +151,11 @@ export default function Laporan() {
   return (
     <div className="mx-auto w-full">
       {/* Master Tabs Navbar */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3">
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3 mb-4">
         <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'penjualan' | 'stok')}>
-          <TabsList className="grid grid-cols-2 w-full max-w-sm mx-auto h-11 p-1 rounded-xl bg-muted/70">
-            <TabsTrigger value="penjualan" className="rounded-lg font-bold text-sm">Laporan Penjualan</TabsTrigger>
-            <TabsTrigger value="stok" className="rounded-lg font-bold text-sm">Laporan Stok</TabsTrigger>
+          <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto h-12 p-1.5 rounded-xl bg-muted shadow-sm">
+            <TabsTrigger value="penjualan" className="rounded-lg font-bold text-sm h-full transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Laporan Penjualan</TabsTrigger>
+            <TabsTrigger value="stok" className="rounded-lg font-bold text-sm h-full transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Laporan Stok</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

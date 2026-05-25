@@ -22,7 +22,7 @@ import Receipt from '@/components/Receipt';
 import { FORMAT_IDR } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-export default function ActiveOrders() {
+export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?: () => void } = {}) {
   const navigate = useNavigate();
   const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
@@ -206,7 +206,7 @@ export default function ActiveOrders() {
                     ) : (
                         <Button 
                           className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
-                          onClick={() => navigate('/kitchen')}
+                          onClick={onSwitchToKitchen ? onSwitchToKitchen : () => navigate('/kitchen')}
                         >
                           Buka Dapur
                           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
