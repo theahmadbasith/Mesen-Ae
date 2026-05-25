@@ -151,28 +151,18 @@ export default function Laporan() {
 
   return (
     <div className="mx-auto w-full">
-      {/* Master Tabs Navbar - Menempel di atas */}
-      <div className="flex w-full bg-card border-b border-border -mx-4 md:-mx-6 lg:-mx-8 -mt-4 md:-mt-6 lg:-mt-8 mb-4 md:mb-6 px-4 md:px-6 lg:px-8">
-        <div className="flex w-full">
+      {/* Master Tabs Navbar */}
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3 mb-4">
+        <div className="flex bg-muted/40 p-1.5 rounded-2xl w-full border border-border/60 shadow-sm shrink-0">
           <button 
             onClick={() => setActiveTab('penjualan')}
-            className={cn(
-              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
-              activeTab === 'penjualan' 
-                ? 'border-primary text-primary bg-primary/5' 
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            )}
+            className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2", activeTab === 'penjualan' ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
           >
             Laporan Penjualan
           </button>
           <button 
             onClick={() => setActiveTab('stok')}
-            className={cn(
-              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
-              activeTab === 'stok' 
-                ? 'border-primary text-primary bg-primary/5' 
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            )}
+            className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2", activeTab === 'stok' ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
           >
             Laporan Stok
           </button>

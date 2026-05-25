@@ -245,35 +245,23 @@ export default function KitchenDisplay() {
   return (
     <div className="flex-1 h-full flex flex-col gap-4">
       {/* KITCHEN TABS */}
-      <div className="flex w-full bg-card border-b border-border -mx-3 sm:-mx-4 lg:-mx-6 -mt-3 sm:-mt-4 lg:-mt-6 mb-4 px-3 sm:px-4 lg:px-6">
-        <div className="flex w-full">
-          <button 
-            onClick={() => setActiveTab('aktif')}
-            className={cn(
-              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
-              activeTab === 'aktif' 
-                ? 'border-primary text-primary bg-primary/5' 
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            )}
-          >
-            <Flame className="w-4 h-4" />
-            <span className="hidden sm:inline">Pesanan Aktif</span>
-            <span className="sm:hidden">Aktif</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('riwayat')}
-            className={cn(
-              "flex-1 py-3.5 text-sm font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 border-b-[3px]", 
-              activeTab === 'riwayat' 
-                ? 'border-primary text-primary bg-primary/5' 
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            )}
-          >
-            <History className="w-4 h-4" />
-            <span className="hidden sm:inline">Riwayat Dapur</span>
-            <span className="sm:hidden">Riwayat</span>
-          </button>
-        </div>
+      <div className="flex bg-muted/40 p-1.5 rounded-2xl w-full border border-border/60 shadow-sm shrink-0 mb-1">
+        <button 
+          onClick={() => setActiveTab('aktif')}
+          className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2", activeTab === 'aktif' ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
+        >
+          <Flame className="w-4 h-4" />
+          <span className="hidden sm:inline">Pesanan Aktif</span>
+          <span className="sm:hidden">Aktif</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('riwayat')}
+          className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2", activeTab === 'riwayat' ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
+        >
+          <History className="w-4 h-4" />
+          <span className="hidden sm:inline">Riwayat Dapur</span>
+          <span className="sm:hidden">Riwayat</span>
+        </button>
       </div>
 
       {activeTab === 'aktif' ? (
