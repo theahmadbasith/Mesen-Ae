@@ -42,6 +42,7 @@ self.addEventListener('push', function(event) {
     data: { url },
     renotify: true,
     requireInteraction: true,
+    silent: false,
     tag: 'mesenae-notification'
   };
 
