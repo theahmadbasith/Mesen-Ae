@@ -87,15 +87,13 @@ export default function Kitchen() {
         
         await dbUpdate('transactions', bill.id!, updates);
         
-        // Trigger Notifikasi Push ke Pelanggan (Background)
-        if (nextStatus === 'disajikan') {
-          await sendPushToRole('customer', {
+        // Saat pesanan DIANTARKAN/SELESAI → notifikasi ke customer
+        if (nextStatus === 'diantarkan') {
+          sendPushToRole('customer', {
             title: 'Pesanan Siap! 🍽️',
-            options: {
-              body: `Pesanan Anda (${bill.receiptNumber}) sudah matang dan siap dinikmati.`,
-              vibrate: [200, 100, 200, 100, 400]
-            }
-          });
+            body:  `Pesanan Anda (${bill.receiptNumber}) sudah siap${storeSettings?.deliveryMode === 'ambil' ? ', silakan diambil di kasir.' : ' dan sedang diantar ke meja Anda.'}`,
+            url:   '/?view=tracking',
+          }).catch(console.error);
         }
         toast.success(`Pesanan ${bill.receiptNumber} lanjut ke tahap: ${nextStatus.toUpperCase()}`);
       }

@@ -598,14 +598,12 @@ export default function Kasir() {
         notes: r.notes
       })));
 
-      // Trigger Notifikasi Push ke Pelanggan (Background)
-      await sendPushToRole('customer', {
+      // Notifikasi Push ke Customer: Pembayaran dikonfirmasi kasir
+      sendPushToRole('customer', {
         title: 'Pembayaran Dikonfirmasi! 🎉',
-        options: {
-          body: `Pesanan Anda (${finalTx.receiptNumber}) telah lunas dan sedang disiapkan.`,
-          vibrate: [200, 100, 200, 100, 400]
-        }
-      });
+        body:  `Pesanan Anda (${finalTx.receiptNumber}) telah lunas dan sedang disiapkan.`,
+        url:   '/?view=tracking',
+      }).catch(console.error);
 
       toast.success(`Transaksi berhasil!`);
       setReceiptOpen(true);
@@ -653,14 +651,12 @@ export default function Kasir() {
           notes: r.notes
         })));
 
-        // Trigger Notifikasi Push ke Pelanggan (Background)
-        await sendPushToRole('customer', {
+        // Notifikasi Push ke Customer: Pembayaran dikonfirmasi kasir (transaksi baru)
+        sendPushToRole('customer', {
           title: 'Pembayaran Dikonfirmasi! 🎉',
-          options: {
-            body: `Pesanan Anda (${receiptNumber}) telah lunas dan sedang disiapkan.`,
-            vibrate: [200, 100, 200, 100, 400]
-          }
-        });
+          body:  `Pesanan Anda (${receiptNumber}) telah lunas dan sedang disiapkan.`,
+          url:   '/?view=tracking',
+        }).catch(console.error);
 
         toast.success(`Transaksi berhasil! ${receiptNumber}`);
         setReceiptOpen(true);

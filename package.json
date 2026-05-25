@@ -8,9 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build:sw": "vite build --config vite.sw.config.ts",
-    "build": "npm run build:sw && vite build",
-    "build:dev": "npm run build:sw && vite build --mode development",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -52,6 +51,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^12.13.0",
+    "firebase-admin": "^13.10.0",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "idb-keyval": "^6.2.2",

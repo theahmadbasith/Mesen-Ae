@@ -1,76 +1,101 @@
-// FCM dependencies removed as we are using native Web Push API
-import { app, db } from "./firebase";
-import { collection, doc, setDoc } from "firebase/firestore";
-import { dbSelect, dbUpsert } from '@/lib/db';
+/**
+ * fcm.ts — Firebase Cloud Messaging (FCM) Integration
+ *
+ * Alur:
+ *   1. requestForToken()  → Daftarkan device ke Firebase, simpan FCM token ke Firestore
+ *   2. sendPushToRole()   → Ambil semua token untuk role tertentu, kirim via /api/fcm-send
+ *   3. /api/fcm-send      → Firebase Admin SDK kirim ke Google FCM → OS Android/iOS
+ */
 
-const DEFAULT_VAPID = "BOS-76i4DY8yREaNKWdh3xkqKkPTVLibbvSroA2rAkOxJlfY7HhF2YDzuIryY4D_5Ky-nQhehNBLBcL7IBt-TNQ";
+import { getToken } from "firebase/messaging";
+import { getMessagingInstance } from "./firebase";
+import { dbUpsert, dbSelect } from "@/lib/db";
 
-// Helper alias for dbInsert used in requestForToken
-const dbInsert = async (table: string, data: any) => {
-  return dbUpsert(table, data, 'token');
-};
+const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string;
 
-export const requestForToken = async (role: 'admin' | 'customer', name: string) => {
+// ─── REQUEST & REGISTER FCM TOKEN ────────────────────────────────────────────
+export const requestForToken = async (
+  role: "admin" | "customer",
+  name: string
+): Promise<string | null> => {
   try {
+    // 1. Cek dukungan browser
+    const messaging = await getMessagingInstance();
+    if (!messaging) {
+      console.warn("[FCM] Firebase Messaging tidak didukung di browser ini.");
+      return null;
+    }
+
+    // 2. Minta izin notifikasi dari pengguna
     const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      const registration = await navigator.serviceWorker.ready;
-      
-      const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID;
-      
-      // Convert VAPID key to Uint8Array
-      const urlBase64ToUint8Array = (base64String: string) => {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) {
-          outputArray[i] = rawData.charCodeAt(i);
-        }
-        return outputArray;
-      };
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-      });
-
-      const subJSON = JSON.parse(JSON.stringify(subscription));
-
-      // Simpan ke Firestore
-      await dbInsert('fcmTokens', {
-        token: subJSON.endpoint, // Gunakan endpoint sebagai ID unik
-        subscription: subJSON,
-        role,
-        name,
-        updatedAt: new Date().toISOString()
-      });
-
-      return subJSON.endpoint;
+    if (permission !== "granted") {
+      console.warn("[FCM] Izin notifikasi ditolak.");
+      return null;
     }
+
+    // 3. Daftarkan Service Worker resmi Firebase
+    const registration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js",
+      { scope: "/" }
+    );
+    await navigator.serviceWorker.ready;
+
+    // 4. Dapatkan FCM Device Token dari Google
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    if (!token) {
+      console.warn("[FCM] Gagal mendapatkan FCM token.");
+      return null;
+    }
+
+    // 5. Simpan token ke Firestore (upsert berdasarkan token)
+    await dbUpsert("fcmTokens", {
+      token,
+      role,
+      name,
+      updatedAt: new Date().toISOString(),
+    }, "token");
+
+    console.info(`[FCM] Token berhasil didaftarkan untuk role=${role}`);
+    return token;
   } catch (err) {
-    console.error('An error occurred while retrieving token. ', err);
+    console.error("[FCM] Error saat mendaftar token:", err);
+    return null;
   }
-  return null;
 };
 
-export const sendPushToRole = async (role: string, payload: any) => {
+// ─── SEND PUSH NOTIFICATION TO ALL DEVICES OF A ROLE ─────────────────────────
+export const sendPushToRole = async (
+  role: string,
+  payload: { title: string; body: string; url?: string }
+): Promise<void> => {
   try {
-    const tokens = await dbSelect('fcmTokens');
-    const targetTokens = tokens.filter((t: any) => t.role === role);
-    
-    for (const t of targetTokens) {
-      if (t.subscription) {
-        await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription: t.subscription, payload })
-        }).catch(console.error);
-      }
+    // Ambil semua FCM token untuk role tersebut dari Firestore
+    const allTokens = await dbSelect("fcmTokens");
+    const tokens: string[] = allTokens
+      .filter((t: any) => t.role === role && t.token)
+      .map((t: any) => t.token as string);
+
+    if (tokens.length === 0) {
+      console.info(`[FCM] Tidak ada token untuk role=${role}, skip.`);
+      return;
+    }
+
+    // Kirim ke backend Vercel yang meneruskan ke Firebase Admin SDK
+    const res = await fetch("/api/fcm-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tokens, payload }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("[FCM] Gagal mengirim push:", err);
     }
   } catch (err) {
-    console.error('Gagal mengirim push ke role', role, err);
+    console.error("[FCM] Error sendPushToRole:", err);
   }
 };
-
-// Legacy unused listener functions have been cleaned up

@@ -73,12 +73,13 @@ export interface FinalOrderData {
 export default function CustomerApp() {
   useThemeColor();
 
+  // Daftarkan FCM token saat customerName tersedia
   useEffect(() => {
+    if (!customerName) return;
     import('@/lib/fcm').then(({ requestForToken }) => {
-      // Tidak perlu lagi mendengarkan pesan foreground,
-      // karena Service Worker murni akan menanganinya di latar belakang
+      requestForToken('customer', customerName).catch(console.error);
     });
-  }, []);
+  }, [customerName]);
 
   // Ambil view awal dari URL jika ada
   const getInitialView = (): string => {
