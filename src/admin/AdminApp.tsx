@@ -22,8 +22,7 @@ const StockInPage = lazy(() => import("./pages/StockIn"));
 const StockOutPage = lazy(() => import("./pages/StockOut"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const StockReport = lazy(() => import("./pages/StockReport"));
-const ActiveOrders = lazy(() => import("./pages/ActiveOrders"));
-const Kitchen = lazy(() => import("./pages/Kitchen"));
+const OrdersManager = lazy(() => import("./pages/OrdersManager"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
 const Vouchers = lazy(() => import("./pages/Vouchers"));
 const BannerPromo = lazy(() => import("./pages/BannerPromo"));
@@ -104,17 +103,12 @@ export default function AdminApp() {
             </Suspense>
           </AdminOnlyRoute>
         } />
-        <Route path="active-orders" element={
+        <Route path="orders" element={
           <AdminOnlyRoute allowedForUser>
             <Suspense fallback={<PageSkeleton />}>
-              <ActiveOrders />
+              <OrdersManager />
             </Suspense>
           </AdminOnlyRoute>
-        } />
-        <Route path="kitchen" element={
-          <Suspense fallback={<PageSkeleton />}>
-            <Kitchen />
-          </Suspense>
         } />
         <Route path="products" element={
           <AdminOnlyRoute>

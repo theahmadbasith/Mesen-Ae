@@ -168,8 +168,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
         <NavGroupLabel>Operasional</NavGroupLabel>
         {role === 'admin' && <NavItem to="/admin" exact icon={LayoutDashboard} label="Dashboard" />}
         {role === 'admin' && <NavItem to="/admin/cashier" icon={ShoppingCart} label="Kasir (POS)" />}
-        <NavItem to="/admin/active-orders" icon={ClipboardList} label="Pesanan Aktif" badge={openBillsCount} />
-        <NavItem to="/admin/kitchen" icon={UtensilsCrossed} label="Dapur" badge={processingCount} />
+        <NavItem to="/admin/orders" icon={ClipboardList} label="Pesanan & Dapur" badge={openBillsCount} />
         <NavItem to="/admin/history" icon={History} label="Riwayat Transaksi" />
         
         {/* Grup 2: Manajemen */}
