@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { 
   ArrowDownToLine, 
   Plus, 
@@ -25,6 +26,9 @@ export default function StockInPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('stockIn');
+
   // Form States
   const [productId, setProductId] = useState('');
   const [supplierId, setSupplierId] = useState('');
@@ -125,11 +129,13 @@ export default function StockInPage() {
   return (
     <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
+      {hasEditAccess && (
       <div className="flex justify-end items-center gap-4">
         <Button size="sm" onClick={openAdd} className="h-10 rounded-xl gap-2 px-4 shadow-sm font-medium">
           <Plus className="w-4 h-4" /> Tambah Stok
         </Button>
       </div>
+      )}
 
       {/* Kontrol & Filter */}
       <div className="flex flex-col gap-2.5">

@@ -11,6 +11,7 @@ import {
   NotebookTabs 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 
 import { useDbQuery, dbInsert, dbUpdate, dbDelete } from '@/hooks/db-hooks';
 import { type Supplier } from '@/hooks/db-hooks';
@@ -46,6 +47,9 @@ export default function SupplierPage() {
 
   // Database Hooks
   const suppliers = useDbQuery<Supplier>('suppliers') || [];
+
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('suppliers');
 
   // Filter pencarian supplier dinamis (Nama & No Telepon)
   const filteredSuppliers = suppliers.filter(s =>
@@ -119,11 +123,13 @@ export default function SupplierPage() {
   return (
     <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
+      {hasEditAccess && (
       <div className="flex justify-end">
         <Button size="sm" onClick={openAdd} className="h-10 rounded-xl gap-2 px-4 shadow-sm font-medium">
           <Plus className="w-4 h-4" /> Tambah Supplier
         </Button>
       </div>
+      )}
 
       {/* Kolom Input Pencarian */}
       <div className="relative">
@@ -187,6 +193,7 @@ export default function SupplierPage() {
                   </div>
 
                   {/* Tombol Aksi */}
+                  {hasEditAccess && (
                   <div className="flex gap-1 flex-shrink-0">
                     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-muted" onClick={() => openEdit(s)}>
                       <Edit2 className="w-4 h-4 text-muted-foreground" />
@@ -195,6 +202,7 @@ export default function SupplierPage() {
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -11,8 +11,7 @@ import { UtensilsCrossed, User, Hash, Clock, ArrowRight, Printer, ChefHat, Check
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
-
-
+import { usePermissions } from '@/hooks/use-permissions';
 
 import PrintActionModal from '@/components/PrintActionModal';
 
@@ -61,6 +60,9 @@ const KITCHEN_STEPS = ['diproses', 'dimasak', 'disiapkan', 'siap', 'diantarkan']
 
 export default function Kitchen() {
   useThemeColor();
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('kitchen');
+  
   const [printActionTx, setPrintActionTx] = useState<Transaction | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -283,15 +285,17 @@ export default function Kitchen() {
                 </CardContent>
 
                 {/* Ticket Footer (Action) */}
-                <div className="p-4 pt-0 mt-auto bg-background">
-                  <Button 
-                    className={cn("w-full h-12 text-sm font-extrabold tracking-wide transition-all shadow-lg active:scale-95", billConfig.btn)}
-                    onClick={() => handleNextStep(bill)}
-                  >
-                    {billConfig.icon}
-                    <span>{billConfig.action}</span>
-                  </Button>
-                </div>
+                {hasEditAccess && (
+                  <div className="p-4 pt-0 mt-auto bg-background">
+                    <Button 
+                      className={cn("w-full h-12 text-sm font-extrabold tracking-wide transition-all shadow-lg active:scale-95", billConfig.btn)}
+                      onClick={() => handleNextStep(bill)}
+                    >
+                      {billConfig.icon}
+                      <span>{billConfig.action}</span>
+                    </Button>
+                  </div>
+                )}
               </Card>
             );
           })}

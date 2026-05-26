@@ -173,7 +173,7 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-primary/20 shadow-2xl">
+      <DialogContent className="max-w-md md:max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-primary/20 shadow-2xl flex flex-col">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-xl font-black tracking-tight">
             <Flame className="text-primary w-6 h-6" />
@@ -184,44 +184,44 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
         {/* ── Area Kertas Struk ── */}
         <div 
           ref={receiptRef} 
-          className="relative bg-white text-black p-5 rounded-md mx-auto shadow-sm" 
+          className="relative bg-card text-card-foreground p-5 rounded-md mx-auto shadow-sm flex-shrink-0" 
           style={{ width: '300px', fontFamily: "'Courier New', Courier, monospace" }}
         >
           {/* Header */}
           <div className="text-center mb-3">
             <h1 className="font-extrabold text-base tracking-widest uppercase">{storeSettings?.storeName || 'RESTO'}</h1>
-            <div className="inline-block mt-2 px-3 py-1 bg-black text-white font-black text-xs tracking-widest rounded-full uppercase">
+            <div className="inline-block mt-2 px-3 py-1 bg-foreground text-background font-black text-xs tracking-widest rounded-full uppercase">
               TIKET DAPUR
             </div>
           </div>
 
-          <div className="border-t-2 border-dashed border-zinc-300 my-3" />
+          <div className="border-t-2 border-dashed border-border/50 my-3" />
 
           {/* Info */}
           <div className="text-xs space-y-1 font-bold">
             <div className="flex justify-between">
-              <span className="text-zinc-500">Order</span>
+              <span className="text-muted-foreground">Order</span>
               <span>{transaction.receiptNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Waktu</span>
+              <span className="text-muted-foreground">Waktu</span>
               <span>{format(new Date(transaction.date), 'dd/MM/yy HH:mm')}</span>
             </div>
             {transaction.customerName && (
               <div className="flex justify-between">
-                <span className="text-zinc-500">Pemesan</span>
+                <span className="text-muted-foreground">Pemesan</span>
                 <span className="font-black uppercase truncate max-w-[130px]">{transaction.customerName}</span>
               </div>
             )}
-            <div className="flex justify-between items-center bg-zinc-100 border border-zinc-200 p-2 rounded mt-2">
-              <span className="text-zinc-600">MEJA</span>
+            <div className="flex justify-between items-center bg-muted/50 border border-border/50 p-2 rounded mt-2">
+              <span className="text-muted-foreground">MEJA</span>
               <span className="font-black text-xl">
                 {transaction.tableNumber ? transaction.tableNumber : <span className="text-base">Bawa Pulang</span>}
               </span>
             </div>
           </div>
 
-          <div className="border-t-2 border-dashed border-zinc-300 my-3" />
+          <div className="border-t-2 border-dashed border-border/50 my-3" />
 
           {/* Items */}
           <div className="space-y-3 min-h-[100px]">
@@ -236,13 +236,13 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
                   </span>
                   
                   {item.selectedVariants && item.selectedVariants.length > 0 && (
-                    <div className="text-[11px] text-zinc-600 font-semibold mt-0.5">
+                    <div className="text-[11px] text-muted-foreground font-semibold mt-0.5">
                       + {item.selectedVariants.map(v => v.optionName).join(', ')}
                     </div>
                   )}
                   
                   {item.notes && (
-                    <div className="text-[11px] font-bold italic text-black bg-zinc-100 border border-zinc-200 inline-block px-1.5 py-0.5 rounded mt-1">
+                    <div className="text-[11px] font-bold italic text-foreground bg-muted/50 border border-border/50 inline-block px-1.5 py-0.5 rounded mt-1">
                       Catatan: {item.notes}
                     </div>
                   )}
@@ -251,8 +251,8 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
             ))}
           </div>
 
-          <div className="border-t-2 border-dashed border-zinc-300 mt-4 mb-2" />
-          <p className="text-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+          <div className="border-t-2 border-dashed border-border/50 mt-4 mb-2" />
+          <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
             -- SELESAI --
           </p>
         </div>

@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface CartItem {
   product: Product;
@@ -88,6 +89,9 @@ export default function Kasir() {
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutDataCache, setCheckoutDataCache] = useState<any>(null);
+
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('cashier');
 
   // Variant selection state
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
@@ -174,7 +178,7 @@ export default function Kasir() {
   // ==========================================
   const processingBills = useMemo(() => allBills
     .filter(t => t.kitchenStatus && t.kitchenStatus !== 'pending' && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'siap')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), [allBills]);
+    .sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime()), [allBills]);
 
   const processingBillsCount = processingBills.length;
   const cartProductIds = useMemo(() => new Set(cart.map(c => c.product.id)), [cart]);
@@ -976,11 +980,12 @@ export default function Kasir() {
                     <span>-{rp(txDiscountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold">
+                <div className="flex justify-between items-center font-bold text-lg border-t border-slate-100 dark:border-slate-800 pt-3">
                   <span>Total</span>
                   <span className="text-primary">{rp(total)}</span>
                 </div>
 
+                {hasEditAccess && (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -999,6 +1004,7 @@ export default function Kasir() {
                     Bayar
                   </Button>
                 </div>
+                )}
 
 
               </div>
@@ -1171,6 +1177,7 @@ export default function Kasir() {
                 </div>
 
                 {/* Action buttons */}
+                {hasEditAccess && (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -1189,6 +1196,7 @@ export default function Kasir() {
                     Bayar
                   </Button>
                 </div>
+                )}
 
 
               </div>

@@ -50,7 +50,7 @@ export default function PaymentSuccessModal({
     <>
       {/* Modal Sukses Pembayaran */}
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-sm w-[92vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 bg-background border border-border shadow-2xl">
+        <DialogContent className="max-w-sm md:max-w-md w-[92vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 bg-background border border-border shadow-2xl">
 
           {/* Hero Section */}
           <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center border-b border-border/80">

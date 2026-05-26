@@ -150,6 +150,8 @@ export default function PaymentModal({
     if (!currentMethod) { toast.error('Pilih metode pembayaran'); return; }
     if (paymentAmount <= 0) { toast.error('Masukkan jumlah'); return; }
     if (paymentAmount > remainingToPay) { toast.error('Jumlah melebihi sisa tagihan'); return; }
+    if (payments.length >= 3) { toast.error('Maksimal 4 split bill (3 cicilan + 1 pelunasan)'); return; }
+    if (paymentAmount > remainingToPay) { toast.error('Jumlah melebihi sisa tagihan'); return; }
     setPayments(prev => [...prev, { methodId: currentMethod.id, methodName: currentMethod.name, amount: paymentAmount, date: new Date() }]);
     setPaymentMethodId('');
     setPaymentAmount(0);
@@ -353,10 +355,10 @@ export default function PaymentModal({
                 <button
                   type="button"
                   onClick={handleAddCicilan}
-                  disabled={!paymentMethodId || paymentAmount <= 0 || paymentAmount > remainingToPay}
+                  disabled={!paymentMethodId || paymentAmount <= 0 || paymentAmount > remainingToPay || payments.length >= 3}
                   className="w-full h-9 rounded-lg border border-blue-400/40 bg-blue-50 dark:bg-blue-900/20 text-xs font-bold text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-40 active:scale-95 transition-all"
                 >
-                  + Tambah Cicilan (Split Payment)
+                  {payments.length >= 3 ? "Maksimal Split Bill Tercapai" : "+ Tambah Cicilan (Split Payment)"}
                 </button>
               </div>
             )}

@@ -30,6 +30,7 @@ import {
 import { useState, useEffect } from "react";
 import { useDbQuery } from '@/hooks/db-hooks';
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface AppSidebarProps {
   isMobile?: boolean;
@@ -101,8 +102,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
     return t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
   }).length;
 
-  const authData = JSON.parse(localStorage.getItem('admin_auth') || '{}');
-  const role = authData.role || 'admin';
+  const { role, canView } = usePermissions();
 
   // Komponen NavItem dengan warna kontras navy & modern
   const NavItem = ({ to, icon: Icon, label, badge = 0, exact = false }: any) => {
@@ -203,11 +203,12 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar pb-6">
         
         {/* Grup 1: Ringkasan & Operasional */}
-        <NavGroupLabel>Operasional</NavGroupLabel>
-        {role === 'admin' && <NavItem to="/admin" exact icon={LayoutDashboard} label="Dashboard" />}
-        {role === 'admin' && <NavItem to="/admin/cashier" icon={ShoppingCart} label="Kasir (POS)" />}
+        {canView('dashboard') && <NavGroupLabel>Operasional</NavGroupLabel>}
+        {canView('dashboard') && <NavItem to="/admin" exact icon={LayoutDashboard} label="Dashboard" />}
+        {canView('cashier') && <NavItem to="/admin/cashier" icon={ShoppingCart} label="Kasir (POS)" />}
         
         {/* Menu Dropdown Pesanan & Dapur */}
+        {(canView('activeOrders') || canView('kitchen')) && (
         <div className="mb-0.5">
           <button
             onClick={() => {
@@ -240,9 +241,9 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
             <div className="overflow-hidden">
               <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                 {[
-                  { to: "/admin/orders", label: "Pesanan Aktif", icon: Clock, badge: openBillsCount },
-                  { to: "/admin/kitchen", label: "Dapur (Kitchen)", icon: ChefHat, badge: processingCount },
-                ].map((item) => (
+                  { to: "/admin/orders", label: "Pesanan Aktif", icon: Clock, badge: openBillsCount, show: canView('activeOrders') },
+                  { to: "/admin/kitchen", label: "Dapur (Kitchen)", icon: ChefHat, badge: processingCount, show: canView('kitchen') },
+                ].filter(i => i.show).map((item) => (
                   <NavLink 
                     key={item.to} 
                     to={item.to} 
@@ -273,15 +274,17 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
             </div>
           </div>
         </div>
+        )}
 
-        <NavItem to="/admin/history" icon={History} label="Riwayat Transaksi" />
+        {canView('history') && <NavItem to="/admin/history" icon={History} label="Riwayat Transaksi" />}
         
         {/* Grup 2: Manajemen */}
-        {role === 'admin' && (
+        {(canView('products') || canView('categories') || canView('suppliers') || canView('stockIn') || canView('stockOut') || canView('marketing') || canView('reports') || canView('settings')) && (
           <>
             <NavGroupLabel>Manajemen</NavGroupLabel>
             
             {/* Menu Dropdown Produk */}
+            {(canView('products') || canView('categories') || canView('suppliers') || canView('stockIn') || canView('stockOut')) && (
             <div className="mb-0.5">
               <button
                 onClick={() => {
@@ -306,7 +309,6 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 )}
               </button>
               
-              {/* Isi Dropdown */}
               <div className={cn(
                 "grid transition-all duration-300 ease-in-out",
                 isProductsOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
@@ -314,12 +316,12 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 <div className="overflow-hidden">
                   <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                     {[
-                      { to: "/admin/products", label: "Daftar Produk", icon: Package },
-                      { to: "/admin/categories", label: "Kategori", icon: FolderTree },
-                      { to: "/admin/supplier", label: "Supplier", icon: Truck },
-                      { to: "/admin/stock-in", label: "Stok Masuk", icon: PlusCircle },
-                      { to: "/admin/stock-out", label: "Stok Keluar", icon: MinusCircle },
-                    ].map((item) => (
+                      { to: "/admin/products", label: "Daftar Produk", icon: Package, show: canView('products') },
+                      { to: "/admin/categories", label: "Kategori", icon: FolderTree, show: canView('categories') },
+                      { to: "/admin/supplier", label: "Supplier", icon: Truck, show: canView('suppliers') },
+                      { to: "/admin/stock-in", label: "Stok Masuk", icon: PlusCircle, show: canView('stockIn') },
+                      { to: "/admin/stock-out", label: "Stok Keluar", icon: MinusCircle, show: canView('stockOut') },
+                    ].filter(i => i.show).map((item) => (
                       <NavLink 
                         key={item.to} 
                         to={item.to} 
@@ -342,8 +344,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Menu Dropdown Marketing */}
+            {canView('marketing') && (
             <div className="mb-0.5">
               <button
                 onClick={() => {
@@ -368,7 +372,6 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 )}
               </button>
               
-              {/* Isi Dropdown Pemasaran */}
               <div className={cn(
                 "grid transition-all duration-300 ease-in-out",
                 isPromoOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
@@ -403,8 +406,10 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Menu Dropdown Laporan */}
+            {canView('reports') && (
             <div className="mb-0.5">
               <button
                 onClick={() => {
@@ -429,7 +434,6 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 )}
               </button>
               
-              {/* Isi Dropdown Laporan */}
               <div className={cn(
                 "grid transition-all duration-300 ease-in-out",
                 isReportsOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
@@ -462,8 +466,9 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                 </div>
               </div>
             </div>
+            )}
             
-            <NavItem to="/admin/settings" icon={Settings} label="Pengaturan Sistem" />
+            {canView('settings') && <NavItem to="/admin/settings" icon={Settings} label="Pengaturan Sistem" />}
           </>
         )}
       </nav>

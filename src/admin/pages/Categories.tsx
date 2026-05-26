@@ -10,38 +10,43 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export default function Categories() {
   const categories = useDbQuery<Category>('categories');
 
   /* ── Kategori State ── */
-  const [catDialog, setCatDialog] = useState(false);
-  const [catEditId, setCatEditId] = useState<string | null>(null);
-  const [catName, setCatName] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('categories');
+
+  const [name, setName] = useState('');
   const [catIcon, setCatIcon] = useState('📦');
   const [catColor, setCatColor] = useState('#3b82f6');
   const [catNeedsKitchen, setCatNeedsKitchen] = useState(true);
   const [isSavingCat, setIsSavingCat] = useState(false);
 
-  const openCatAdd = () => {
-    setCatEditId(null);
-    setCatName('');
+  const openAdd = () => {
+    setEditCategory(null);
+    setName('');
     setCatIcon('📦');
     setCatColor('#3b82f6');
     setCatNeedsKitchen(true);
-    setCatDialog(true);
+    setDialogOpen(true);
   };
 
-  const openCatEdit = (c: Category) => {
-    setCatEditId(c.id!);
-    setCatName(c.name);
+  const openEdit = (c: Category) => {
+    setEditCategory(c);
+    setName(c.name);
     setCatIcon(c.icon);
     setCatColor(c.color);
     setCatNeedsKitchen(c.needsKitchen ?? true);
-    setCatDialog(true);
+    setDialogOpen(true);
   };
 
-  const deleteCat = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Hapus kategori ini secara permanen?')) return;
     try {
       await dbDelete('categories', id);
@@ -53,15 +58,15 @@ export default function Categories() {
 
   const saveCat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!catName.trim()) return;
+    if (!name.trim()) return;
     setIsSavingCat(true);
     try {
-      if (catEditId) {
-        await dbUpdate('categories', catEditId, { name: catName, icon: catIcon, color: catColor, needsKitchen: catNeedsKitchen });
+      if (editCategory) {
+        await dbUpdate('categories', editCategory.id!, { name: name, icon: catIcon, color: catColor, needsKitchen: catNeedsKitchen });
       } else {
-        await dbInsert('categories', { name: catName, icon: catIcon, color: catColor, needsKitchen: catNeedsKitchen, createdAt: new Date().toISOString() });
+        await dbInsert('categories', { name: name, icon: catIcon, color: catColor, needsKitchen: catNeedsKitchen, createdAt: new Date().toISOString() });
       }
-      setCatDialog(false);
+      setDialogOpen(false);
       toast.success('Kategori berhasil disimpan');
     } catch (error: any) {
       toast.error('Gagal menyimpan kategori: ' + (error.message || error));
@@ -77,10 +82,14 @@ export default function Categories() {
         <p className="text-sm font-medium text-muted-foreground">
           {categories?.length ?? 0} kategori terdaftar.
         </p>
-        <Button onClick={openCatAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
-          <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
-          Tambah Kategori
-        </Button>
+        {hasEditAccess && (
+        <div className="flex justify-end">
+          <Button onClick={openAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
+            <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
+            Tambah Kategori
+          </Button>
+        </div>
+        )}
       </div>
 
       {!categories?.length ? (
@@ -89,11 +98,13 @@ export default function Categories() {
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
               <Tag className="w-6 h-6 opacity-40" />
             </div>
-            <p className="text-sm font-medium text-foreground">Belum ada kategori produk</p>
-            <p className="text-xs max-w-[200px] mb-2">Buat kategori pertama Anda untuk mengelompokkan produk jualan.</p>
-            <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs font-semibold" onClick={openCatAdd}>
-              <Plus className="w-3.5 h-3.5" /> Tambah Sekarang
+            <h3 className="text-lg font-bold text-foreground mb-1">Kategori Kosong</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">Belum ada kategori yang ditambahkan. Silahkan tambah kategori pertama Anda.</p>
+            {hasEditAccess && (
+            <Button variant="outline" className="mt-6 rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-bold" onClick={openAdd}>
+              <Plus className="w-4 h-4 mr-2" /> Tambah Kategori
             </Button>
+            )}
           </div>
         </Card>
       ) : (
@@ -124,14 +135,16 @@ export default function Categories() {
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" onClick={() => openCatEdit(c)}>
-                    <Edit2 className="w-4 h-4" />
+                {hasEditAccess && (
+                <div className="flex gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => openEdit(c)}>
+                    <Edit2 className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg" onClick={() => deleteCat(c.id!)}>
-                    <Trash2 className="w-4 h-4" />
+                  <Button variant="destructive" size="icon" className="h-8 w-8 rounded-lg" onClick={() => handleDelete(c.id!)}>
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
+                )}
               </div>
             </Card>
           ))}

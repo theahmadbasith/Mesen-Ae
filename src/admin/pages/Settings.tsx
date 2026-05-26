@@ -1,5 +1,6 @@
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
 import { type PaymentMethod, type Category, type User, type StoreSettings } from '@/hooks/db-hooks';
+import { type UserPermissions, DEFAULT_USER_PERMISSIONS, type ModulePermission } from '@/hooks/use-permissions';
 import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Store, CreditCard, Tag, Plus, Trash2, Edit2,
@@ -8,7 +9,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed
+  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 
@@ -122,6 +123,13 @@ function RoleBadge({ role }: { role: string }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
         <BadgeCheck className="w-2.5 h-2.5" /> Admin
+      </span>
+    );
+  }
+  if (role === 'dapur') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+        <ChefHat className="w-2.5 h-2.5" /> Dapur
       </span>
     );
   }
@@ -311,13 +319,14 @@ export default function Pengaturan() {
   const [userName,      setUserName]      = useState('');
   const [userWhatsapp,  setUserWhatsapp]  = useState('');
   const [userPassword,  setUserPassword]  = useState('');
-  const [userRole,      setUserRole]      = useState<'admin' | 'user'>('user');
+  const [userRole,      setUserRole]      = useState<'admin' | 'user' | 'dapur'>('user');
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>(DEFAULT_USER_PERMISSIONS);
   const [userEditId,    setUserEditId]    = useState<number | null>(null);
   const [showPassword,  setShowPassword]  = useState(false);
   const [isSavingUser,  setIsSavingUser]  = useState(false);
 
-  const openUserAdd  = () => { setUserEditId(null); setUserUsername(''); setUserName(''); setUserWhatsapp(''); setUserPassword(''); setUserRole('user'); setShowPassword(false); setUserDialog(true); };
-  const openUserEdit = (u: User) => { setUserEditId(u.id!); setUserUsername(u.username); setUserName(u.name ?? ''); setUserWhatsapp(u.whatsapp ?? ''); setUserPassword(''); setUserRole(u.role as 'admin' | 'user'); setShowPassword(false); setUserDialog(true); };
+  const openUserAdd  = () => { setUserEditId(null); setUserUsername(''); setUserName(''); setUserWhatsapp(''); setUserPassword(''); setUserRole('user'); setUserPermissions(DEFAULT_USER_PERMISSIONS); setShowPassword(false); setUserDialog(true); };
+  const openUserEdit = (u: User) => { setUserEditId(u.id!); setUserUsername(u.username); setUserName(u.name ?? ''); setUserWhatsapp(u.whatsapp ?? ''); setUserPassword(''); setUserRole(u.role as 'admin' | 'user' | 'dapur'); setUserPermissions(u.permissions || DEFAULT_USER_PERMISSIONS); setShowPassword(false); setUserDialog(true); };
   const saveUser = async () => {
     if (!userUsername.trim()) return;
     if (!userEditId && !userPassword) { toast.error('Password wajib diisi untuk pengguna baru'); return; }
@@ -328,9 +337,12 @@ export default function Pengaturan() {
       if (userEditId) {
         const updates: Record<string, unknown> = { username: userUsername.trim(), role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim() };
         if (password_hash) updates.password_hash = password_hash;
+        if (userRole === 'user') updates.permissions = userPermissions;
         await dbUpdate('users', userEditId, updates);
       } else {
-        await dbInsert('users', { username: userUsername.trim(), password_hash, role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim(), createdAt: new Date().toISOString() });
+        const newUserData: Record<string, unknown> = { username: userUsername.trim(), password_hash, role: userRole, name: userName.trim(), whatsapp: userWhatsapp.trim(), createdAt: new Date().toISOString() };
+        if (userRole === 'user') newUserData.permissions = userPermissions;
+        await dbInsert('users', newUserData as User);
       }
       setUserDialog(false); toast.success('Pengguna disimpan');
     } catch (error: any) {
@@ -513,6 +525,8 @@ export default function Pengaturan() {
                       'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0',
                       u.role === 'admin'
                         ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                        : u.role === 'dapur'
+                        ? 'bg-gradient-to-br from-rose-400 to-red-500'
                         : 'bg-gradient-to-br from-blue-400 to-indigo-500'
                     )}>
                       {u.username.charAt(0).toUpperCase()}
@@ -523,7 +537,7 @@ export default function Pengaturan() {
                         <RoleBadge role={u.role} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {u.whatsapp ? `WA: ${u.whatsapp}` : (u.role === 'admin' ? 'Akses penuh ke semua fitur' : 'Akses terbatas: dapur & pesanan')}
+                        {u.whatsapp ? `WA: ${u.whatsapp}` : (u.role === 'admin' ? 'Akses penuh ke semua fitur' : u.role === 'dapur' ? 'Akses khusus dapur' : 'Hak akses kustom')}
                       </p>
                     </div>
                     <div className="flex gap-1 shrink-0">
@@ -851,7 +865,7 @@ export default function Pengaturan() {
 
       {/* ── User Dialog ── */}
       <Dialog open={userDialog} onOpenChange={v => { setUserDialog(v); if (!v) setShowPassword(false); }}>
-        <DialogContent className="max-w-sm rounded-2xl">
+        <DialogContent className="max-w-sm rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserCog className="w-4 h-4" /> {userEditId ? 'Edit' : 'Tambah'} Pengguna
@@ -897,8 +911,8 @@ export default function Pengaturan() {
 
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" />Hak Akses</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {(['admin', 'user'] as const).map(role => (
+              <div className="grid grid-cols-3 gap-2">
+                {(['admin', 'user', 'dapur'] as const).map(role => (
                   <button
                     key={role}
                     onClick={() => setUserRole(role)}
@@ -907,30 +921,79 @@ export default function Pengaturan() {
                       userRole === role
                         ? role === 'admin'
                           ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                          : 'border-primary bg-primary/5'
+                          : role === 'user' ? 'border-primary bg-primary/5' : 'border-rose-400 bg-rose-50 dark:bg-rose-900/20'
                         : 'border-border hover:border-border/80'
                     )}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      {role === 'admin'
-                        ? <BadgeCheck className={cn('w-4 h-4', userRole === 'admin' ? 'text-amber-600' : 'text-muted-foreground')} />
-                        : <Shield className={cn('w-4 h-4', userRole === 'user' ? 'text-primary' : 'text-muted-foreground')} />}
+                      {role === 'admin' && <BadgeCheck className={cn('w-4 h-4', userRole === 'admin' ? 'text-amber-600' : 'text-muted-foreground')} />}
+                      {role === 'user' && <Shield className={cn('w-4 h-4', userRole === 'user' ? 'text-primary' : 'text-muted-foreground')} />}
+                      {role === 'dapur' && <ChefHat className={cn('w-4 h-4', userRole === 'dapur' ? 'text-rose-600' : 'text-muted-foreground')} />}
                       <span className={cn(
                         'text-xs font-semibold',
                         userRole === role
-                          ? role === 'admin' ? 'text-amber-700 dark:text-amber-400' : 'text-primary'
+                          ? role === 'admin' ? 'text-amber-700 dark:text-amber-400' : role === 'user' ? 'text-primary' : 'text-rose-700 dark:text-rose-400'
                           : 'text-muted-foreground'
                       )}>
-                        {role === 'admin' ? 'Admin' : 'Staf'}
+                        {role === 'admin' ? 'Admin' : role === 'user' ? 'Staf' : 'Dapur'}
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      {role === 'admin' ? 'Akses penuh ke semua fitur' : 'Akses terbatas: dapur & pesanan'}
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                      {role === 'admin' ? 'Akses penuh' : role === 'user' ? 'Akses kustom' : 'Akses dapur'}
                     </p>
                   </button>
                 ))}
               </div>
             </div>
+
+            {userRole === 'user' && (
+              <div className="space-y-3 mt-4 border-t border-border pt-4">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" /> Konfigurasi Akses Modul
+                </Label>
+                <div className="space-y-2">
+                  {(Object.entries({
+                    dashboard: 'Dashboard', cashier: 'Kasir (POS)', activeOrders: 'Pesanan Aktif', kitchen: 'Dapur',
+                    history: 'Riwayat Transaksi', products: 'Daftar Produk', categories: 'Kategori', suppliers: 'Supplier',
+                    stockIn: 'Stok Masuk', stockOut: 'Stok Keluar', marketing: 'Marketing (QR, Banner, dll)',
+                    reports: 'Laporan', settings: 'Pengaturan Sistem'
+                  }) as [keyof UserPermissions, string][]).map(([key, label]) => (
+                    <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl border border-border bg-muted/20">
+                      <span className="text-xs font-medium">{label}</span>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <span className="text-[10px] font-medium text-muted-foreground">Lihat</span>
+                          <Switch 
+                            checked={userPermissions[key].view}
+                            onCheckedChange={(v) => {
+                              setUserPermissions(prev => ({
+                                ...prev,
+                                [key]: { ...prev[key], view: v, edit: v ? prev[key].edit : false }
+                              }));
+                            }}
+                            className="scale-75 origin-right"
+                          />
+                        </label>
+                        <label className={cn("flex items-center gap-2", !userPermissions[key].view ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
+                          <span className="text-[10px] font-medium text-muted-foreground">Kelola</span>
+                          <Switch 
+                            checked={userPermissions[key].edit}
+                            onCheckedChange={(v) => {
+                              setUserPermissions(prev => ({
+                                ...prev,
+                                [key]: { ...prev[key], edit: v }
+                              }));
+                            }}
+                            className="scale-75 origin-right"
+                            disabled={!userPermissions[key].view}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {!userEditId && !userPassword && (
               <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">

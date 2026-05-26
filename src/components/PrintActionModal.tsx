@@ -57,7 +57,7 @@ export default function PrintActionModal({
     <>
       {/* Modal Pilihan Cetak */}
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-xs w-[90vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 bg-background border border-border shadow-2xl">
+        <DialogContent className="max-w-sm md:max-w-md w-[90vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 bg-background border border-border shadow-2xl">
           {/* Header */}
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/80">
             <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-lg font-black tracking-tight">

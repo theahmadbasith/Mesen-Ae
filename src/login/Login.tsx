@@ -85,16 +85,26 @@ export default function SharedLogin() {
       // Step 3: Route based on role
       const role = user.role || 'user';
       const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
-      const authData = JSON.stringify({ role, username: user.username, name: user.name, whatsapp: user.whatsapp, expiresAt });
+      const authData = JSON.stringify({ 
+        role, 
+        username: user.username, 
+        name: user.name, 
+        whatsapp: user.whatsapp, 
+        expiresAt,
+        permissions: user.permissions || undefined
+      });
 
       if (role === 'admin') {
         localStorage.setItem('admin_auth', authData);
-        toast.success(`Selamat datang, ${user.username}!`);
+        toast.success(`Selamat datang, Administrator ${user.username}!`);
         navigate('/admin/');
       } else if (role === 'user') {
-        localStorage.setItem('kitchen_auth', authData);
         localStorage.setItem('admin_auth', authData);
-        toast.success(`Selamat datang Koki ${user.username}!`);
+        toast.success(`Selamat datang, Staff ${user.username}!`);
+        navigate('/admin/');
+      } else if (role === 'dapur') {
+        localStorage.setItem('kitchen_auth', authData);
+        toast.success(`Selamat datang, Koki ${user.username}!`);
         navigate('/kitchen/');
       } else {
         toast.error('Akses ditolak. Peran pengguna tidak dikenali.');

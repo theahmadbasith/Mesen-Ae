@@ -188,7 +188,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-sm w-[92vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-border shadow-2xl">
+      <DialogContent className="max-w-md md:max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-border shadow-2xl flex flex-col">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2">
             {isPaidTx ? (
@@ -206,14 +206,14 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         </DialogHeader>
 
         {/* Kertas Struk dengan Efek Visual */}
-        <div className="relative mx-auto bg-white text-slate-900 p-6 shadow-[0_5px_15px_rgba(0,0,0,0.5)] w-[300px] mb-6 overflow-hidden" 
+        <div className="relative mx-auto bg-card text-card-foreground p-6 shadow-lg w-full max-w-[340px] mb-6 overflow-hidden flex-shrink-0" 
              style={{ 
                fontFamily: "'Courier New', Courier, monospace", 
                fontSize: '12px',
                clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), 98% 100%, 96% calc(100% - 6px), 94% 100%, 92% calc(100% - 6px), 90% 100%, 88% calc(100% - 6px), 86% 100%, 84% calc(100% - 6px), 82% 100%, 80% calc(100% - 6px), 78% 100%, 76% calc(100% - 6px), 74% 100%, 72% calc(100% - 6px), 70% 100%, 68% calc(100% - 6px), 66% 100%, 64% calc(100% - 6px), 62% 100%, 60% calc(100% - 6px), 58% 100%, 56% calc(100% - 6px), 54% 100%, 52% calc(100% - 6px), 50% 100%, 48% calc(100% - 6px), 46% 100%, 44% calc(100% - 6px), 42% 100%, 40% calc(100% - 6px), 38% 100%, 36% calc(100% - 6px), 34% 100%, 32% calc(100% - 6px), 30% 100%, 28% calc(100% - 6px), 26% 100%, 24% calc(100% - 6px), 22% 100%, 20% calc(100% - 6px), 18% 100%, 16% calc(100% - 6px), 14% 100%, 12% calc(100% - 6px), 10% 100%, 8% calc(100% - 6px), 6% 100%, 4% calc(100% - 6px), 2% 100%, 0 calc(100% - 6px))'
              }}>
           
-          <div ref={receiptRef} className="relative z-10 bg-white">
+          <div ref={receiptRef} className="relative z-10 bg-card">
             {/* Watermark Lunas / Belum Lunas */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] z-0">
               {isPaidTx ? (
@@ -237,7 +237,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               {storeSettings?.phone && <p className="text-[10px]">{storeSettings.phone}</p>}
             </div>
 
-            <div className="border-t-[1.5px] border-dashed border-slate-300 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Info Transaksi */}
             <div className="flex justify-between text-[10px] relative z-10">
@@ -255,7 +255,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               </div>
             )}
 
-            <div className="border-t-[1.5px] border-dashed border-slate-300 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Daftar Item */}
             <div className="relative z-10 min-h-[80px]">
@@ -280,7 +280,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               ))}
             </div>
 
-            <div className="border-t-[1.5px] border-dashed border-slate-300 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Kalkulasi Total */}
             <div className="space-y-1 text-[11px] relative z-10">
@@ -295,7 +295,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 </div>
               )}
               
-              <div className="flex justify-between font-black text-[13px] border-t border-slate-300 pt-1.5 mt-1.5">
+              <div className="flex justify-between font-black text-[13px] border-t border-border/50 pt-1.5 mt-1.5">
                 <span>TOTAL</span>
                 <span>{rp(transaction.total)}</span>
               </div>
@@ -330,7 +330,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               </div>
             </div>
 
-            <div className="border-t-[1.5px] border-dashed border-slate-300 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Footer */}
             <div className="text-center text-[10px] text-slate-500 relative z-10 pb-4 mt-4">

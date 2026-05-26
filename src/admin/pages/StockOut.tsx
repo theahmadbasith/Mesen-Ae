@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { 
   ArrowUpFromLine, 
   Plus, 
@@ -27,6 +28,9 @@ const REASONS = ['Rusak', 'Hilang', 'Kadaluarsa', 'Retur ke Supplier', 'Pemakaia
 export default function StockOutPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('stockOut');
   
   // Form States
   const [productId, setProductId] = useState('');
@@ -104,11 +108,13 @@ export default function StockOutPage() {
   return (
     <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
-      <div className="flex justify-end items-center gap-4">
-        <Button size="sm" onClick={openAdd} className="h-10 rounded-xl gap-2 px-4 shadow-sm font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-          <Plus className="w-4 h-4" /> Catat Pengurangan
-        </Button>
-      </div>
+      {hasEditAccess && (
+        <div className="flex justify-end items-center gap-4">
+          <Button size="sm" onClick={openAdd} className="h-10 rounded-xl gap-2 px-4 shadow-sm font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+            <Plus className="w-4 h-4" /> Catat Pengurangan
+          </Button>
+        </div>
+      )}
 
       <div className="text-xs text-muted-foreground pl-1">
         Total log aktivitas penyesuaian: <span className="font-semibold text-foreground">{sortedStockOuts.length}</span> catatan

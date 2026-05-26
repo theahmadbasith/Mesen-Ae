@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { requestForToken } from "@/lib/fcm";
 import { toast } from "sonner";
 import AppLayout from "@/admin/components/layout/AppLayout";
+import { usePermissions, UserPermissions } from "@/hooks/use-permissions";
 import {
   DashboardSkeleton,
   ProductsSkeleton,
@@ -56,13 +57,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Admin Only Route Wrapper (or cashier if allowed)
-const AdminOnlyRoute = ({ children, allowedForUser = false }: { children: React.ReactNode, allowedForUser?: boolean }) => {
+const ProtectedModuleRoute = ({ children, moduleName }: { children: React.ReactNode, moduleName: keyof UserPermissions }) => {
   const authString = localStorage.getItem('admin_auth');
   if (!authString) return <Navigate to="/login" replace />;
   
   try {
     const auth = JSON.parse(authString);
-    if (auth.role === 'admin' || allowedForUser) {
+    if (auth.role === 'admin') {
+      return <>{children}</>;
+    }
+
+    // Check permissions
+    const permissions = auth.permissions || {};
+    if (permissions[moduleName]?.view) {
       return <>{children}</>;
     }
   } catch (e) {}
@@ -90,123 +97,123 @@ export default function AdminApp() {
     <Routes>
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="dashboard">
             <Suspense fallback={<DashboardSkeleton />}>
               <Dashboard />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="cashier" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="cashier">
             <Suspense fallback={<PageSkeleton />}>
               <Cashier />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="orders" element={
-          <AdminOnlyRoute allowedForUser>
+          <ProtectedModuleRoute moduleName="activeOrders">
             <Suspense fallback={<PageSkeleton />}>
               <ActiveOrders />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="kitchen" element={
-          <AdminOnlyRoute allowedForUser>
+          <ProtectedModuleRoute moduleName="kitchen">
             <Suspense fallback={<PageSkeleton />}>
               <Kitchen />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="products" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="products">
             <Suspense fallback={<ProductsSkeleton />}>
               <Products />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="categories" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="categories">
             <Suspense fallback={<PageSkeleton />}>
               <Categories />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="reports" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="reports">
             <Suspense fallback={<ReportsSkeleton />}>
               <Reports />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="settings" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="settings">
             <Suspense fallback={<SettingsSkeleton />}>
               <Settings />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="supplier" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="suppliers">
             <Suspense fallback={<PageSkeleton />}>
               <SupplierPage />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="stock-in" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="stockIn">
             <Suspense fallback={<PageSkeleton />}>
               <StockInPage />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="stock-out" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="stockOut">
             <Suspense fallback={<PageSkeleton />}>
               <StockOutPage />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="barcode" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="marketing">
             <Suspense fallback={<PageSkeleton />}>
               <BarcodePrint />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="history" element={
-          <AdminOnlyRoute allowedForUser>
+          <ProtectedModuleRoute moduleName="history">
             <Suspense fallback={<TransactionHistorySkeleton />}>
               <TransactionHistory />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="stock-report" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="reports">
             <Suspense fallback={<PageSkeleton />}>
               <StockReport />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="qr-code" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="marketing">
             <Suspense fallback={<PageSkeleton />}>
               <QrCodeMenu />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="vouchers" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="marketing">
             <Suspense fallback={<VouchersSkeleton />}>
               <Vouchers />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
         <Route path="banner" element={
-          <AdminOnlyRoute>
+          <ProtectedModuleRoute moduleName="marketing">
             <Suspense fallback={<PageSkeleton />}>
               <BannerPromo />
             </Suspense>
-          </AdminOnlyRoute>
+          </ProtectedModuleRoute>
         } />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

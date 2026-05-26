@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export default function Produk() {
   const [search, setSearch] = useState('');
@@ -29,6 +30,9 @@ export default function Produk() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('products');
 
   // Form state
   const [name, setName] = useState('');
@@ -184,12 +188,14 @@ export default function Produk() {
       ) : (
         <>
           {/* Action Header */}
+      {hasEditAccess && (
       <div className="flex justify-end">
         <Button onClick={openAdd} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
           <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
           Tambah Produk
         </Button>
       </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="bg-card border border-border/50 p-3 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3">
@@ -234,9 +240,11 @@ export default function Produk() {
           </div>
           <h3 className="text-lg font-bold text-foreground mb-1">Produk Tidak Ditemukan</h3>
           <p className="text-sm text-muted-foreground max-w-sm">Belum ada produk yang ditambahkan atau cocok dengan pencarian Anda.</p>
+          {hasEditAccess && (
           <Button variant="outline" className="mt-6 rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-bold" onClick={openAdd}>
             <Plus className="w-4 h-4 mr-2" /> Tambah Produk Baru
           </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -293,20 +301,24 @@ export default function Produk() {
                 </div>
 
                 {/* 4. Actions (Hover Slide In) */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex-col gap-2 shrink-0 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:flex bg-card/80 backdrop-blur-sm p-1.5 rounded-xl border border-border/50 shadow-sm z-20">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => openEdit(p)}>
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive hover:text-white" onClick={() => setDeleteId(p.id!)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                {hasEditAccess && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex-col gap-2 shrink-0 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:flex bg-card/80 backdrop-blur-sm p-1.5 rounded-xl border border-border/50 shadow-sm z-20">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => openEdit(p)}>
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-destructive hover:text-white" onClick={() => setDeleteId(p.id!)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
                 
                 {/* Mobile Actions */}
+                {hasEditAccess && (
                 <div className="flex sm:hidden flex-col gap-1 shrink-0 ml-1">
                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-primary" onClick={() => openEdit(p)}><Edit2 className="w-3.5 h-3.5" /></Button>
                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-destructive" onClick={() => setDeleteId(p.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
+                )}
                 
               </div>
             </Card>

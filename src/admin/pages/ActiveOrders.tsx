@@ -13,6 +13,7 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 import { useDbQuery, dbDelete, dbUpdate, Transaction } from '@/hooks/db-hooks';
 import { sendPushToRole } from '@/lib/fcm';
@@ -43,6 +44,9 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   // Success modal setelah bayar
   const [successTx, setSuccessTx] = useState<Transaction | null>(null);
   const [successPayMethodName, setSuccessPayMethodName] = useState('Tunai');
+
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('activeOrders');
 
   // Queries
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
@@ -299,53 +303,48 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
               </CardContent>
 
               {/* Card Bottom / Footer */}
-              <CardFooter className="p-5 pt-0 flex flex-col gap-4 border-t border-border/40 mt-auto bg-muted/20">
-                <div className="flex justify-between items-end w-full pt-4">
-                  <span className="text-sm font-medium text-muted-foreground">Total:</span>
-                  <span className="text-xl font-bold tracking-tight text-foreground">
-                    {FORMAT_IDR(bill.total)}
-                  </span>
-                </div>
-                
-                <div className="flex gap-2.5 w-full">
-                  {bill.status !== 'lunas' && (
-                    <Button 
-                      variant="outline" 
-                      className="flex-none px-3 text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                      onClick={() => confirmCancel(bill)}
-                      title="Batalkan Pesanan"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {bill.status === 'lunas' ? (
-                    !getBillNeedsKitchen(bill) ? (
+              <CardFooter className="px-5 pb-5 pt-0 mt-auto shrink-0 z-20 relative">
+                {hasEditAccess && (
+                  <div className="flex gap-2.5 w-full">
+                    {bill.status !== 'lunas' && (
                       <Button 
-                        className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
-                        onClick={() => handleMarkDone(bill)}
+                        variant="outline" 
+                        className="flex-none px-3 text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                        onClick={() => confirmCancel(bill)}
+                        title="Batalkan Pesanan"
                       >
-                        Tandai Selesai
-                        <CheckCircle2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    ) : (
+                    )}
+                    {bill.status === 'lunas' ? (
+                      !getBillNeedsKitchen(bill) ? (
                         <Button 
-                          className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
-                          onClick={() => navigate('/admin/kitchen')}
+                          className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
+                          onClick={() => handleMarkDone(bill)}
                         >
-                          Buka Dapur
-                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                          Tandai Selesai
+                          <CheckCircle2 className="w-4 h-4" />
                         </Button>
-                    )
-                  ) : (
-                    <Button 
-                      className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
-                      onClick={() => setPayingBill(bill)}
-                    >
-                      Bayar
-                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  )}
-                </div>
+                      ) : (
+                          <Button 
+                            className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
+                            onClick={() => navigate('/admin/kitchen')}
+                          >
+                            Buka Dapur
+                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                          </Button>
+                      )
+                    ) : (
+                      <Button 
+                        className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
+                        onClick={() => setPayingBill(bill)}
+                      >
+                        Bayar
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardFooter>
             </Card>
           ))}
