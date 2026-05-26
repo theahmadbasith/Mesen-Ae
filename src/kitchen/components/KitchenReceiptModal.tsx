@@ -263,9 +263,9 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
             variant="outline" 
             className="flex flex-col items-center gap-2 h-16 bg-card border-border hover:bg-muted hover:border-primary/50 text-muted-foreground hover:text-primary rounded-2xl transition-all shadow-sm"
             onClick={handleDownload} 
-            disabled={downloading || printing}
+            disabled={generating || printing}
           >
-            {downloading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Download className="w-5 h-5 text-muted-foreground" />}
+            {generating ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Download className="w-5 h-5 text-muted-foreground" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Unduh</span>
           </Button>
           
@@ -273,7 +273,7 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
             variant="outline" 
             className="flex flex-col items-center gap-2 h-16 bg-primary border border-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 rounded-2xl transition-all"
             onClick={handleBluetoothPrint} 
-            disabled={downloading || printing}
+            disabled={generating || printing}
           >
             {printing ? <Loader2 className="w-5 h-5 animate-spin text-primary-foreground" /> : <Printer className="w-5 h-5 text-primary-foreground" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Cetak ESC/POS</span>
