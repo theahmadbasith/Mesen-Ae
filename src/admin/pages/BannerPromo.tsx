@@ -98,7 +98,7 @@ function DraggableItem({ pos, isDragging, isSelected, onPointerDown, children, t
       }}
       onPointerDown={onPointerDown}
       className={cn(
-        "select-none touch-none block transition-all duration-150 rounded-xl",
+        "select-none touch-none block transition-[outline,background-color,box-shadow] duration-150 rounded-xl",
         "hover:outline-cyan-400/60 hover:bg-cyan-500/5"
       )}
     >
@@ -256,6 +256,17 @@ export default function BannerPromo() {
       // Set styles directly on the DOM for zero latency
       el.style.left = `${newX}%`;
       el.style.top = `${newY}%`;
+
+      // Update positions in React state in real-time to sync with DOM mutations and prevent snap-backs during re-renders
+      if (target === 'title') {
+        setTitlePos({ x: newX, y: newY });
+      } else if (target === 'desc') {
+        setDescPos({ x: newX, y: newY });
+      } else if (target === 'overlay') {
+        setOverlayPos({ x: newX, y: newY });
+      } else if (target === 'button') {
+        setButtonPos({ x: newX, y: newY });
+      }
 
       // Update guideline triggers
       setActiveGuidelines({
