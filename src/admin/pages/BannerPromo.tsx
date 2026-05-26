@@ -71,6 +71,12 @@ function getCanvasPct(clientX: number, clientY: number, rect: DOMRect, isMobileP
 
 function DraggableItem({ pos, isDragging, isSelected, onPointerDown, children, type }: any) {
   const transform = type === 'overlay' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)';
+  
+  // Clean outline and layout style to prevent text sizes/layout shifting between editor and output.
+  const outlineColor = isDragging || isSelected ? '#22d3ee' : 'rgba(255, 255, 255, 0.3)';
+  const outlineWidth = isDragging || isSelected ? '2px' : '1.5px';
+  const outlineStyle = isDragging || isSelected ? 'solid' : 'dashed';
+  
   return (
     <div 
       style={{ 
@@ -82,15 +88,18 @@ function DraggableItem({ pos, isDragging, isSelected, onPointerDown, children, t
         width: 'max-content',
         minWidth: 'max-content',
         maxWidth: 'none',
-        right: 'auto'
+        right: 'auto',
+        outline: `${outlineWidth} ${outlineStyle} ${outlineColor}`,
+        outlineOffset: '4px',
+        borderRadius: '8px',
+        backgroundColor: isDragging || isSelected ? 'rgba(34, 211, 238, 0.08)' : 'rgba(0, 0, 0, 0.15)',
+        boxShadow: isDragging || isSelected ? '0 0 15px rgba(34, 211, 238, 0.3)' : 'none',
+        zIndex: isDragging ? 50 : isSelected ? 45 : 40
       }}
       onPointerDown={onPointerDown}
       className={cn(
-        "select-none z-40 touch-none whitespace-nowrap flex shrink-0 transition-all duration-150 rounded-lg p-1",
-        isDragging && "z-50 scale-[1.01] pointer-events-none",
-        isSelected && (type === 'overlay'
-          ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950 shadow-[0_0_15px_rgba(34,211,238,0.5)] border border-cyan-400/50"
-          : "border border-dashed border-cyan-400 bg-cyan-400/5 shadow-[0_0_10px_rgba(34,211,238,0.2)]")
+        "select-none touch-none block transition-all duration-150 rounded-xl",
+        "hover:outline-cyan-400/60 hover:bg-cyan-500/5"
       )}
     >
       {children}
@@ -656,7 +665,7 @@ export default function BannerPromo() {
 
       {/* Modal Add/Edit Banner Penawaran - WORKSPACE DIALOG LEBIH BESAR */}
       <Dialog open={bannerDialogOpen} onOpenChange={(open) => { if (!isEditingLayout) setBannerDialogOpen(open); }}>
-        <DialogContent className="max-w-[1200px] w-[96vw] rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl bg-background">
+        <DialogContent className="max-w-[1200px] w-[96vw] max-h-[90vh] overflow-y-auto rounded-[2rem] p-0 border-border/60 shadow-2xl bg-background custom-scrollbar">
           <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10">
             <DialogTitle className="text-xl font-extrabold flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
@@ -666,7 +675,7 @@ export default function BannerPromo() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto p-6 custom-scrollbar" style={{ maxHeight: 'calc(85vh - 130px)' }}>
+          <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Column: Form Fields (Inputs) */}
               <div className="lg:col-span-6 space-y-4 pr-1">
@@ -1055,7 +1064,7 @@ export default function BannerPromo() {
                   }}
                   type="overlay"
                 >
-                  <div className="relative select-none pointer-events-none flex shrink-0 p-1">
+                  <div className="relative select-none pointer-events-none flex shrink-0 p-0">
                     <img 
                       src={overlayImage} 
                       style={{
@@ -1148,7 +1157,7 @@ export default function BannerPromo() {
               >
                 <div className="w-[70cqw] max-w-[75cqw] cursor-grab active:cursor-grabbing">
                   <span className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded bg-white/20 backdrop-blur-md font-bold mb-[1.5cqw] inline-block uppercase tracking-wider border border-white/10 shadow-sm pointer-events-none">
-                    Promo Spesial
+                    {bannerType === 'voucher' ? 'Promo Voucher' : bannerType === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
                   </span>
                   <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-md pointer-events-none">
                     {bannerTitle || 'Judul Penawaran'}
@@ -1165,12 +1174,14 @@ export default function BannerPromo() {
                 type="desc"
               >
                 <div className="w-[70cqw] max-w-[75cqw] cursor-grab active:cursor-grabbing">
-                  <p className="text-[2.8cqw] text-slate-100 font-semibold line-clamp-3 leading-[1.3] drop-shadow-sm mb-[1.5cqw] pointer-events-none m-0">
+                  <p className="text-[2.8cqw] text-slate-100 font-medium line-clamp-3 leading-[1.3] drop-shadow-sm m-0 pointer-events-none">
                     {bannerDesc || 'Tulis deskripsi promo produk Anda di sini...'}
                   </p>
-                  <button className="bg-white text-slate-900 text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-md pointer-events-none mt-[1.5cqw]">
-                    {bannerButtonText || 'Lihat Detail'}
-                  </button>
+                  <div className="mt-[1.5cqw]">
+                    <button className="text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-none inline-block">
+                      {bannerButtonText || 'Lihat Detail'}
+                    </button>
+                  </div>
                 </div>
               </DraggableItem>
             </div>
