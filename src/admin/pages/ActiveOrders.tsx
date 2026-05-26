@@ -132,6 +132,23 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
     }
   };
 
+  const handleUpdateRetailStatus = async (bill: Transaction, nextStatus: string) => {
+    try {
+      await dbUpdate('transactions', bill.id!, { kitchenStatus: nextStatus });
+      
+      if (nextStatus === 'siap' || nextStatus === 'diantarkan') {
+        sendPushToRole('customer', {
+          title: nextStatus === 'siap' ? 'Pesanan Siap! 🍽️' : 'Pesanan Selesai! ✅',
+          body: nextStatus === 'siap' ? `Pesanan Anda (${bill.receiptNumber}) sudah siap diambil/diantar.` : `Pesanan Anda (${bill.receiptNumber}) telah diselesaikan.`,
+          url: '/?view=tracking',
+        }).catch(console.error);
+      }
+      toast.success(`Status pesanan diperbarui`);
+    } catch (e) {
+      toast.error('Gagal memperbarui status pesanan');
+    }
+  };
+
   const processCheckoutToDb = async (bill: Transaction, data: any) => {
     setIsCheckingOut(true);
     try {
@@ -318,13 +335,48 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                     )}
                     {bill.status === 'lunas' ? (
                       !getBillNeedsKitchen(bill) ? (
-                        <Button 
-                          className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
-                          onClick={() => handleMarkDone(bill)}
-                        >
-                          Tandai Selesai
-                          <CheckCircle2 className="w-4 h-4" />
-                        </Button>
+                        bill.remarks === 'Pesanan dari Web' ? (
+                          <div className="flex gap-2 w-full">
+                            {(!bill.kitchenStatus || bill.kitchenStatus === 'pending') ? (
+                              <Button 
+                                className="flex-1 bg-indigo-500 hover:bg-indigo-600 shadow-md shadow-indigo-500/20 transition-all text-white"
+                                onClick={() => handleUpdateRetailStatus(bill, 'diproses')}
+                              >
+                                Terima Pesanan
+                              </Button>
+                            ) : bill.kitchenStatus === 'diproses' ? (
+                              <Button 
+                                className="flex-1 bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all text-white"
+                                onClick={() => handleUpdateRetailStatus(bill, 'disiapkan')}
+                              >
+                                Mulai Siapkan
+                              </Button>
+                            ) : bill.kitchenStatus === 'disiapkan' ? (
+                              <Button 
+                                className="flex-1 bg-blue-500 hover:bg-blue-600 shadow-md shadow-blue-500/20 transition-all text-white"
+                                onClick={() => handleUpdateRetailStatus(bill, 'siap')}
+                              >
+                                Pesanan Siap
+                              </Button>
+                            ) : (
+                              <Button 
+                                className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
+                                onClick={() => handleUpdateRetailStatus(bill, 'diantarkan')}
+                              >
+                                Tandai Selesai
+                                <CheckCircle2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <Button 
+                            className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all text-white"
+                            onClick={() => handleMarkDone(bill)}
+                          >
+                            Tandai Selesai
+                            <CheckCircle2 className="w-4 h-4" />
+                          </Button>
+                        )
                       ) : (
                           <Button 
                             className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all group-hover:shadow-emerald-600/30 text-white"
