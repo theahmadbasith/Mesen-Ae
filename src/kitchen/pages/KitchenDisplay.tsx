@@ -96,7 +96,7 @@ export default function KitchenDisplay() {
   const allTxItems = useDbQuery<TransactionItemRecord>('transactionItems') || [];
   const receiptItems = (allTxItems).filter((i) => receiptTx && i.transactionId === receiptTx.id);
   
-  const activeBills = allBills.filter(t => t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending');
+  const activeBills = allBills.filter(t => t.needsKitchen !== false && t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending');
 
   // Pisahkan berdasarkan status untuk layout Kanban Board
   const billsDiproses = activeBills.filter(t => t.kitchenStatus === 'diproses').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -104,7 +104,7 @@ export default function KitchenDisplay() {
   const billsDisiapkan = activeBills.filter(t => t.kitchenStatus === 'disiapkan').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const billsSiap = activeBills.filter(t => t.kitchenStatus === 'siap').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const billsRiwayat = allBills.filter(t => t.kitchenStatus === 'diantarkan' || t.status === 'batal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const billsRiwayat = allBills.filter(t => t.kitchenStatus === 'diantarkan').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Live clock
   useEffect(() => {

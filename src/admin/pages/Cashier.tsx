@@ -123,13 +123,6 @@ export default function Kasir() {
   
   const loading = realtimeProducts.length === 0 && realtimeCategories.length === 0;
 
-  // Fungsi untuk muat ulang manual (sudah dihandle realtime, jadi bisa kosong atau fungsional minimal)
-  const refreshAllData = async () => {};
-
-  useEffect(() => {
-    refreshAllData().then(() => setLoading(false));
-  }, []);
-
   // Handle auto-load from ActiveOrders
   useEffect(() => {
     if (!loading && location.state?.loadBillId) {
@@ -177,8 +170,8 @@ export default function Kasir() {
   // 4. SEMUA USEMEMO (Kalkulasi)
   // ==========================================
   const processingBills = useMemo(() => allBills
-    .filter(t => t.kitchenStatus && t.kitchenStatus !== 'pending' && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'siap')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime()), [allBills]);
+    .filter(t => t.kitchenStatus && t.kitchenStatus !== 'pending' && t.kitchenStatus !== 'diantarkan')
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), [allBills]);
 
   const processingBillsCount = processingBills.length;
   const cartProductIds = useMemo(() => new Set(cart.map(c => c.product.id)), [cart]);

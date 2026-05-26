@@ -94,13 +94,14 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
 
   const openBillsCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
     const isUnpaid = t.status === 'belum lunas';
-    const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+    const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'pending'].includes(t.kitchenStatus);
     return isUnpaid || isPaidButCooking;
   }).length;
   
   const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
-    const hasKitchen = t.needsKitchen !== false && t.needs_kitchen !== false;
-    return hasKitchen && t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal', 'pending'].includes(t.kitchenStatus);
+    return t.needsKitchen !== false
+      && t.kitchenStatus
+      && !['diantarkan', 'pending'].includes(t.kitchenStatus);
   }).length;
 
   const { role, canView } = usePermissions();

@@ -1,4 +1,4 @@
-import { useDbQuery, dbInsert, dbUpdate, dbDelete } from '@/hooks/db-hooks';
+import { useDbQuery } from '@/hooks/db-hooks';
 import { type TransactionItemRecord } from '@/hooks/db-hooks';
 import { useState } from 'react';
 import { ShoppingCart, Package, BarChart3, TrendingUp, AlertTriangle, Receipt, ChevronRight, ClipboardList } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function Dashboard() {
   const allProducts = useDbQuery<any>('products') || [];
   const lowStockProducts = allProducts.filter(p => p.stock <= 5);
 
-  const recentTransactions = [...allTransactions].sort((a:any,b:any)=>new Date(b.date).getTime()-new Date(a.date).getTime()).slice(0,5);
+  const recentTransactions = [...allTransactions].filter(t => t.status === 'lunas').sort((a:any,b:any)=>new Date(b.date).getTime()-new Date(a.date).getTime()).slice(0,5);
 
   const allTxItems = useDbQuery<any>('transactionItems') || [];
   const recentTxItems = (() => {
@@ -95,7 +95,7 @@ export default function Dashboard() {
                 <ClipboardList className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">Open Bills</p>
+                <p className="text-sm font-semibold">Tagihan Aktif</p>
                 <p className="text-xs text-muted-foreground">{openBillsCount} bill menunggu pembayaran</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />

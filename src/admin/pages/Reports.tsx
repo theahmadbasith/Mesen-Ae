@@ -1,4 +1,4 @@
-import { useDbQuery, dbInsert, dbUpdate, dbDelete } from '@/hooks/db-hooks';
+import { useDbQuery } from '@/hooks/db-hooks';
 import { useState, useMemo } from 'react';
 import { BarChart3, TrendingUp, ShoppingCart, Package, DollarSign, ArrowDown, ArrowUp, Minus, Share2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,7 +74,7 @@ export default function Laporan() {
       }
       map[i.productName].qty += (i.quantity || 0);
       map[i.productName].revenue += (i.subtotal || 0);
-      map[i.productName].profit += (i.profit || 0);
+      map[i.productName].profit += ((i.price - i.hpp) * i.quantity) || 0;
     }
 
     return Object.values(map)
@@ -114,7 +114,7 @@ export default function Laporan() {
         }
         productMap[item.productName].qty += item.quantity || 0;
         productMap[item.productName].revenue += item.subtotal || 0;
-        productMap[item.productName].profit += item.profit || 0;
+        productMap[item.productName].profit += ((item.price - item.hpp) * item.quantity) || 0;
       }
 
       const topProducts = Object.entries(productMap)

@@ -20,7 +20,7 @@ import { sendPushToRole } from '@/lib/fcm';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Receipt from '@/components/Receipt';
+
 import PrintActionModal from '@/components/PrintActionModal';
 import PaymentSuccessModal from '@/components/PaymentSuccessModal';
 import { FORMAT_IDR } from '@/lib/utils';
@@ -30,7 +30,6 @@ import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
 
 export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?: () => void } = {}) {
   const navigate = useNavigate();
-  const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
   const [printActionTx, setPrintActionTx] = useState<Transaction | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [billToCancel, setBillToCancel] = useState<Transaction | null>(null);
@@ -72,14 +71,11 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const openBills = (useDbQuery<Transaction>('transactions') || []).filter(
     (t) => {
       const isUnpaid = t.status === 'belum lunas';
-      const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+      const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'pending'].includes(t.kitchenStatus);
       return isUnpaid || isPaidButCooking;
     }
   ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const receiptItems = allTxItems.filter(
-    (i: any) => receiptTx && i.transactionId === receiptTx.id
-  );
 
   // Smart Trigger: Bunyikan notifikasi native saat ada pesanan baru
   const prevBillsCountRef = React.useRef(openBills.length);
@@ -199,7 +195,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         total: finalTotal,
         taxAndService: finalTax,
         status: 'lunas',
-        kitchenStatus: getBillNeedsKitchen(bill) ? 'diproses' : (bill.kitchenStatus ?? null),
+        kitchenStatus: getBillNeedsKitchen(bill) ? 'diproses' : (bill.remarks === 'Pesanan dari Web' ? (bill.kitchenStatus || 'pending') : null),
         customerName: data.customerName || bill.customerName || null,
         tableNumber: data.tableNumber || bill.tableNumber || null,
       };
@@ -432,17 +428,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         );
       })()}
 
-      {/* Receipt (legacy - fallback, tidak dipakai lagi untuk alur baru) */}
-      {receiptTx && (
-        <Receipt
-          open={!!receiptTx}
-          onClose={() => setReceiptTx(null)}
-          transaction={receiptTx}
-          items={allTxItems.filter((i: any) => i.transactionId === receiptTx.id)}
-          storeSettings={storeSettings}
-          paymentMethodName={paymentMethods.find((pm: any) => pm.id === receiptTx.paymentMethodId)?.name || 'Tunai'}
-        />
-      )}
+
 
       <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
         <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">

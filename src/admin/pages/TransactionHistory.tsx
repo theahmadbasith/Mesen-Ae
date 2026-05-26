@@ -309,7 +309,7 @@ export default function TransactionHistory() {
                           <div className="flex items-center gap-2 min-w-0">
                             <p className="text-sm font-bold text-foreground font-mono truncate">{tx.receiptNumber}</p>
                             {tx.status === 'belum lunas' ? (
-                              <Badge className="text-[10px] font-black uppercase tracking-wider px-2 py-0 bg-warning text-warning-foreground hover:bg-warning shadow-sm">Open</Badge>
+                              <Badge className="text-[10px] font-black uppercase tracking-wider px-2 py-0 bg-warning text-warning-foreground hover:bg-warning shadow-sm">Belum Lunas</Badge>
                             ) : (
                               <Badge className="text-[10px] font-black uppercase tracking-wider px-2 py-0 bg-success text-success-foreground hover:bg-success shadow-sm">Lunas</Badge>
                             )}
