@@ -248,25 +248,30 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
             {/* Daftar Item */}
             <div className="relative z-10 min-h-[80px]">
-              {items.map((item, i) => (
+              {items.map((item: any, i: number) => {
+                const pName = item.productName || item.product_name || 'Produk';
+                const variants = item.selectedVariants || item.selected_variants || [];
+                const discAmt = item.discountAmount || item.discount_amount || 0;
+                
+                return (
                 <div key={i} className="mb-2.5">
-                  <p className="text-[11px] font-bold uppercase">{item.productName}</p>
-                  {item.selectedVariants && item.selectedVariants.length > 0 && (
-                    <p className="text-[9px] text-slate-500">  + {item.selectedVariants.map(v => v.optionName).join(', ')}</p>
+                  <p className="text-[11px] font-bold uppercase">{pName}</p>
+                  {variants && variants.length > 0 && (
+                    <p className="text-[9px] text-slate-500">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
                   )}
                   {item.notes && <p className="text-[9px] text-slate-500 italic">  Catatan: {item.notes}</p>}
                   <div className="flex justify-between text-[10px] mt-0.5">
                     <span>{item.quantity} x {rp(item.price)}</span>
                     <span className="font-medium">{rp(item.subtotal)}</span>
                   </div>
-                  {(item.discountAmount ?? 0) > 0 && (
+                  {discAmt > 0 && (
                     <div className="flex justify-between text-[10px] text-slate-500">
                       <span>  Diskon</span>
-                      <span>-{rp(item.discountAmount)}</span>
+                      <span>-{rp(discAmt)}</span>
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
 
             <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
