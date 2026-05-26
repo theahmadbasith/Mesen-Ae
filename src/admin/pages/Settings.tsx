@@ -166,6 +166,9 @@ export default function Pengaturan() {
   const paymentMethods  = useDbQuery<PaymentMethod>('paymentMethods');
   const users           = useDbQuery<User>('users');
 
+  const { canEdit } = usePermissions();
+  const hasEditAccess = canEdit('settings');
+
 
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'toko';
@@ -224,6 +227,10 @@ export default function Pengaturan() {
   };
 
   const saveStore = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+      return;
+    }
     setIsSavingStore(true);
     try {
       let finalLogoUrl = storeLogo;
@@ -278,6 +285,10 @@ export default function Pengaturan() {
   const openPmAdd  = () => { setPmEditId(null); setPmName(''); setPmCategory('tunai'); setPmDialog(true); };
   const openPmEdit = (pm: PaymentMethod) => { setPmEditId(pm.id!); setPmName(pm.name); setPmCategory(pm.category); setPmDialog(true); };
   const savePm = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+      return;
+    }
     if (!pmName.trim()) return;
     setIsSavingPm(true);
     try {
@@ -288,7 +299,14 @@ export default function Pengaturan() {
       toast.error('Gagal menyimpan metode pembayaran: ' + (error.message || error));
     } finally { setIsSavingPm(false); }
   };
-  const deletePm = async (id: string | number) => { await dbDelete('paymentMethods', id); toast.success('Dihapus'); };
+  const deletePm = async (id: string | number) => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+      return;
+    }
+    await dbDelete('paymentMethods', id);
+    toast.success('Dihapus');
+  };
 
   /* ── Category ── */
   const [catDialog,   setCatDialog]   = useState(false);
@@ -328,6 +346,10 @@ export default function Pengaturan() {
   const openUserAdd  = () => { setUserEditId(null); setUserUsername(''); setUserName(''); setUserWhatsapp(''); setUserPassword(''); setUserRole('user'); setUserPermissions(DEFAULT_USER_PERMISSIONS); setShowPassword(false); setUserDialog(true); };
   const openUserEdit = (u: User) => { setUserEditId(u.id!); setUserUsername(u.username); setUserName(u.name ?? ''); setUserWhatsapp(u.whatsapp ?? ''); setUserPassword(''); setUserRole(u.role as 'admin' | 'user' | 'dapur'); setUserPermissions(u.permissions || DEFAULT_USER_PERMISSIONS); setShowPassword(false); setUserDialog(true); };
   const saveUser = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+      return;
+    }
     if (!userUsername.trim()) return;
     if (!userEditId && !userPassword) { toast.error('Password wajib diisi untuk pengguna baru'); return; }
     setIsSavingUser(true);
@@ -349,7 +371,14 @@ export default function Pengaturan() {
       toast.error('Gagal menyimpan pengguna: ' + (error.message || error));
     } finally { setIsSavingUser(false); }
   };
-  const deleteUser = async (id: string | number) => { await dbDelete('users', id); toast.success('Pengguna dihapus'); };
+  const deleteUser = async (id: string | number) => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+      return;
+    }
+    await dbDelete('users', id);
+    toast.success('Pengguna dihapus');
+  };
 
 
   /* ── Storage ── */
@@ -405,11 +434,11 @@ export default function Pengaturan() {
           <Section
             title="Info Toko"
             description="Identitas, kontak, dan konfigurasi struk."
-            action={
+            action={hasEditAccess ? (
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={openStoreEdit}>
                 <Edit2 className="w-3.5 h-3.5" /> Edit
               </Button>
-            }
+            ) : undefined}
           >
             {/* Store hero card */}
             <SettingCard>
@@ -443,20 +472,22 @@ export default function Pengaturan() {
           <Section
             title="Metode Pembayaran"
             description={`${paymentMethods?.length ?? 0} metode terdaftar.`}
-            action={
+            action={hasEditAccess ? (
               <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={openPmAdd}>
                 <Plus className="w-3.5 h-3.5" /> Tambah
               </Button>
-            }
+            ) : undefined}
           >
             {!paymentMethods?.length ? (
               <SettingCard>
                 <div className="flex flex-col items-center py-10 text-center text-muted-foreground gap-2">
                   <CreditCard className="w-8 h-8 opacity-25" />
                   <p className="text-sm">Belum ada metode pembayaran</p>
+                  {hasEditAccess && (
                   <Button size="sm" variant="outline" className="mt-1 gap-1.5 text-xs h-8" onClick={openPmAdd}>
                     <Plus className="w-3.5 h-3.5" /> Tambah Sekarang
                   </Button>
+                  )}
                 </div>
               </SettingCard>
             ) : (
@@ -471,6 +502,7 @@ export default function Pengaturan() {
                       <p className="text-sm font-medium">{pm.name}</p>
                       <p className="text-xs text-muted-foreground capitalize">{pm.category}</p>
                     </div>
+                    {hasEditAccess && (
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openPmEdit(pm)}>
                         <Edit2 className="w-3.5 h-3.5" />
@@ -479,6 +511,7 @@ export default function Pengaturan() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
+                    )}
                   </div>
                 ))}
               </SettingCard>
@@ -491,11 +524,11 @@ export default function Pengaturan() {
           <Section
             title="Manajemen Pengguna"
             description="Kontrol akses berbasis peran (Admin / Staf)."
-            action={
+            action={hasEditAccess ? (
               <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={openUserAdd}>
                 <Plus className="w-3.5 h-3.5" /> Tambah
               </Button>
-            }
+            ) : undefined}
           >
             {/* Auth info banner */}
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/15 text-xs text-primary">
@@ -508,9 +541,11 @@ export default function Pengaturan() {
                 <div className="flex flex-col items-center py-10 text-center text-muted-foreground gap-2">
                   <Users className="w-8 h-8 opacity-25" />
                   <p className="text-sm">Belum ada pengguna terdaftar</p>
+                  {hasEditAccess && (
                   <Button size="sm" variant="outline" className="mt-1 gap-1.5 text-xs h-8" onClick={openUserAdd}>
                     <Plus className="w-3.5 h-3.5" /> Tambah Pengguna Pertama
                   </Button>
+                  )}
                 </div>
               </SettingCard>
             ) : (
@@ -540,6 +575,7 @@ export default function Pengaturan() {
                         {u.whatsapp ? `WA: ${u.whatsapp}` : (u.role === 'admin' ? 'Akses penuh ke semua fitur' : u.role === 'dapur' ? 'Akses khusus dapur' : 'Hak akses kustom')}
                       </p>
                     </div>
+                    {hasEditAccess && (
                     <div className="flex gap-1 shrink-0">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openUserEdit(u)}>
                         <Edit2 className="w-3.5 h-3.5" />
@@ -548,6 +584,7 @@ export default function Pengaturan() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
+                    )}
                   </div>
                 ))}
               </SettingCard>
@@ -603,11 +640,15 @@ export default function Pengaturan() {
                   </Button>
                 </SettingRow>
                 <SettingRow label="Restore Database (JSON)" description="Pulihkan seluruh data dari file JSON. Awas: ini akan menimpa data yang ada secara parsial/total!" last>
-                  <Button variant="outline" size="sm" onClick={() => allDataInputRef.current?.click()} disabled={isImportingAll}>
+                  <Button variant="outline" size="sm" onClick={() => allDataInputRef.current?.click()} disabled={isImportingAll || !hasEditAccess}>
                     {isImportingAll ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2 text-rose-500" />}
                     Restore JSON
                   </Button>
                   <input type="file" ref={allDataInputRef} className="hidden" accept=".json" onChange={async (e) => {
+                    if (!hasEditAccess) {
+                      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+                      return;
+                    }
                     const file = e.target.files?.[0];
                     if (!file) return;
                     setIsImportingAll(true);
@@ -632,11 +673,15 @@ export default function Pengaturan() {
                   </Button>
                 </SettingRow>
                 <SettingRow label="Import Produk Masal" description="Upload produk baru dari template Excel yang telah diisi." last>
-                  <Button variant="outline" size="sm" onClick={() => prodInputRef.current?.click()} disabled={isImportingProd}>
+                  <Button variant="outline" size="sm" onClick={() => prodInputRef.current?.click()} disabled={isImportingProd || !hasEditAccess}>
                     {isImportingProd ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UploadCloud className="w-4 h-4 mr-2 text-primary" />}
                     Upload Produk
                   </Button>
                   <input type="file" ref={prodInputRef} className="hidden" accept=".xlsx,.xls" onChange={async (e) => {
+                    if (!hasEditAccess) {
+                      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
+                      return;
+                    }
                     const file = e.target.files?.[0];
                     if (!file) return;
                     setIsImportingProd(true);
