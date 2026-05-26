@@ -3,7 +3,7 @@ import { type Voucher, type Product } from '@/hooks/db-hooks';
 import { useState, useRef, useEffect } from 'react';
 import { 
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Gift, Clock, Move, 
-  Minus, RotateCcw, RotateCw, FlipHorizontal, ArrowRight, ExternalLink
+  Minus, RotateCcw, RotateCw, FlipHorizontal, ArrowRight, ExternalLink, Scaling, Maximize, MousePointer2
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,40 +42,8 @@ export interface PromoBanner {
   overlayFlipX?: boolean;
 }
 
-function getCanvasPct(clientX: number, clientY: number, rect: DOMRect, isMobilePortrait: boolean) {
-  if (isMobilePortrait) {
-    // Rotated 90deg CW
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const screenDx = clientX - cx;
-    const screenDy = clientY - cy;
-    
-    // Canvas local dimensions when rotated:
-    // Screen height corresponds to local width W
-    // Screen width corresponds to local height H
-    const canvasW = rect.height;
-    const canvasH = rect.width;
-    
-    const localX = screenDy;
-    const localY = -screenDx;
-    
-    const pctX = (localX / canvasW) * 100 + 50;
-    const pctY = (localY / canvasH) * 100 + 50;
-    return { x: pctX, y: pctY };
-  } else {
-    const pctX = ((clientX - rect.left) / rect.width) * 100;
-    const pctY = ((clientY - rect.top) / rect.height) * 100;
-    return { x: pctX, y: pctY };
-  }
-}
-
 function DraggableItem({ pos, isDragging, isSelected, onPointerDown, children, type }: any) {
   const transform = type === 'overlay' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)';
-  
-  // Clean outline and layout style to prevent text sizes/layout shifting between editor and output.
-  const outlineColor = isDragging || isSelected ? '#22d3ee' : 'rgba(255, 255, 255, 0.3)';
-  const outlineWidth = isDragging || isSelected ? '2px' : '1.5px';
-  const outlineStyle = isDragging || isSelected ? 'solid' : 'dashed';
   
   return (
     <div 
@@ -84,25 +52,33 @@ function DraggableItem({ pos, isDragging, isSelected, onPointerDown, children, t
         left: `${pos.x}%`, 
         top: `${pos.y}%`, 
         transform, 
-        cursor: isDragging ? 'grabbing' : 'grab', 
-        width: 'max-content',
-        minWidth: 'max-content',
-        maxWidth: 'none',
-        right: 'auto',
-        outline: `${outlineWidth} ${outlineStyle} ${outlineColor}`,
-        outlineOffset: '4px',
-        borderRadius: '8px',
-        backgroundColor: isDragging || isSelected ? 'rgba(34, 211, 238, 0.08)' : 'rgba(0, 0, 0, 0.15)',
-        boxShadow: isDragging || isSelected ? '0 0 15px rgba(34, 211, 238, 0.3)' : 'none',
         zIndex: isDragging ? 50 : isSelected ? 45 : 40
       }}
       onPointerDown={onPointerDown}
       className={cn(
-        "select-none touch-none block transition-[outline,background-color,box-shadow] duration-150 rounded-xl",
-        "hover:outline-cyan-400/60 hover:bg-cyan-500/5"
+        "select-none touch-none absolute transition-none cursor-grab active:cursor-grabbing",
+        "group"
       )}
     >
-      {children}
+      {/* Bounding Box Indicator - Canva Style */}
+      <div className={cn(
+        "absolute inset-[-8px] rounded-lg border-2 pointer-events-none transition-colors duration-200",
+        isSelected || isDragging ? "border-cyan-400 bg-cyan-400/10" : "border-transparent group-hover:border-white/40 group-hover:bg-white/5"
+      )}>
+        {(isSelected || isDragging) && (
+          <>
+            <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-cyan-400 rounded-full" />
+            <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-cyan-400 rounded-full" />
+            <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-cyan-400 rounded-full" />
+            <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-cyan-400 rounded-full" />
+          </>
+        )}
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10 w-max pointer-events-none">
+        {children}
+      </div>
     </div>
   )
 }
@@ -140,32 +116,18 @@ export default function BannerPromo() {
   const [overlayRotate, setOverlayRotate] = useState<number>(0);
   const [overlayFlipX, setOverlayFlipX] = useState<boolean>(false);
   
-  // Custom interactive editing & snapping guidelines states
+  // Custom interactive editing
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<'title' | 'desc' | 'overlay' | 'button' | null>(null);
-  const [activeGuidelines, setActiveGuidelines] = useState<{
-    xCenter: boolean;
-    yCenter: boolean;
-    xLeft: boolean;
-    xRight: boolean;
-    yTop: boolean;
-    yBottom: boolean;
-  }>({
-    xCenter: false,
-    yCenter: false,
-    xLeft: false,
-    xRight: false,
-    yTop: false,
-    yBottom: false
+  const [activeGuidelines, setActiveGuidelines] = useState({
+    xCenter: false, yCenter: false, xLeft: false, xRight: false, yTop: false, yBottom: false
   });
   
   const [isMobilePortrait, setIsMobilePortrait] = useState(false);
 
   useEffect(() => {
     const checkOrientation = () => {
-      setIsMobilePortrait(
-        window.innerWidth <= 768 && window.innerHeight > window.innerWidth
-      );
+      setIsMobilePortrait(window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
     };
     checkOrientation();
     window.addEventListener('resize', checkOrientation);
@@ -186,9 +148,11 @@ export default function BannerPromo() {
     );
   }
 
-  // Smooth Direct DOM drag handler with starting click offset and auto-snap tracking
+  // Delta-based Drag Engine (No Jumping)
   const handleDragStart = (e: React.PointerEvent<HTMLDivElement>, target: 'title' | 'desc' | 'overlay' | 'button') => {
     e.preventDefault();
+    e.stopPropagation();
+    
     const el = e.currentTarget;
     el.setPointerCapture(e.pointerId);
     setDragTarget(target);
@@ -196,100 +160,54 @@ export default function BannerPromo() {
 
     const canvas = previewRef.current;
     if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-
-    // Mouse coordinates in percentage of the canvas
-    const startPct = getCanvasPct(e.clientX, e.clientY, rect, isMobilePortrait);
-
-    // Component's initial positions
+    
+    // Store initial mouse positions and element positions
+    const startMouseX = e.clientX;
+    const startMouseY = e.clientY;
+    
     const initialPos = target === 'title' ? titlePos : target === 'desc' ? descPos : target === 'overlay' ? overlayPos : buttonPos;
     const startX = initialPos.x;
     const startY = initialPos.y;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
-      const currentRect = canvas.getBoundingClientRect();
-      const currentPct = getCanvasPct(moveEvent.clientX, moveEvent.clientY, currentRect, isMobilePortrait);
+      // Calculate delta movement in pixels
+      const dx = moveEvent.clientX - startMouseX;
+      const dy = moveEvent.clientY - startMouseY;
 
-      const deltaX = currentPct.x - startPct.x;
-      const deltaY = currentPct.y - startPct.y;
+      // Convert delta to percentages relative to canvas size
+      // Handle mobile landscape rotation trick if active
+      const canvasW = isMobilePortrait ? rect.height : rect.width;
+      const canvasH = isMobilePortrait ? rect.width : rect.height;
+      
+      const deltaXPct = isMobilePortrait ? (dy / canvasW) * 100 : (dx / canvasW) * 100;
+      const deltaYPct = isMobilePortrait ? (-dx / canvasH) * 100 : (dy / canvasH) * 100;
 
-      let newX = startX + deltaX;
-      let newY = startY + deltaY;
+      let newX = startX + deltaXPct;
+      let newY = startY + deltaYPct;
 
-      // Auto-Snap Alignment (Magnet)
-      const snapThreshold = 3.0; // 3%
-      let snapX = false;
-      let snapLeft = false;
-      let snapRight = false;
-      let snapY = false;
-      let snapTop = false;
-      let snapBottom = false;
+      // Magnetic Snapping Engine
+      const snapThreshold = 2.5; 
+      let guides = { xCenter: false, yCenter: false, xLeft: false, xRight: false, yTop: false, yBottom: false };
 
-      // X alignment (horizontal centering & margins)
-      if (Math.abs(newX - 50) <= snapThreshold) {
-        newX = 50;
-        snapX = true;
-      } else if (Math.abs(newX - 10) <= snapThreshold) {
-        newX = 10;
-        snapLeft = true;
-      } else if (Math.abs(newX - 90) <= snapThreshold) {
-        newX = 90;
-        snapRight = true;
-      }
+      if (Math.abs(newX - 50) <= snapThreshold) { newX = 50; guides.xCenter = true; }
+      else if (Math.abs(newX - 8) <= snapThreshold) { newX = 8; guides.xLeft = true; }
+      else if (Math.abs(newX - 92) <= snapThreshold) { newX = 92; guides.xRight = true; }
 
-      // Y alignment (vertical centering & margins)
-      if (Math.abs(newY - 50) <= snapThreshold) {
-        newY = 50;
-        snapY = true;
-      } else if (Math.abs(newY - 10) <= snapThreshold) {
-        newY = 10;
-        snapTop = true;
-      } else if (Math.abs(newY - 90) <= snapThreshold) {
-        newY = 90;
-        snapBottom = true;
-      }
+      if (Math.abs(newY - 50) <= snapThreshold) { newY = 50; guides.yCenter = true; }
+      else if (Math.abs(newY - 10) <= snapThreshold) { newY = 10; guides.yTop = true; }
+      else if (Math.abs(newY - 90) <= snapThreshold) { newY = 90; guides.yBottom = true; }
 
       // Constrain inside bounds [0, 100]
-      newX = Math.round(Math.max(0, Math.min(100, newX)));
-      newY = Math.round(Math.max(0, Math.min(100, newY)));
+      newX = Math.round(Math.max(0, Math.min(100, newX)) * 10) / 10;
+      newY = Math.round(Math.max(0, Math.min(100, newY)) * 10) / 10;
 
-      // Set styles directly on the DOM for zero latency
+      // Zero-latency DOM update
       el.style.left = `${newX}%`;
       el.style.top = `${newY}%`;
 
-      // Update positions in React state in real-time to sync with DOM mutations and prevent snap-backs during re-renders
-      if (target === 'title') {
-        setTitlePos({ x: newX, y: newY });
-      } else if (target === 'desc') {
-        setDescPos({ x: newX, y: newY });
-      } else if (target === 'overlay') {
-        setOverlayPos({ x: newX, y: newY });
-      } else if (target === 'button') {
-        setButtonPos({ x: newX, y: newY });
-      }
-
-      // Update guideline triggers
-      setActiveGuidelines({
-        xCenter: snapX,
-        yCenter: snapY,
-        xLeft: snapLeft,
-        xRight: snapRight,
-        yTop: snapTop,
-        yBottom: snapBottom
-      });
-
-      if (target === 'overlay') {
-        const toolbar = el.querySelector('.floating-toolbar') as HTMLDivElement | null;
-        if (toolbar) {
-          if (newY < 25) {
-            toolbar.style.bottom = '-52px';
-            toolbar.style.top = 'auto';
-          } else {
-            toolbar.style.top = '-52px';
-            toolbar.style.bottom = 'auto';
-          }
-        }
-      }
+      setActiveGuidelines(guides);
     };
 
     const handlePointerUp = (upEvent: PointerEvent) => {
@@ -298,35 +216,21 @@ export default function BannerPromo() {
       window.removeEventListener('pointerup', handlePointerUp);
       setDragTarget(null);
       
-      // Clear guidelines
-      setActiveGuidelines({
-        xCenter: false,
-        yCenter: false,
-        xLeft: false,
-        xRight: false,
-        yTop: false,
-        yBottom: false
-      });
+      setActiveGuidelines({ xCenter: false, yCenter: false, xLeft: false, xRight: false, yTop: false, yBottom: false });
 
-      // Commit final coordinates to state
-      const finalX = parseFloat(el.style.left) || 0;
-      const finalY = parseFloat(el.style.top) || 0;
+      // Commit state
+      const finalX = parseFloat(el.style.left) || initialPos.x;
+      const finalY = parseFloat(el.style.top) || initialPos.y;
 
-      if (target === 'title') {
-        setTitlePos({ x: finalX, y: finalY });
-      } else if (target === 'desc') {
-        setDescPos({ x: finalX, y: finalY });
-      } else if (target === 'overlay') {
-        setOverlayPos({ x: finalX, y: finalY });
-      } else if (target === 'button') {
-        setButtonPos({ x: finalX, y: finalY });
-      }
+      if (target === 'title') setTitlePos({ x: finalX, y: finalY });
+      else if (target === 'desc') setDescPos({ x: finalX, y: finalY });
+      else if (target === 'overlay') setOverlayPos({ x: finalX, y: finalY });
+      else if (target === 'button') setButtonPos({ x: finalX, y: finalY });
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
   };
-
 
   const openAddBanner = () => {
     setEditBanner(null);
@@ -344,9 +248,8 @@ export default function BannerPromo() {
     setOverlayRotate(0);
     setOverlayFlipX(false);
     setTitlePos({ x: 8, y: 30 });
-    setDescPos({ x: 8, y: 60 });
-    setOverlayPos({ x: 85, y: 50 });
-    setButtonPos({ x: 8, y: 80 });
+    setDescPos({ x: 8, y: 65 });
+    setOverlayPos({ x: 80, y: 50 });
     setBannerBgType('image');
     setBannerBgColor('#1E293B');
     setBannerBgGradient('linear-gradient(to bottom right, #3b82f6, #9333ea)');
@@ -370,9 +273,8 @@ export default function BannerPromo() {
     setOverlayRotate(b.overlayRotate ?? 0);
     setOverlayFlipX(b.overlayFlipX ?? false);
     setTitlePos(b.titlePos || { x: 8, y: 30 });
-    setDescPos(b.descPos || { x: 8, y: 60 });
-    setOverlayPos(b.overlayPos || { x: 85, y: 50 });
-    setButtonPos(b.buttonPos || { x: 8, y: 80 });
+    setDescPos(b.descPos || { x: 8, y: 65 });
+    setOverlayPos(b.overlayPos || { x: 80, y: 50 });
     setBannerIsActive(b.isActive);
     setBannerBgType(b.bgType || 'image');
     setBannerBgColor(b.bgColor || '#1E293B');
@@ -497,10 +399,7 @@ export default function BannerPromo() {
         await dbUpdate('banners', editBanner.id, bannerData);
         toast.success('Banner penawaran diperbarui');
       } else {
-        await dbInsert('banners', {
-          ...bannerData,
-          createdAt: new Date().toISOString()
-        });
+        await dbInsert('banners', { ...bannerData, createdAt: new Date().toISOString() });
         toast.success('Banner penawaran baru ditambahkan');
       }
       setBannerDialogOpen(false);
@@ -512,7 +411,6 @@ export default function BannerPromo() {
   const handleDeleteBanner = async () => {
     if (deleteBannerId) {
       const bannerToDelete = currentBanners.find(b => b.id === deleteBannerId);
-      
       try {
         if (bannerToDelete?.imageUrl && bannerToDelete.imageUrl.includes('banners')) {
           await dbDeleteFile(bannerToDelete.imageUrl);
@@ -542,30 +440,28 @@ export default function BannerPromo() {
   };
 
   const currentBanners = bannerList || [];
-  const bannerListCopy = bannerList || [];
 
   return (
-    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt-8 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 className="text-xl font-black text-foreground">Pengaturan Banner Penawaran</h3>
-          <p className="text-sm text-muted-foreground">Atur banner promo, produk unggulan, atau pengumuman khusus yang tampil di bagian teratas Beranda Pelanggan.</p>
+          <h3 className="text-2xl font-black text-foreground tracking-tight">Pengaturan Banner Penawaran</h3>
+          <p className="text-sm text-muted-foreground mt-1">Atur banner promo, produk unggulan, atau pengumuman khusus di Beranda Pelanggan.</p>
         </div>
         <Button onClick={openAddBanner} className="h-11 px-5 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 active:scale-[0.98] transition-all shrink-0">
-          <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
-          Tambah Banner
+          <Plus className="w-5 h-5 mr-2" strokeWidth={3} /> Tambah Banner
         </Button>
       </div>
 
       {bannerList.length === 0 ? (
-        <div className="bg-card border border-dashed border-border/60 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center opacity-80 mt-6">
+        <div className="bg-card border border-dashed border-border/60 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center mt-6">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Sparkles className="w-10 h-10 text-primary/50" strokeWidth={1.5} />
           </div>
           <h3 className="text-lg font-bold text-foreground mb-1">Belum Ada Banner Kustom</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">Anda belum menambahkan penawaran kustom. Sistem saat ini menampilkan voucher aktif sebagai banner fallback di beranda customer.</p>
+          <p className="text-sm text-muted-foreground max-w-sm">Tambahkan banner untuk menarik perhatian pelanggan dengan penawaran terbaik Anda.</p>
           <Button variant="outline" className="mt-6 rounded-xl border-primary/20 text-primary hover:bg-primary/10 font-bold" onClick={openAddBanner}>
-            <Plus className="w-4 h-4 mr-2" /> Tambah Banner Pertama
+            <Plus className="w-4 h-4 mr-2" /> Buat Banner Pertama
           </Button>
         </div>
       ) : (
@@ -574,9 +470,9 @@ export default function BannerPromo() {
             <Card key={b.id} className="border border-border/60 rounded-[2rem] overflow-hidden flex flex-col bg-card hover:shadow-xl transition-all duration-300">
               <div className="p-6 flex flex-col lg:flex-row gap-6 items-center">
                 
-                {/* Visual Preview Card - 1 Kolom besar */}
+                {/* Visual Preview Card (Dashboard List) */}
                 <div 
-                  className="w-full lg:w-[420px] aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-md shrink-0 select-none bg-slate-900"
+                  className="w-full lg:w-[420px] aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-md shrink-0 select-none bg-slate-900 border border-border/50"
                   style={{ 
                     background: b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined,
                     containerType: 'inline-size'
@@ -584,21 +480,19 @@ export default function BannerPromo() {
                 >
                   {b.imageUrl ? (
                     <div className="absolute inset-0 z-0">
-                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover opacity-55" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover opacity-60 mix-blend-overlay" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/40 to-transparent" />
                     </div>
                   ) : (
-                    <Gift size={90} className="absolute -right-3 -bottom-3 text-white/10 rotate-[-15deg] z-0" />
+                    <div className="absolute inset-0 bg-slate-900/20" />
                   )}
                   
                   {b.overlayImageUrl && (
                     <div 
                       style={{ 
                         position: 'absolute', 
-                        left: `${b.overlayPos?.x ?? 85}%`, 
-                        top: `${b.overlayPos?.y ?? 50}%`, 
-                        transform: 'translate(-50%, -50%)', 
-                        zIndex: 5 
+                        left: `${b.overlayPos?.x ?? 80}%`, top: `${b.overlayPos?.y ?? 50}%`, 
+                        transform: 'translate(-50%, -50%)', zIndex: 5 
                       }}
                     >
                        <img 
@@ -615,15 +509,15 @@ export default function BannerPromo() {
                   )}
 
                   <div style={{ position: 'absolute', left: `${b.titlePos?.x ?? 8}%`, top: `${b.titlePos?.y ?? 30}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw]">
-                     <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-[1.5cqw]">
+                     <span className="bg-white/10 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/20 mb-[1.5cqw]">
                         {b.type === 'voucher' ? 'Promo Voucher' : b.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
                      </span>
-                     <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm">{b.title}</h4>
+                     <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-lg">{b.title}</h4>
                   </div>
                   
-                  <div style={{ position: 'absolute', left: `${b.descPos?.x ?? 8}%`, top: `${b.descPos?.y ?? 70}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
-                     <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">{b.description}</p>
-                     <div className="mt-[1.5cqw] text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto inline-block">
+                  <div style={{ position: 'absolute', left: `${b.descPos?.x ?? 8}%`, top: `${b.descPos?.y ?? 65}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
+                     <p className="text-[2.8cqw] text-slate-200 line-clamp-3 leading-[1.3] font-medium drop-shadow-md m-0">{b.description}</p>
+                     <div className="mt-[2cqw] text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[3cqw] py-[1cqw] rounded-lg shadow-xl pointer-events-auto inline-block">
                         {b.buttonText || 'Lihat Detail'}
                      </div>
                   </div>
@@ -634,17 +528,17 @@ export default function BannerPromo() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={cn(
-                        "text-[9px] font-black uppercase px-2.5 py-0.5 rounded-md border-none tracking-widest",
+                        "text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md border-none tracking-widest",
                         b.isActive ? "bg-green-500/10 text-green-600 dark:bg-green-500/20" : "bg-muted text-muted-foreground"
                       )}>
-                        {b.isActive ? 'Aktif di Beranda' : 'Nonaktif / Arsip'}
+                        {b.isActive ? 'Aktif di Beranda' : 'Nonaktif'}
                       </Badge>
-                      <Badge variant="secondary" className="text-[9px] font-bold px-2 py-0.5 rounded-md">
-                        Tipe: {b.type === 'voucher' ? 'Voucher' : b.type === 'menu' ? 'Produk Baru' : 'Kustom Bebas'}
+                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-md">
+                        {b.type === 'voucher' ? 'Voucher' : b.type === 'menu' ? 'Produk Baru' : 'Kustom Bebas'}
                       </Badge>
                     </div>
-                    <h4 className="font-extrabold text-lg sm:text-xl text-foreground leading-snug">{b.title}</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
+                    <h4 className="font-extrabold text-xl text-foreground leading-snug">{b.title}</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{b.description}</p>
                   </div>
 
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50 w-full">
@@ -658,10 +552,10 @@ export default function BannerPromo() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl bg-background hover:bg-primary/10 hover:text-primary border-border/60 font-bold text-xs flex items-center gap-1.5" onClick={() => openEditBanner(b)}>
+                      <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl bg-background hover:bg-cyan-500/10 hover:border-cyan-500/30 hover:text-cyan-600 font-bold text-xs flex items-center gap-1.5 transition-all" onClick={() => openEditBanner(b)}>
                         <Edit2 className="w-3.5 h-3.5" /> Edit Desain
                       </Button>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl bg-background hover:bg-destructive/10 hover:text-destructive border-border/60 text-muted-foreground" onClick={() => setDeleteBannerId(b.id)}>
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl bg-background hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive text-muted-foreground transition-all" onClick={() => setDeleteBannerId(b.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -674,7 +568,7 @@ export default function BannerPromo() {
         </div>
       )}
 
-      {/* Modal Add/Edit Banner Penawaran - WORKSPACE DIALOG LEBIH BESAR */}
+      {/* Modal Add/Edit Form */}
       <Dialog open={bannerDialogOpen} onOpenChange={(open) => { if (!isEditingLayout) setBannerDialogOpen(open); }}>
         <DialogContent className="max-w-[1200px] w-[96vw] max-h-[90vh] overflow-y-auto rounded-[2rem] p-0 border-border/60 shadow-2xl bg-background custom-scrollbar">
           <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10">
@@ -687,21 +581,16 @@ export default function BannerPromo() {
           </DialogHeader>
 
           <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Form Fields (Inputs) */}
-              <div className="lg:col-span-6 space-y-4 pr-1">
-                <h4 className="font-extrabold text-sm text-foreground mb-3 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Detail & Latar Belakang Banner
-                </h4>
-                
-                {/* Tipe Penawaran */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-black text-foreground uppercase tracking-wider">Tipe Konten Penawaran <span className="text-destructive">*</span></Label>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left Column: Form Fields */}
+              <div className="lg:col-span-6 space-y-5">
+                <div className="space-y-4">
+                  <Label className="text-xs font-black text-foreground uppercase tracking-wider">Tipe Penawaran <span className="text-destructive">*</span></Label>
                   <Select value={bannerType} onValueChange={(val: 'voucher' | 'menu' | 'custom') => {
                     setBannerType(val);
                     if (val === 'custom') { setBannerVoucherId(''); setBannerProductId(''); }
                   }}>
-                    <SelectTrigger className="h-11 bg-background rounded-xl font-bold">
+                    <SelectTrigger className="h-12 bg-background rounded-xl font-bold shadow-sm border-border/60">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -716,7 +605,7 @@ export default function BannerPromo() {
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Voucher</Label>
                     <Select value={bannerVoucherId} onValueChange={handleBannerVoucherChange}>
-                      <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih voucher..." /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background rounded-xl font-semibold shadow-sm border-border/60"><SelectValue placeholder="Pilih voucher..." /></SelectTrigger>
                       <SelectContent className="rounded-xl">
                         {vouchers.map(v => (
                           <SelectItem key={v.id} value={v.id!.toString()} className="font-semibold">{v.code} (Diskon {v.type === 'percentage' ? `${v.value}%` : FORMAT_IDR(v.value)})</SelectItem>
@@ -730,7 +619,7 @@ export default function BannerPromo() {
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pilih Produk</Label>
                     <Select value={bannerProductId} onValueChange={handleBannerProductChange}>
-                      <SelectTrigger className="h-11 bg-background rounded-xl font-semibold"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background rounded-xl font-semibold shadow-sm border-border/60"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
                       <SelectContent className="rounded-xl">
                         {products.map(p => (
                           <SelectItem key={p.id} value={p.id!.toString()} className="font-semibold">{p.name} ({FORMAT_IDR(p.price)})</SelectItem>
@@ -740,109 +629,93 @@ export default function BannerPromo() {
                   </div>
                 )}
 
-                {/* Title & Desc */}
                 <div className="space-y-2">
                   <Label className="text-xs font-black text-foreground uppercase tracking-wider">Judul Banner <span className="text-destructive">*</span></Label>
-                  <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} maxLength={45} placeholder="Contoh: Promo Spesial Weekend!" className="h-11 bg-background rounded-xl font-semibold text-sm" />
+                  <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} maxLength={45} placeholder="Contoh: Promo Spesial Weekend!" className="h-12 bg-background rounded-xl font-semibold shadow-sm border-border/60" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label className="text-xs font-black text-foreground uppercase tracking-wider">Deskripsi Singkat <span className="text-destructive">*</span></Label>
-                  <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} maxLength={120} placeholder="Ketik keterangan promo di sini..." className="w-full p-3 bg-background rounded-xl border border-input focus:outline-none focus:ring-1 focus:ring-primary text-sm font-semibold resize-none" />
+                  <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} maxLength={120} placeholder="Ketik keterangan promo di sini..." className="w-full p-4 bg-background rounded-xl border border-border/60 focus:outline-none focus:ring-2 focus:ring-primary/50 font-semibold resize-none shadow-sm" />
                 </div>
 
-                {/* Background Selector */}
-                <div className="p-4 bg-muted/30 border border-border/40 rounded-xl space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe Latar Belakang Canvas</Label>
-                    <Select value={bannerBgType} onValueChange={(val: any) => setBannerBgType(val)}>
-                      <SelectTrigger className="h-10 bg-background rounded-lg font-bold text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="image" className="font-semibold text-xs">Gambar Latar Kustom (Upload)</SelectItem>
-                        <SelectItem value="solid" className="font-semibold text-xs">Warna Solid Tunggal</SelectItem>
-                        <SelectItem value="gradient" className="font-semibold text-xs">Warna Gradasi Modern</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="p-5 bg-muted/30 border border-border/40 rounded-2xl space-y-4">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Background Canvas</Label>
+                  <Select value={bannerBgType} onValueChange={(val: any) => setBannerBgType(val)}>
+                    <SelectTrigger className="h-11 bg-background rounded-lg font-bold text-xs border-border/60 shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="image" className="font-semibold text-xs">Gambar Latar (Upload)</SelectItem>
+                      <SelectItem value="solid" className="font-semibold text-xs">Warna Solid</SelectItem>
+                      <SelectItem value="gradient" className="font-semibold text-xs">Warna Gradasi Modern</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   {bannerBgType === 'image' && (
-                    <div className="flex gap-3 items-center animate-in fade-in duration-200">
-                      <div className="w-16 h-12 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden shrink-0">
-                        {bannerImage && !bannerImage.startsWith('preset:') ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
+                    <div className="flex gap-4 items-center animate-in fade-in duration-200 pt-2">
+                      <div className="w-20 h-14 rounded-lg border border-border/60 bg-background flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                        {bannerImage && !bannerImage.startsWith('preset:') ? <img src={bannerImage} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-6 h-6 text-muted-foreground/40" />}
                       </div>
                       <div className="flex-1">
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, false)} />
-                        <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-8 border-border/60" onClick={() => fileInputRef.current?.click()}>Pilih File Latar</Button>
-                        <p className="text-[9px] text-muted-foreground mt-1">Rasio optimal 21:9.</p>
+                        <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-9 border-border/60 hover:bg-muted" onClick={() => fileInputRef.current?.click()}>Pilih File Gambar Latar</Button>
+                        <p className="text-[10px] text-muted-foreground mt-1.5">Rasio optimal 21:9. Format JPG/PNG.</p>
                       </div>
                     </div>
                   )}
 
                   {bannerBgType === 'solid' && (
-                    <div className="space-y-3 animate-in fade-in duration-200">
-                      <div className="flex flex-wrap gap-2">
-                        {['#0F172A', '#3B82F6', '#EF4444', '#EAB308', '#10B981', '#8B5CF6', '#F97316', '#64748B'].map(color => (
+                    <div className="space-y-3 animate-in fade-in duration-200 pt-2">
+                      <div className="flex flex-wrap gap-2.5">
+                        {['#0F172A', '#1E293B', '#3B82F6', '#EF4444', '#EAB308', '#10B981', '#8B5CF6', '#F97316'].map(color => (
                           <button
-                            key={color}
-                            type="button"
-                            onClick={() => setBannerBgColor(color)}
+                            key={color} type="button" onClick={() => setBannerBgColor(color)}
                             className={cn("w-8 h-8 rounded-full border-2 transition-transform hover:scale-110", bannerBgColor.toUpperCase() === color ? 'border-primary shadow-md scale-110' : 'border-transparent')}
-                            style={{ backgroundColor: color }}
-                            title={color}
+                            style={{ backgroundColor: color }} title={color}
                           />
                         ))}
                       </div>
                       <div className="flex gap-3 items-center">
-                        <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-14 h-11 p-1 cursor-pointer rounded-lg border-border/60 shrink-0" />
-                        <div className="flex-1">
-                          <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-xs font-bold uppercase font-mono" />
-                        </div>
+                        <Input type="color" value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="w-12 h-10 p-1 cursor-pointer rounded-lg border-border/60 shrink-0" />
+                        <Input value={bannerBgColor} onChange={e => setBannerBgColor(e.target.value)} className="h-10 bg-background rounded-lg text-xs font-bold uppercase font-mono shadow-sm" />
                       </div>
                     </div>
                   )}
 
                   {bannerBgType === 'gradient' && (
-                    <div className="space-y-3 animate-in fade-in duration-200">
-                      <div className="flex flex-wrap gap-2">
+                    <div className="space-y-3 animate-in fade-in duration-200 pt-2">
+                      <div className="flex flex-wrap gap-2.5">
                         {[
                           'linear-gradient(to bottom right, #3b82f6, #9333ea)',
                           'linear-gradient(to bottom right, #ef4444, #f97316)',
                           'linear-gradient(to bottom right, #0f2027, #2c5364)',
                           'linear-gradient(to right, #11998e, #38ef7d)',
-                          'linear-gradient(to right, #ff9966, #ff5e62)',
                           'linear-gradient(to right, #8e2de2, #4a00e0)'
                         ].map(grad => (
                           <button
-                            key={grad}
-                            type="button"
-                            onClick={() => setBannerBgGradient(grad)}
-                            className={cn("w-12 h-8 rounded-md border-2 transition-transform hover:scale-105", bannerBgGradient === grad ? 'border-primary shadow-md scale-105' : 'border-transparent')}
-                            style={{ background: grad }}
-                            title={grad}
+                            key={grad} type="button" onClick={() => setBannerBgGradient(grad)}
+                            className={cn("w-14 h-8 rounded-md border-2 transition-transform hover:scale-105", bannerBgGradient === grad ? 'border-primary shadow-md scale-105' : 'border-transparent')}
+                            style={{ background: grad }} title={grad}
                           />
                         ))}
                       </div>
-                      <div className="space-y-2">
-                        <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-xs font-bold font-mono" />
-                        <div className="w-full h-8 rounded-lg border border-border/60" style={{ background: bannerBgGradient }} />
-                      </div>
+                      <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} placeholder="linear-gradient(...)" className="h-10 bg-background rounded-lg text-xs font-bold font-mono shadow-sm" />
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Right Column: Static Preview & Layout Trigger */}
-              <div className="lg:col-span-6 flex flex-col justify-between space-y-6 bg-muted/10 border border-border/40 p-6 rounded-2xl">
-                <div className="space-y-4">
+              <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
+                <div className="p-6 bg-muted/10 border border-border/40 rounded-[2rem] space-y-5">
                   <h4 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" /> Preview Hasil Banner
+                    <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" /> Live Preview
                   </h4>
                   
-                  {/* Visual Preview Card (Static) */}
+                  {/* Static Visual Preview Container */}
                   <div 
-                    className="w-full aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-md select-none border border-border bg-slate-955"
+                    className="w-full aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-lg select-none border border-border/50 bg-slate-900 ring-4 ring-slate-900/5 dark:ring-white/5"
                     style={{ 
                       background: bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : undefined,
                       containerType: 'inline-size'
@@ -850,307 +723,222 @@ export default function BannerPromo() {
                   >
                     {bannerBgType === 'image' && bannerImage ? (
                       <div className="absolute inset-0 z-0">
-                        <img src={bannerImage} alt="Banner Preview" className="w-full h-full object-cover opacity-55" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+                        <img src={bannerImage} alt="Preview Background" className="w-full h-full object-cover opacity-60 mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/40 to-transparent" />
                       </div>
                     ) : (
-                      <Gift size={90} className="absolute -right-3 -bottom-3 text-white/10 rotate-[-15deg] z-0 pointer-events-none" />
+                      <div className="absolute inset-0 bg-slate-900/20" />
                     )}
                     
                     {overlayImage && (
-                      <div 
-                        style={{ 
-                          position: 'absolute', 
-                          left: `${overlayPos.x}%`, 
-                          top: `${overlayPos.y}%`, 
-                          transform: 'translate(-50%, -50%)', 
-                          zIndex: 5 
-                        }}
-                      >
+                      <div style={{ position: 'absolute', left: `${overlayPos.x}%`, top: `${overlayPos.y}%`, transform: 'translate(-50%, -50%)', zIndex: 5 }}>
                          <img 
                            src={overlayImage} 
                            style={{
                              transform: `scaleX(${overlayFlipX ? -1 : 1}) rotate(${overlayRotate}deg)`,
-                             width: `calc(${overlayScale} * 20cqw)`,
-                             height: 'auto',
+                             width: `calc(${overlayScale} * 20cqw)`, height: 'auto',
                            }}
-                           className="object-contain drop-shadow-2xl max-w-none" 
-                           alt="Overlay"
+                           className="object-contain drop-shadow-2xl max-w-none" alt="Overlay"
                          />
                       </div>
                     )}
 
                     <div style={{ position: 'absolute', left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw]">
-                       <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-[1.5cqw]">
+                       <span className="bg-white/10 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/20 mb-[1.5cqw]">
                           {bannerType === 'voucher' ? 'Promo Voucher' : bannerType === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
                        </span>
-                       <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm">{bannerTitle || 'Judul Banner'}</h4>
+                       <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-lg">{bannerTitle || 'Judul Banner'}</h4>
                     </div>
                     
                     <div style={{ position: 'absolute', left: `${descPos.x}%`, top: `${descPos.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
-                       <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">{bannerDesc || 'Tulis deskripsi promo di sini...'}</p>
-                       <div className="mt-[1.5cqw] text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto inline-block">
+                       <p className="text-[2.8cqw] text-slate-200 line-clamp-3 leading-[1.3] font-medium drop-shadow-md m-0">{bannerDesc || 'Tulis deskripsi promo di sini...'}</p>
+                       <div className="mt-[2cqw] text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[3cqw] py-[1cqw] rounded-lg shadow-xl inline-block">
                           {bannerButtonText || 'Lihat Detail'}
                        </div>
                     </div>
                   </div>
 
-                  {/* Settings & Overlay Image Upload */}
-                  <div className="space-y-4 pt-2">
-                    <div className="p-4 bg-background border border-border/60 rounded-xl space-y-3">
-                      <Label className="text-xs font-bold text-foreground uppercase tracking-wider">Foto Produk PNG Transparan Overlay</Label>
+                  {/* Settings for Overlay & Buttons */}
+                  <div className="space-y-4 pt-4">
+                    <div className="p-4 bg-background border border-border/60 rounded-2xl shadow-sm space-y-3">
+                      <Label className="text-xs font-bold text-foreground uppercase tracking-wider">Foto Produk Overlay (Transparan PNG)</Label>
                       <div className="flex gap-4 items-center">
-                        <div className="w-14 h-14 rounded-xl border border-dashed border-border/60 bg-muted/10 flex items-center justify-center overflow-hidden shrink-0">
-                          {overlayImage ? <img src={overlayImage} alt="Overlay" className="w-full h-full object-contain" /> : <ImageIcon className="w-5 h-5 text-muted-foreground/40" />}
+                        <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/20 flex items-center justify-center overflow-hidden shrink-0 group hover:border-primary/50 transition-colors cursor-pointer" onClick={() => overlayInputRef.current?.click()}>
+                          {overlayImage ? <img src={overlayImage} alt="Overlay" className="w-full h-full object-contain p-1" /> : <ImageIcon className="w-6 h-6 text-muted-foreground/40 group-hover:text-primary/50" />}
                         </div>
                         <div className="flex-1">
                           <input ref={overlayInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={e => handleImageSelect(e, true)} />
-                          <Button type="button" variant="outline" className="rounded-lg text-xs font-bold h-9 border-primary/30 text-primary hover:bg-primary/10" onClick={() => overlayInputRef.current?.click()}>Pilih PNG Produk</Button>
+                          <Button type="button" variant="outline" className="rounded-xl text-xs font-bold h-10 border-primary/20 text-primary hover:bg-primary/10 shadow-sm w-full sm:w-auto" onClick={() => overlayInputRef.current?.click()}>
+                            Pilih Foto Produk PNG
+                          </Button>
                         </div>
                       </div>
                     </div>
 
                     <div className={cn("grid gap-4", bannerType === 'custom' ? "grid-cols-2" : "grid-cols-1")}>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Teks Tombol Aksi</Label>
-                        <Input value={bannerButtonText} onChange={e => setBannerButtonText(e.target.value)} placeholder="Beli Sekarang" className="h-10 bg-background rounded-xl font-semibold text-xs" />
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Teks Tombol</Label>
+                        <Input value={bannerButtonText} onChange={e => setBannerButtonText(e.target.value)} placeholder="Beli Sekarang" className="h-11 bg-background rounded-xl font-semibold text-sm shadow-sm" />
                       </div>
                       {bannerType === 'custom' && (
-                        <div className="space-y-1 animate-in fade-in duration-200">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tautan Web (Link URL)</Label>
-                          <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://instagram.com/..." className="h-10 bg-background rounded-xl font-semibold text-xs" />
+                        <div className="space-y-2 animate-in fade-in duration-200">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">URL Tujuan (Link)</Label>
+                          <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://..." className="h-11 bg-background rounded-xl font-semibold text-sm shadow-sm" />
                         </div>
                       )}
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-background border border-border/50 rounded-xl">
-                      <div className="flex flex-col">
-                        <Label htmlFor="banner-active" className="text-xs font-bold cursor-pointer">Terbitkan Banner</Label>
-                        <span className="text-[9px] text-muted-foreground">Tampilkan banner ini di beranda customer.</span>
-                      </div>
-                      <Switch id="banner-active" checked={bannerIsActive} onCheckedChange={setBannerIsActive} className="data-[state=checked]:bg-green-500 scale-90" />
                     </div>
                   </div>
                 </div>
 
-                {/* Layout Customizer Trigger Button */}
                 <Button 
                   type="button" 
                   onClick={() => setIsEditingLayout(true)}
-                  className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold h-12 rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                  className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-black h-14 rounded-[1.25rem] shadow-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all border border-slate-700 dark:border-transparent group"
                 >
-                  <Move className="w-5 h-5" /> Kustomisasi Tata Letak & Posisi (Edit Layout)
+                  <Scaling className="w-5 h-5 group-hover:rotate-12 transition-transform" /> Buka Editor Interaktif (Geser & Putar)
                 </Button>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-border/50 bg-muted/10 gap-2 sm:gap-0">
-            <Button variant="outline" className="h-11 rounded-xl font-bold border-border/60 hover:bg-muted" onClick={() => setBannerDialogOpen(false)}>Batal</Button>
+          <DialogFooter className="px-6 py-5 border-t border-border/50 bg-muted/10 gap-3 sm:gap-0">
+            <Button variant="outline" className="h-12 rounded-xl font-bold border-border/60 hover:bg-muted px-6" onClick={() => setBannerDialogOpen(false)}>Batal</Button>
             <Button 
-              className="h-11 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-md active:scale-[0.98] transition-all px-8" 
+              className="h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 active:scale-[0.98] transition-all px-8" 
               onClick={handleSaveBanner} 
               disabled={!bannerTitle.trim() || !bannerDesc.trim()}
             >
-              {editBanner ? 'Simpan Perubahan' : 'Terbitkan Banner'}
+              {editBanner ? 'Simpan Perubahan Desain' : 'Terbitkan Banner'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* IMMERSIVE LAYOUT CANVAS EDITOR OVERLAY (Full screen & rotated on mobile portrait) */}
+      {/* IMMERSIVE LAYOUT CANVAS EDITOR OVERLAY (Full screen) */}
       {isEditingLayout && (
         <div className={cn(
-          "fixed inset-0 z-[100] bg-slate-950 flex flex-col justify-between overflow-hidden",
-          isMobilePortrait ? "landscape-editor-workspace" : "w-screen h-screen"
+          "fixed inset-0 z-[100] bg-slate-950 flex flex-col justify-between overflow-hidden animate-in fade-in duration-200",
+          "w-screen h-screen"
         )}>
-          {/* Custom style tags to rotate orientation on mobile */}
-          <style>{`
-            @media (max-width: 768px) and (orientation: portrait) {
-              .landscape-editor-workspace {
-                position: fixed !important;
-                top: 50% !important;
-                left: 50% !important;
-                width: 100vh !important;
-                height: 100vw !important;
-                transform: translate(-50%, -50%) rotate(90deg) !important;
-                transform-origin: center !important;
-                z-index: 9999 !important;
-                background-color: #020617 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-                padding: 1rem !important;
-              }
-              .rotated-canvas-container {
-                width: 80% !important;
-                max-width: 90vh !important;
-                aspect-ratio: 21/9 !important;
-                margin: auto !important;
-              }
-            }
-          `}</style>
-
-          {/* Top Bar */}
-          <div className="w-full flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-900/90 backdrop-blur-md text-white select-none shrink-0 z-50">
-            <div className="flex items-center gap-3">
+          {/* Editor Top Bar */}
+          <div className="w-full flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-900/80 backdrop-blur-xl text-white select-none shrink-0 z-50">
+            <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
-                className="text-white hover:bg-white/10 rounded-xl h-10 px-4 font-bold border border-white/10"
+                className="text-white hover:bg-white/10 rounded-xl h-10 px-4 font-bold border border-white/10 transition-colors"
                 onClick={() => setIsEditingLayout(false)}
               >
-                Kembali ke Form
+                Tutup Editor
               </Button>
-              <span className="h-4 w-[1px] bg-white/20" />
-              <h4 className="font-extrabold text-sm tracking-wide uppercase text-cyan-400">Editor Tata Letak Banner</h4>
+              <div className="h-5 w-[1px] bg-white/20 hidden sm:block" />
+              <div className="hidden sm:flex items-center gap-2 text-cyan-400">
+                <Sparkles className="w-4 h-4" />
+                <h4 className="font-black text-sm tracking-widest uppercase">Canva-Mode Editor</h4>
+              </div>
             </div>
             
-            <div className="hidden md:flex items-center gap-2 text-xs text-slate-300">
-              <Move className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
-              <span>Geser judul/deskripsi/overlay untuk atur posisi. Magnet Snap akan otomatis aktif di margin & tengah.</span>
+            <div className="hidden md:flex items-center gap-2.5 text-xs text-slate-300 bg-black/30 px-4 py-2 rounded-full border border-white/5">
+              <MousePointer2 className="w-4 h-4 text-cyan-400" />
+              <span>Drag elemen untuk memindahkan. Gunakan toolbar untuk memutar/mengubah ukuran gambar.</span>
             </div>
 
             <Button 
-              variant="outline" 
-              size="sm"
-              className="text-xs font-bold rounded-lg border-white/20 text-white hover:bg-white/10"
+              variant="outline" size="sm"
+              className="text-xs font-bold rounded-lg border-white/20 text-white hover:bg-white/10 bg-transparent h-9 px-4"
               onClick={() => {
-                setTitlePos({ x: 8, y: 30 });
-                setDescPos({ x: 8, y: 70 });
-                setOverlayPos({ x: 85, y: 50 });
-                setButtonPos({ x: 8, y: 80 });
-                setOverlayScale(1);
-                setOverlayRotate(0);
-                setOverlayFlipX(false);
-                setSelectedTarget(null);
-                toast.success('Posisi direset ke default');
+                setTitlePos({ x: 8, y: 30 }); setDescPos({ x: 8, y: 65 }); setOverlayPos({ x: 80, y: 50 }); setButtonPos({ x: 8, y: 80 });
+                setOverlayScale(1); setOverlayRotate(0); setOverlayFlipX(false); setSelectedTarget(null);
+                toast.success('Posisi kanvas direset ke default');
               }}
             >
-              <RotateCcw className="w-3 h-3 mr-1" /> Reset Posisi
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Reset Posisi
             </Button>
           </div>
 
           {/* Workspace Area with interactive Canvas */}
-          <div className="flex-1 w-full flex items-center justify-center p-4 bg-slate-950 overflow-hidden relative">
+          <div 
+            className="flex-1 w-full flex items-center justify-center p-4 sm:p-8 bg-slate-950 overflow-hidden relative"
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)', backgroundSize: '24px 24px' }}
+            onPointerDown={() => setSelectedTarget(null)}
+          >
             <div 
               ref={previewRef}
-              onPointerDown={() => setSelectedTarget(null)}
               className={cn(
-                "w-full aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10 select-none bg-slate-900 touch-none",
-                isMobilePortrait ? "rotated-canvas-container" : "w-[92vw] max-w-[1250px]"
+                "w-full aspect-[21/9] rounded-2xl text-white relative shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/15 select-none bg-slate-900 touch-none ring-1 ring-white/5",
+                isMobilePortrait ? "w-[95vw] mt-auto mb-auto" : "w-[92vw] max-w-[1250px]"
               )}
               style={{ 
                 background: bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : undefined,
-                containerType: 'inline-size'
+                containerType: 'inline-size',
+                ...(isMobilePortrait ? { transform: 'rotate(90deg)', transformOrigin: 'center' } : {})
               }}
             >
               {bannerBgType === 'image' && bannerImage ? (
-                <div className="absolute inset-0 z-0 select-none pointer-events-none">
-                  <img src={bannerImage} alt="Bg" className="w-full h-full object-cover opacity-60" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+                <div className="absolute inset-0 z-0 select-none pointer-events-none rounded-2xl overflow-hidden">
+                  <img src={bannerImage} alt="Bg" className="w-full h-full object-cover opacity-70 mix-blend-overlay" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/40 to-transparent" />
                 </div>
               ) : bannerBgType === 'image' ? (
-                <div className="absolute inset-0 bg-slate-900 flex items-center justify-center opacity-30 select-none pointer-events-none">
+                <div className="absolute inset-0 bg-slate-900 flex items-center justify-center opacity-30 select-none pointer-events-none rounded-2xl">
                   <ImageIcon size={48} />
                 </div>
               ) : null}
 
-              {/* Smart Visual Guides (Garis Bantu Cyan) */}
+              {/* Magnetic Guides Lines */}
               {activeGuidelines.xCenter && <div className="absolute top-0 bottom-0 left-1/2 w-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
-              {activeGuidelines.xLeft && <div className="absolute top-0 bottom-0 left-[10%] w-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
-              {activeGuidelines.xRight && <div className="absolute top-0 bottom-0 left-[90%] w-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
+              {activeGuidelines.xLeft && <div className="absolute top-0 bottom-0 left-[8%] w-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
+              {activeGuidelines.xRight && <div className="absolute top-0 bottom-0 left-[92%] w-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
               {activeGuidelines.yCenter && <div className="absolute left-0 right-0 top-1/2 h-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
               {activeGuidelines.yTop && <div className="absolute left-0 right-0 top-[10%] h-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
               {activeGuidelines.yBottom && <div className="absolute left-0 right-0 top-[90%] h-[1.5px] bg-[#22d3ee] shadow-[0_0_8px_#22d3ee] z-30 pointer-events-none" />}
 
-              {/* OVERLAY IMAGE (Draggable & Transformable) */}
+              {/* OVERLAY IMAGE (Draggable) */}
               {overlayImage && (
                 <DraggableItem 
                   pos={overlayPos} 
                   isDragging={dragTarget === 'overlay'} 
                   isSelected={selectedTarget === 'overlay'}
                   onPointerDown={(e: any) => { 
-                    if (e.target.closest('.no-drag')) return;
+                    if (e.target.closest('.floating-toolbar')) return;
                     handleDragStart(e, 'overlay'); 
                   }}
                   type="overlay"
                 >
-                  <div className="relative select-none pointer-events-none flex shrink-0 p-0">
+                  <div className="relative flex shrink-0 p-0">
                     <img 
                       src={overlayImage} 
                       style={{
                         transform: `scaleX(${overlayFlipX ? -1 : 1}) rotate(${overlayRotate}deg)`,
-                        width: `calc(${overlayScale} * 20cqw)`,
-                        height: 'auto',
+                        width: `calc(${overlayScale} * 20cqw)`, height: 'auto',
                       }}
-                      className="object-contain drop-shadow-2xl max-w-none animate-in zoom-in duration-200" 
+                      className="object-contain drop-shadow-2xl max-w-none animate-in zoom-in duration-300 pointer-events-none" 
                       alt="Overlay" 
                     />
                     
-                    {/* Floating actions toolbar */}
-                    {selectedTarget === 'overlay' && (
+                    {/* Sleek Floating Actions Toolbar */}
+                    {(selectedTarget === 'overlay' || dragTarget === 'overlay') && (
                       <div 
-                        style={overlayPos.y < 25 ? { bottom: '-55px', top: 'auto' } : { top: '-55px', bottom: 'auto' }}
-                        className="floating-toolbar no-drag absolute left-1/2 -translate-x-1/2 bg-slate-900/95 text-white border border-cyan-500/30 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.2)] flex items-center gap-1.5 p-1.5 z-50 backdrop-blur-md pointer-events-auto"
+                        style={overlayPos.y < 25 ? { bottom: '-60px', top: 'auto' } : { top: '-60px', bottom: 'auto' }}
+                        className="floating-toolbar absolute left-1/2 -translate-x-1/2 bg-slate-950/90 text-white border border-white/20 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center gap-1 p-1.5 z-50 backdrop-blur-xl pointer-events-auto"
                         onPointerDown={(e) => e.stopPropagation()}
                       >
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-7 h-7 hover:bg-white/10 rounded-lg text-white p-0" 
-                          onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.max(0.2, Math.round((prev - 0.1) * 10) / 10)); }} 
-                          title="Kecilkan"
-                        >
+                        <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-white/10 rounded-lg text-white p-0 transition-colors" onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.max(0.2, Math.round((prev - 0.1) * 10) / 10)); }} title="Kecilkan">
                           <Minus className="w-4 h-4" />
                         </Button>
-                        <span className="text-[10px] font-mono font-black px-1.5 select-none">{Math.round(overlayScale * 100)}%</span>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-7 h-7 hover:bg-white/10 rounded-lg text-white p-0" 
-                          onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.min(3.0, Math.round((prev + 0.1) * 10) / 10)); }} 
-                          title="Besarkan"
-                        >
+                        <span className="text-[11px] font-mono font-black px-2 select-none text-cyan-300 min-w-[3ch] text-center">{Math.round(overlayScale * 100)}%</span>
+                        <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-white/10 rounded-lg text-white p-0 transition-colors" onClick={(e) => { e.stopPropagation(); setOverlayScale(prev => Math.min(3.5, Math.round((prev + 0.1) * 10) / 10)); }} title="Besarkan">
                           <Plus className="w-4 h-4" />
                         </Button>
-                        <div className="w-[1px] h-4 bg-white/20 mx-1" />
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-7 h-7 hover:bg-white/10 rounded-lg text-white p-0" 
-                          onClick={(e) => { e.stopPropagation(); setOverlayRotate(prev => (prev - 15) % 360); }} 
-                          title="Putar Kiri"
-                        >
+                        <div className="w-[1px] h-5 bg-white/20 mx-1" />
+                        <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-white/10 rounded-lg text-white p-0 transition-colors" onClick={(e) => { e.stopPropagation(); setOverlayRotate(prev => (prev - 15) % 360); }} title="Putar Kiri">
                           <RotateCcw className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-7 h-7 hover:bg-white/10 rounded-lg text-white p-0" 
-                          onClick={(e) => { e.stopPropagation(); setOverlayRotate(prev => (prev + 15) % 360); }} 
-                          title="Putar Kanan"
-                        >
+                        <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-white/10 rounded-lg text-white p-0 transition-colors" onClick={(e) => { e.stopPropagation(); setOverlayRotate(prev => (prev + 15) % 360); }} title="Putar Kanan">
                           <RotateCw className="w-4 h-4" />
                         </Button>
-                        <div className="w-[1px] h-4 bg-white/20 mx-1" />
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className={cn("w-7 h-7 hover:bg-white/10 rounded-lg text-white p-0", overlayFlipX && "bg-cyan-500/20 text-cyan-400")} 
-                          onClick={(e) => { e.stopPropagation(); setOverlayFlipX(prev => !prev); }} 
-                          title="Balik Horisontal"
-                        >
+                        <div className="w-[1px] h-5 bg-white/20 mx-1" />
+                        <Button variant="ghost" size="icon" className={cn("w-8 h-8 rounded-lg p-0 transition-colors", overlayFlipX ? "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30" : "text-white hover:bg-white/10")} onClick={(e) => { e.stopPropagation(); setOverlayFlipX(prev => !prev); }} title="Balik Horisontal">
                           <FlipHorizontal className="w-4 h-4" />
-                        </Button>
-                        <div className="w-[1px] h-4 bg-white/20 mx-1" />
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-7 h-7 text-red-400 hover:bg-red-500/20 rounded-lg p-0" 
-                          onClick={(e) => { e.stopPropagation(); setOverlayImage(null); }} 
-                          title="Hapus Overlay"
-                        >
-                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     )}
@@ -1160,17 +948,14 @@ export default function BannerPromo() {
 
               {/* TITLE DRAG */}
               <DraggableItem 
-                pos={titlePos} 
-                isDragging={dragTarget === 'title'} 
-                isSelected={selectedTarget === 'title'}
-                onPointerDown={(e: any) => handleDragStart(e, 'title')}
-                type="title"
+                pos={titlePos} isDragging={dragTarget === 'title'} isSelected={selectedTarget === 'title'}
+                onPointerDown={(e: any) => handleDragStart(e, 'title')} type="title"
               >
-                <div className="w-[70cqw] max-w-[75cqw] cursor-grab active:cursor-grabbing">
-                  <span className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded bg-white/20 backdrop-blur-md font-bold mb-[1.5cqw] inline-block uppercase tracking-wider border border-white/10 shadow-sm pointer-events-none">
+                <div className="w-[70cqw] max-w-[75cqw]">
+                  <span className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded bg-white/10 backdrop-blur-md font-bold mb-[1.5cqw] inline-block uppercase tracking-widest border border-white/20 shadow-sm">
                     {bannerType === 'voucher' ? 'Promo Voucher' : bannerType === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
                   </span>
-                  <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-md pointer-events-none">
+                  <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-xl text-white">
                     {bannerTitle || 'Judul Penawaran'}
                   </h4>
                 </div>
@@ -1178,57 +963,54 @@ export default function BannerPromo() {
 
               {/* DESC DRAG */}
               <DraggableItem 
-                pos={descPos} 
-                isDragging={dragTarget === 'desc'} 
-                isSelected={selectedTarget === 'desc'}
-                onPointerDown={(e: any) => handleDragStart(e, 'desc')}
-                type="desc"
+                pos={descPos} isDragging={dragTarget === 'desc'} isSelected={selectedTarget === 'desc'}
+                onPointerDown={(e: any) => handleDragStart(e, 'desc')} type="desc"
               >
-                <div className="w-[70cqw] max-w-[75cqw] cursor-grab active:cursor-grabbing">
-                  <p className="text-[2.8cqw] text-slate-100 font-medium line-clamp-3 leading-[1.3] drop-shadow-sm m-0 pointer-events-none">
+                <div className="w-[70cqw] max-w-[75cqw]">
+                  <p className="text-[2.8cqw] text-slate-200 font-medium line-clamp-3 leading-[1.3] drop-shadow-md m-0">
                     {bannerDesc || 'Tulis deskripsi promo produk Anda di sini...'}
                   </p>
-                  <div className="mt-[1.5cqw]">
-                    <button className="text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-none inline-block">
+                  <div className="mt-[2cqw]">
+                    <div className="text-[2.4cqw] bg-white text-slate-950 font-extrabold px-[3cqw] py-[1cqw] rounded-lg shadow-xl inline-block transition-transform">
                       {bannerButtonText || 'Lihat Detail'}
-                    </button>
+                    </div>
                   </div>
                 </div>
               </DraggableItem>
             </div>
           </div>
 
-          {/* Bottom Bar */}
-          <div className="w-full bg-slate-900/90 border-t border-white/10 px-6 py-4 flex items-center justify-between text-white select-none shrink-0 z-50">
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Tata letak kanvas akan disimpan secara otomatis saat Anda menutup editor.</span>
+          {/* Editor Bottom Bar */}
+          <div className="w-full bg-slate-900/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-white select-none shrink-0 z-50 gap-4">
+            <div className="flex items-center gap-2.5 text-xs text-slate-300">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span>Sistem akan mengingat posisi elemen secara otomatis.</span>
             </div>
             <Button 
-              className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-black px-6 rounded-xl h-11 shadow-lg shadow-cyan-500/20"
+              className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black px-8 rounded-xl h-12 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-all"
               onClick={() => setIsEditingLayout(false)}
             >
-              Selesai & Simpan Posisi
+              Simpan Tata Letak
             </Button>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Banner Modal */}
+      {/* Delete Confirmation Modal */}
       <AlertDialog open={!!deleteBannerId} onOpenChange={() => setDeleteBannerId(null)}>
-        <AlertDialogContent className="max-w-[400px] rounded-2xl p-6">
+        <AlertDialogContent className="max-w-[400px] rounded-3xl p-6 border-border/50 shadow-2xl">
           <AlertDialogHeader>
-            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2 mx-auto">
-              <Trash2 className="w-6 h-6 text-destructive" />
+            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-3 mx-auto">
+              <Trash2 className="w-7 h-7 text-destructive" />
             </div>
-            <AlertDialogTitle className="text-center text-xl font-extrabold">Hapus Banner Penawaran?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              Banner penawaran menarik ini akan dihapus secara permanen dari beranda pelanggan.
+            <AlertDialogTitle className="text-center text-xl font-extrabold tracking-tight">Hapus Banner?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-muted-foreground mt-2">
+              Banner penawaran ini akan dihapus secara permanen dari beranda. Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteBanner} className="flex-1 rounded-xl h-11 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-md shadow-destructive/20">
+          <AlertDialogFooter className="mt-8 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-12 font-bold border-border/60 hover:bg-muted">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBanner} className="flex-1 rounded-xl h-12 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-lg shadow-destructive/20">
               Ya, Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
