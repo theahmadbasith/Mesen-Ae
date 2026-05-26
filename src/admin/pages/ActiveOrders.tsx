@@ -71,10 +71,13 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const openBills = (useDbQuery<Transaction>('transactions') || []).filter(
     (t) => {
       const isUnpaid = t.status === 'belum lunas';
-      const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'pending'].includes(t.kitchenStatus);
-      return isUnpaid || isPaidButCooking;
+      // Pesanan dapur yang lunas tapi belum selesai diantar
+      const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'selesai'].includes(t.kitchenStatus);
+      // Pesanan ritel dari web yang lunas tapi belum ditangani (kitchenStatus = 'pending' atau 'diproses')
+      const isPaidRetailWeb = t.status === 'lunas' && t.remarks === 'Pesanan dari Web' && !t.kitchenStatus;
+      return isUnpaid || isPaidButCooking || isPaidRetailWeb;
     }
-  ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  ).sort((a, b) => new Date(a.date || a.created_at || 0).getTime() - new Date(b.date || b.created_at || 0).getTime());
 
 
   // Smart Trigger: Bunyikan notifikasi native saat ada pesanan baru
@@ -166,7 +169,11 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         table_number: data.tableNumber || null,
         remarks: data.remarks || null,
         status: 'lunas',
-        kitchen_status: getBillNeedsKitchen(bill) ? 'diproses' : (bill.remarks === 'Pesanan dari Web' ? (bill.kitchenStatus || 'pending') : null),
+        // Ritel dari web: set 'diproses' agar tampil di ActiveOrders dan bisa di-manage
+        // Pesanan non-web dengan needsKitchen=false: null (tidak perlu tracking)
+        kitchen_status: getBillNeedsKitchen(bill)
+          ? 'diproses'
+          : (bill.remarks === 'Pesanan dari Web' ? 'diproses' : null),
         closed_at: new Date().toISOString(),
       };
 
@@ -195,7 +202,9 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         total: finalTotal,
         taxAndService: finalTax,
         status: 'lunas',
-        kitchenStatus: getBillNeedsKitchen(bill) ? 'diproses' : (bill.remarks === 'Pesanan dari Web' ? (bill.kitchenStatus || 'pending') : null),
+        kitchenStatus: getBillNeedsKitchen(bill)
+          ? 'diproses'
+          : (bill.remarks === 'Pesanan dari Web' ? 'diproses' : null),
         customerName: data.customerName || bill.customerName || null,
         tableNumber: data.tableNumber || bill.tableNumber || null,
       };
