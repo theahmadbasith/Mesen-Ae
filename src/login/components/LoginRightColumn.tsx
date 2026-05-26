@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, User, Lock, LogIn, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDbQuery } from '@/hooks/db-hooks';
 
 interface LoginRightColumnProps {
   username: string;
@@ -26,16 +27,36 @@ export default function LoginRightColumn({
   loading,
   handleLogin,
 }: LoginRightColumnProps) {
+  const storeSettingsList = useDbQuery<any>('storeSettings') ?? [];
+  const storeSettings = storeSettingsList[0] || null;
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative bg-zinc-950">
       <div className="w-full max-w-md relative z-10">
 
         {/* Logo Mobile */}
         <div className="lg:hidden flex flex-col items-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-4 border border-primary/20">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="w-20 h-20 bg-white/5 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 mb-4 border border-white/10 p-2">
+            <img
+              src={storeSettings?.logo || "/icon-192.png"}
+              alt={storeSettings?.storeName || "MesenAe"}
+              className="w-full h-full object-contain drop-shadow-lg"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const icon = document.createElement('div');
+                  icon.className = 'flex items-center justify-center w-full h-full text-white font-bold text-2xl';
+                  icon.innerHTML = (storeSettings?.storeName || 'MesenAe').charAt(0).toUpperCase();
+                  parent.appendChild(icon);
+                }
+              }}
+            />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">MesenAe</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            {storeSettings?.storeName || 'MesenAe'}
+          </h1>
           <p className="text-sm font-medium text-orange-500 mt-1">Management Portal</p>
         </div>
 
@@ -44,12 +65,6 @@ export default function LoginRightColumn({
           
           {/* Header Form */}
           <div className="mb-8 space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-primary" strokeWidth={2.5} />
-              <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
-                Secure Workspace Login
-              </span>
-            </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Selamat Datang
             </h2>
