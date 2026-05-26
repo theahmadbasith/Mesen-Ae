@@ -190,7 +190,7 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
           {/* Header */}
           <div className="text-center mb-3">
             <h1 className="font-extrabold text-base tracking-widest uppercase">{storeSettings?.storeName || 'RESTO'}</h1>
-            <div className="inline-block mt-2 px-3 py-1 bg-foreground text-background font-black text-xs tracking-widest rounded-full uppercase">
+            <div className="mt-1.5 text-xs font-black tracking-widest uppercase border border-current rounded px-2 py-0.5 inline-block">
               TIKET DAPUR
             </div>
           </div>
@@ -213,8 +213,8 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
                 <span className="font-black uppercase truncate max-w-[130px]">{transaction.customerName}</span>
               </div>
             )}
-            <div className="flex justify-between items-center bg-muted/50 border border-border/50 p-2 rounded mt-2">
-              <span className="text-muted-foreground">MEJA</span>
+            <div className="flex justify-between items-center border border-border/60 p-2 rounded mt-2">
+              <span className="text-muted-foreground text-xs font-bold">MEJA</span>
               <span className="font-black text-xl">
                 {transaction.tableNumber ? transaction.tableNumber : <span className="text-base">Bawa Pulang</span>}
               </span>
@@ -242,8 +242,8 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
                   )}
                   
                   {item.notes && (
-                    <div className="text-[11px] font-bold italic text-foreground bg-muted/50 border border-border/50 inline-block px-1.5 py-0.5 rounded mt-1">
-                      Catatan: {item.notes}
+                    <div className="text-[11px] italic text-muted-foreground mt-0.5">
+                      📝 {item.notes}
                     </div>
                   )}
                 </div>

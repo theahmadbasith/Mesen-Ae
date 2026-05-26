@@ -214,18 +214,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
              }}>
           
           <div ref={receiptRef} className="relative z-10 bg-card">
-            {/* Watermark Lunas / Belum Lunas */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] z-0">
-              {isPaidTx ? (
-                <span className="text-6xl font-black tracking-widest text-emerald-600 -rotate-45 uppercase border-8 border-emerald-600 rounded-xl p-4">
-                  Lunas
-                </span>
-              ) : (
-                <span className="text-5xl font-black tracking-tight text-rose-600 -rotate-45 uppercase border-8 border-rose-600 rounded-xl p-3">
-                  Belum Lunas
-                </span>
-              )}
-            </div>
+
 
             {/* Header Toko */}
             <div className="text-center mb-4 relative z-10">
@@ -333,16 +322,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Footer */}
-            <div className="text-center text-[10px] text-slate-500 relative z-10 pb-4 mt-4">
-              <p>{storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
-              <div className="mt-4 flex justify-center opacity-50">
-                {/* Visual Barcode Placeholder */}
-                <div className="w-48 h-8 flex gap-[2px] justify-center items-center">
-                   {Array.from({ length: 30 }).map((_, i) => (
-                     <div key={i} className="bg-slate-800 h-full" style={{ width: `${Math.random() * 3 + 1}px` }} />
-                   ))}
-                </div>
-              </div>
+            <div className="text-center text-[10px] text-slate-500 relative z-10 pt-1 pb-3">
+              <p className="font-medium">{storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
             </div>
           </div>
         </div>

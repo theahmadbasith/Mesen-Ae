@@ -195,8 +195,8 @@ export default function KitchenReceipt({ open, onClose, transaction, items, stor
           {/* Header Toko & Tipe Struk */}
           <div className="text-center mb-3">
             <p className="font-bold text-sm tracking-widest uppercase">{storeSettings?.storeName || 'Toko'}</p>
-            <div className="inline-block mt-2 px-3 py-1 bg-slate-900 text-white font-black text-xs tracking-widest rounded uppercase">
-              STRUK DAPUR
+            <div className="mt-1.5 text-xs font-black tracking-widest uppercase border border-slate-400 rounded px-2 py-0.5 inline-block">
+              TIKET DAPUR
             </div>
           </div>
 
@@ -218,8 +218,8 @@ export default function KitchenReceipt({ open, onClose, transaction, items, stor
                 <span className="font-semibold">{transaction.customerName}</span>
               </div>
             )}
-            <div className="flex justify-between items-center bg-slate-100 p-2 rounded-md mt-2">
-              <span className="text-slate-600 font-bold">MEJA</span>
+            <div className="flex justify-between items-center border border-slate-300 p-2 rounded-md mt-2">
+              <span className="text-slate-600 font-bold text-xs">MEJA</span>
               <span className="font-black text-lg">{transaction.tableNumber || '-'}</span>
             </div>
           </div>
@@ -247,8 +247,8 @@ export default function KitchenReceipt({ open, onClose, transaction, items, stor
                   )}
                   
                   {item.notes && (
-                    <div className="text-[11px] font-bold italic text-slate-800 bg-slate-100 inline-block px-1.5 py-0.5 rounded mt-1">
-                      Catatan: {item.notes}
+                    <div className="text-[11px] italic text-slate-600 mt-0.5">
+                      📝 {item.notes}
                     </div>
                   )}
                 </div>

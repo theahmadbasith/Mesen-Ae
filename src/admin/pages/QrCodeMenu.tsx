@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2, Link as LinkIcon, Save } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate } from '@/hooks/db-hooks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -17,6 +18,7 @@ export default function QrCodeMenu() {
   const [tableToDelete, setTableToDelete] = useState<string | null>(null);
   const [customerUrl, setCustomerUrl] = useState('');
   const qrRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!storeSettings) {
@@ -146,36 +148,24 @@ export default function QrCodeMenu() {
     toast.success('Tautan berhasil disalin ke clipboard');
   };
 
-  const downloadQrCode = () => {
-    if (!qrRef.current) return;
-    const svg = qrRef.current.querySelector('svg');
-    if (!svg) return;
-    
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width + 64; 
-      canvas.height = img.height + 64;
-      if (ctx) {
-        // Background putih
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Gambar QR
-        ctx.drawImage(img, 32, 32);
-        
-        const pngFile = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.download = `QR_Meja_${activeTable || '1'}.png`;
-        downloadLink.href = pngFile;
-        downloadLink.click();
-        toast.success('QR Code berhasil diunduh');
-      }
-    };
-    
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  const downloadQrCode = async () => {
+    if (!cardRef.current) return;
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        useCORS: true,
+        logging: false,
+      });
+      const pngFile = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `QR_Meja_${activeTable || '1'}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+      toast.success('QR Code berhasil diunduh');
+    } catch {
+      toast.error('Gagal mengunduh QR Code');
+    }
   };
 
   const printQrCode = () => {
@@ -436,8 +426,11 @@ export default function QrCodeMenu() {
                 </div>
               ) : (
                 <>
-                  {/* Visualisasi Standee/Print Preview */}
-                  <div className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 mb-8 relative border border-border/50 transform transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
+                  {/* Full card yang akan di-capture untuk PNG */}
+                  <div 
+                    ref={cardRef}
+                    className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 mb-8 relative border border-border/50 transform transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10"
+                  >
                     <div className="text-center mb-6">
                       <h4 className="font-bold text-gray-900 uppercase tracking-widest text-sm mb-1">
                         {storeSettings?.storeName || 'Toko Kami'}
