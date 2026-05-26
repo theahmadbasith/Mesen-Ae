@@ -14,7 +14,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 
 
-import KitchenReceipt from '@/components/KitchenReceipt';
+import PrintActionModal from '@/components/PrintActionModal';
 
 // Helper component to render items
 function KitchenItemsList({ transactionId }: { transactionId: number }) {
@@ -61,12 +61,12 @@ const KITCHEN_STEPS = ['diproses', 'dimasak', 'disiapkan', 'siap', 'diantarkan']
 
 export default function Kitchen() {
   useThemeColor();
-  const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
+  const [printActionTx, setPrintActionTx] = useState<Transaction | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   
   const storeSettings = useDbQuery<StoreSettings>('storeSettings')?.[0];
   const allBills = useDbQuery<Transaction>('transactions') || [];
-  const receiptItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []).filter((i) => receiptTx && i.transactionId === receiptTx.id);
+  const allItems = useDbQuery<TransactionItemRecord>('transactionItems') || [];
   
   const processingBills = allBills
     .filter(t => t.needsKitchen !== false && t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending')
@@ -226,7 +226,7 @@ export default function Kitchen() {
                     <Badge variant="outline" className="bg-background font-mono text-xs font-bold border-border/60 shadow-sm">
                       {bill.receiptNumber}
                     </Badge>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-background border border-border/50 hover:bg-muted shadow-sm rounded-lg" onClick={() => setReceiptTx(bill)} title="Print Tiket">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-background border border-border/50 hover:bg-muted shadow-sm rounded-lg" onClick={() => setPrintActionTx(bill)} title="Pilihan Cetak">
                       <Printer className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </Button>
                   </div>
@@ -302,16 +302,21 @@ export default function Kitchen() {
         </div>
       )}
 
-      {/* Receipt Modal */}
-      {receiptTx && (
-        <KitchenReceipt
-          open={!!receiptTx}
-          onClose={() => setReceiptTx(null)}
-          transaction={receiptTx}
-          items={receiptItems || []}
-          storeSettings={storeSettings}
-        />
-      )}
+      {/* Print Action Modal — Pilihan Cetak */}
+      {printActionTx && (() => {
+        const txItems = allItems.filter((i) => i.transactionId === printActionTx.id);
+        return (
+          <PrintActionModal
+            open={!!printActionTx}
+            onClose={() => setPrintActionTx(null)}
+            transaction={printActionTx}
+            items={txItems}
+            storeSettings={storeSettings}
+            showCustomerReceipt={false}
+            showKitchenReceipt={true}
+          />
+        );
+      })()}
     </div>
   );
 }

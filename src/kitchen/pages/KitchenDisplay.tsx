@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import KitchenReceiptModal from '../components/KitchenReceiptModal';
+import PrintActionModal from '@/components/PrintActionModal';
 
 // ── KOMPONEN ITEM PESANAN ──
 function KitchenItemsList({ transactionId, compact = false }: { transactionId: number, compact?: boolean }) {
@@ -82,6 +83,7 @@ export default function KitchenDisplay() {
   useThemeColor();
   const [activeTab, setActiveTab] = useState<'aktif' | 'riwayat'>('aktif');
   const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
+  const [printActionTx, setPrintActionTx] = useState<Transaction | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
 
@@ -91,7 +93,8 @@ export default function KitchenDisplay() {
   
   const storeSettings = useDbQuery<StoreSettings>('storeSettings')?.[0];
   const allBills = useDbQuery<Transaction>('transactions') || [];
-  const receiptItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []).filter((i) => receiptTx && i.transactionId === receiptTx.id);
+  const allTxItems = useDbQuery<TransactionItemRecord>('transactionItems') || [];
+  const receiptItems = (allTxItems).filter((i) => receiptTx && i.transactionId === receiptTx.id);
   
   const activeBills = allBills.filter(t => t.kitchenStatus && t.kitchenStatus !== 'diantarkan' && t.kitchenStatus !== 'pending');
 
@@ -138,7 +141,7 @@ export default function KitchenDisplay() {
             <Badge variant="outline" className="bg-background/80 backdrop-blur text-foreground font-mono text-xs font-bold border-border/50 px-2 py-1">
               {bill.receiptNumber}
             </Badge>
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/50 rounded-md text-muted-foreground hover:text-foreground shadow-sm bg-background/20 backdrop-blur" onClick={() => setReceiptTx(bill)} title="Print Tiket">
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/50 rounded-md text-muted-foreground hover:text-foreground shadow-sm bg-background/20 backdrop-blur" onClick={() => setPrintActionTx(bill)} title="Pilihan Cetak">
               <Printer className="w-4 h-4" />
             </Button>
           </div>
@@ -442,7 +445,23 @@ export default function KitchenDisplay() {
         </div>
       )}
 
-      {/* Printer / Receipt Modal Khusus Dapur */}
+      {/* Pilihan Cetak dari tombol printer di Kanban Card */}
+      {printActionTx && (() => {
+        const txItems = allTxItems.filter((i) => i.transactionId === printActionTx.id);
+        return (
+          <PrintActionModal
+            open={!!printActionTx}
+            onClose={() => setPrintActionTx(null)}
+            transaction={printActionTx}
+            items={txItems}
+            storeSettings={storeSettings}
+            showCustomerReceipt={false}
+            showKitchenReceipt={true}
+          />
+        );
+      })()}
+
+      {/* Printer / Receipt Modal Khusus Dapur (dari riwayat) */}
       {receiptTx && (
         <KitchenReceiptModal
           open={!!receiptTx}

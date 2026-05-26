@@ -20,6 +20,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Receipt from '@/components/Receipt';
+import PrintActionModal from '@/components/PrintActionModal';
+import PaymentSuccessModal from '@/components/PaymentSuccessModal';
 import { FORMAT_IDR } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import PaymentModal from '@/admin/components/PaymentModal';
@@ -28,6 +30,7 @@ import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
 export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?: () => void } = {}) {
   const navigate = useNavigate();
   const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
+  const [printActionTx, setPrintActionTx] = useState<Transaction | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [billToCancel, setBillToCancel] = useState<Transaction | null>(null);
 
@@ -36,6 +39,10 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [midtransPaymentType, setMidtransPaymentType] = useState<'qris' | 'transfer' | 'e-wallet' | 'lainnya' | null>(null);
   const [checkoutDataCache, setCheckoutDataCache] = useState<{ bill: Transaction; data: any } | null>(null);
+
+  // Success modal setelah bayar
+  const [successTx, setSuccessTx] = useState<Transaction | null>(null);
+  const [successPayMethodName, setSuccessPayMethodName] = useState('Tunai');
 
   // Queries
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
@@ -159,6 +166,24 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
 
       toast.success('Pembayaran berhasil disimpan!');
       setPayingBill(null);
+
+      // Buka modal sukses dengan data transaksi yang sudah diupdate
+      const updatedBill: Transaction = {
+        ...bill,
+        ...txPayload,
+        paymentMethodId: primaryMethodId,
+        paymentAmount: finalPaymentAmount,
+        payments: finalPayments,
+        change: finalChange,
+        total: finalTotal,
+        taxAndService: finalTax,
+        status: 'lunas',
+        kitchenStatus: getBillNeedsKitchen(bill) ? 'diproses' : (bill.kitchenStatus ?? null),
+        customerName: data.customerName || bill.customerName || null,
+        tableNumber: data.tableNumber || bill.tableNumber || null,
+      };
+      setSuccessTx(updatedBill);
+      setSuccessPayMethodName(data.paymentMethodName || 'Tunai');
     } catch (e: any) {
       toast.error('Gagal menyimpan pembayaran: ' + e.message);
     } finally {
@@ -235,8 +260,8 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" 
-                    onClick={() => setReceiptTx(bill)}
-                    title="Cetak Tiket Dapur"
+                    onClick={() => setPrintActionTx(bill)}
+                    title="Pilihan Cetak"
                   >
                     <Printer className="w-4 h-4" />
                   </Button>
@@ -327,14 +352,51 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         </div>
       )}
 
-      {/* Modal / Dialog Struk Pembayaran */}
+      {/* Modal Pilihan Cetak (tombol printer di card) */}
+      {printActionTx && (() => {
+        const txItems = allTxItems.filter((i: any) => i.transactionId === printActionTx.id);
+        const needsKitchen = getBillNeedsKitchen(printActionTx);
+        const payMethodName = paymentMethods.find((pm: any) => pm.id === printActionTx.paymentMethodId)?.name || 'Tunai';
+        return (
+          <PrintActionModal
+            open={!!printActionTx}
+            onClose={() => setPrintActionTx(null)}
+            transaction={printActionTx}
+            items={txItems}
+            storeSettings={storeSettings}
+            paymentMethodName={payMethodName}
+            showCustomerReceipt={printActionTx.status === 'lunas'}
+            showKitchenReceipt={needsKitchen}
+          />
+        );
+      })()}
+
+      {/* Modal Sukses Pembayaran */}
+      {successTx && (() => {
+        const txItems = allTxItems.filter((i: any) => i.transactionId === successTx.id);
+        const needsKitchen = getBillNeedsKitchen(successTx);
+        return (
+          <PaymentSuccessModal
+            open={!!successTx}
+            onClose={() => setSuccessTx(null)}
+            transaction={successTx}
+            items={txItems}
+            storeSettings={storeSettings}
+            paymentMethodName={successPayMethodName}
+            needsKitchen={needsKitchen}
+          />
+        );
+      })()}
+
+      {/* Receipt (legacy - fallback, tidak dipakai lagi untuk alur baru) */}
       {receiptTx && (
         <Receipt
           open={!!receiptTx}
           onClose={() => setReceiptTx(null)}
           transaction={receiptTx}
-          items={receiptItems || []}
+          items={allTxItems.filter((i: any) => i.transactionId === receiptTx.id)}
           storeSettings={storeSettings}
+          paymentMethodName={paymentMethods.find((pm: any) => pm.id === receiptTx.paymentMethodId)?.name || 'Tunai'}
         />
       )}
 
