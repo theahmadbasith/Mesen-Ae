@@ -99,7 +99,8 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   }).length;
   
   const processingCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
-    return t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
+    const hasKitchen = t.needsKitchen !== false && t.needs_kitchen !== false;
+    return hasKitchen && t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal', 'pending'].includes(t.kitchenStatus);
   }).length;
 
   const { role, canView } = usePermissions();
