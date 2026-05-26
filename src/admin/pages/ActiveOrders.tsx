@@ -337,14 +337,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                       !getBillNeedsKitchen(bill) ? (
                         bill.remarks === 'Pesanan dari Web' ? (
                           <div className="flex gap-2 w-full">
-                            {(!bill.kitchenStatus || bill.kitchenStatus === 'pending') ? (
-                              <Button 
-                                className="flex-1 bg-indigo-500 hover:bg-indigo-600 shadow-md shadow-indigo-500/20 transition-all text-white"
-                                onClick={() => handleUpdateRetailStatus(bill, 'diproses')}
-                              >
-                                Terima Pesanan
-                              </Button>
-                            ) : bill.kitchenStatus === 'diproses' ? (
+                            {(!bill.kitchenStatus || bill.kitchenStatus === 'pending' || bill.kitchenStatus === 'diproses') ? (
                               <Button 
                                 className="flex-1 bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all text-white"
                                 onClick={() => handleUpdateRetailStatus(bill, 'disiapkan')}
