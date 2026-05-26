@@ -35,7 +35,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const [payingBill, setPayingBill] = useState<Transaction | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [midtransPaymentType, setMidtransPaymentType] = useState<'qris' | 'transfer' | 'e-wallet' | 'lainnya' | null>(null);
-  const [checkoutDataCache, setCheckoutDataCache] = useState<any>(null);
+  const [checkoutDataCache, setCheckoutDataCache] = useState<{ bill: Transaction; data: any } | null>(null);
 
   // Queries
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
@@ -374,7 +374,10 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           isCheckingOut={isCheckingOut}
           onCheckout={(data) => {
             if (data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
-              setCheckoutDataCache(data);
+              // Simpan bill + data ke cache, tutup PaymentModal, buka Midtrans
+              const billSnapshot = payingBill;
+              setCheckoutDataCache({ bill: billSnapshot, data });
+              setPayingBill(null); // Tutup PaymentModal agar tidak blokir Snap
               setMidtransPaymentType(data.paymentMethodCategory as any);
             } else {
               processCheckoutToDb(payingBill, data);
@@ -383,19 +386,22 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         />
       )}
 
-      {midtransPaymentType && payingBill && checkoutDataCache && (
+      {midtransPaymentType && checkoutDataCache && (
         <MidtransPaymentModal
           isOpen={!!midtransPaymentType}
           paymentType={midtransPaymentType}
-          amount={checkoutDataCache.total}
-          customerName={checkoutDataCache.customerName}
-          orderId={`TX-${payingBill.id}-${Date.now()}`}
+          amount={checkoutDataCache.data.total}
+          customerName={checkoutDataCache.data.customerName}
+          orderId={`TX-${checkoutDataCache.bill?.id ?? Date.now()}-${Date.now()}`}
           onSuccess={() => {
+            const { bill, data } = checkoutDataCache;
             setMidtransPaymentType(null);
-            processCheckoutToDb(payingBill, checkoutDataCache);
+            setCheckoutDataCache(null);
+            processCheckoutToDb(bill, data);
           }}
           onPending={() => {
             setMidtransPaymentType(null);
+            setCheckoutDataCache(null);
             toast.warning('Pembayaran pending, silakan selesaikan via Midtrans.');
           }}
           onError={() => {
