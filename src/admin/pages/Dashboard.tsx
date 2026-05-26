@@ -1,6 +1,4 @@
-import { useDbQuery } from '@/hooks/db-hooks';
-import { type TransactionItemRecord } from '@/hooks/db-hooks';
-import { useState } from 'react';
+import { useDbQuery, type TransactionItemRecord } from '@/hooks/db-hooks';
 import { ShoppingCart, Package, BarChart3, TrendingUp, AlertTriangle, Receipt, ChevronRight, ClipboardList } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';

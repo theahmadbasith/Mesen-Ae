@@ -94,6 +94,7 @@ export function mapTransaction(r: Record<string, unknown>) {
     discountValue: Number(r.discount_value),
     discountAmount: Number(r.discount_amount),
     total: Number(r.total),
+    taxAndService: r.tax_and_service ? Number(r.tax_and_service) : undefined,
     paymentMethodId: r.payment_method_id as number,
     paymentAmount: Number(r.payment_amount),
     payments: (r.payments ?? []) as unknown[],
@@ -142,6 +143,7 @@ export function mapStoreSettings(s: Record<string, unknown>) {
     themeColor: s.theme_color as string,
     logo: s.logo as string,
     tables: s.tables as string[],
+    promoBanners: (s.promo_banners as any[]) ?? [],
     deliveryMode: (s.delivery_mode as 'ambil' | 'diantar') || 'diantar'
   };
 }

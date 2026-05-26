@@ -347,7 +347,7 @@ export async function appendPaymentToTransactionByReceipt(receiptNumber: string,
     payments.push(payment);
 
     const totalPaid = payments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
-    const totalDue = Number(existing.total) || Number(existing.grand_total) || 0;
+    const totalDue = Number(existing.total) || 0;
     const newStatus = totalPaid >= totalDue ? 'lunas' : (totalPaid > 0 ? 'partial' : existing.status || 'belum lunas');
 
     const updates: any = {
