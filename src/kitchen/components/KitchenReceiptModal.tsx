@@ -255,7 +255,9 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
           <p className="text-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
             -- SELESAI --
           </p>
-             {/* ── Action Buttons ── */}
+        </div>
+
+        {/* ── Action Buttons ── */}
         <div className="grid grid-cols-2 gap-3 mb-3 mt-6">
           <Button 
             variant="outline" 
