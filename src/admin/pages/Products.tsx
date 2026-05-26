@@ -57,7 +57,7 @@ export default function Produk() {
   const filtered = useMemo(() => {
     return products?.filter(p => {
       const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
-      const matchCategory = filterCategory === 'all' || p.categoryId === Number(filterCategory);
+      const matchCategory = filterCategory === 'all' || String(p.categoryId) === String(filterCategory);
       return matchSearch && matchCategory;
     }) ?? [];
   }, [products, search, filterCategory]);

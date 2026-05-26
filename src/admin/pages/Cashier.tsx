@@ -177,12 +177,22 @@ export default function Kasir() {
   const cartProductIds = useMemo(() => new Set(cart.map(c => c.product.id)), [cart]);
 
   const filtered = useMemo(() => {
-    return products?.filter(p => {
+    let result = products?.filter(p => {
       const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-      const matchCategory = filterCategory === 'all' || p.categoryId === Number(filterCategory);
+      const matchCategory = filterCategory === 'all' || String(p.categoryId) === String(filterCategory);
       return matchSearch && matchCategory && (p.stock > 0 || cartProductIds.has(p.id!));
     }) ?? [];
-  }, [products, search, filterCategory, cartProductIds]);
+
+    if (filterCategory === 'all') {
+      result = result.sort((a, b) => {
+        const catA = categories?.findIndex(c => String(c.id) === String(a.categoryId)) ?? 0;
+        const catB = categories?.findIndex(c => String(c.id) === String(b.categoryId)) ?? 0;
+        return catA - catB;
+      });
+    }
+
+    return result;
+  }, [products, search, filterCategory, cartProductIds, categories]);
 
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + getItemSubtotal(item), 0), [cart]);
 
@@ -822,6 +832,80 @@ export default function Kasir() {
                     ? 'Semua produk stoknya habis. Tambah stok dulu di menu Stok Masuk.'
                     : 'Belum ada produk. Tambah produk dulu di menu Produk.'}
                 </p>
+              </div>
+            ) : filterCategory === 'all' ? (
+              <div className="space-y-6">
+                {categories?.map(c => {
+                  const catProducts = filtered.filter(p => String(p.categoryId) === String(c.id));
+                  if (catProducts.length === 0) return null;
+                  return (
+                    <div key={c.id} className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <span className="text-sm">{c.icon}</span>
+                        <h4 className="text-xs font-bold tracking-wide uppercase text-muted-foreground">
+                          {c.name}
+                        </h4>
+                        <div className="h-[1px] flex-1 bg-border/60 ml-2" />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {catProducts.map(p => (
+                          <Card key={p.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]" onClick={() => addToCart(p)}>
+                            <CardContent className="p-0">
+                              <div className="w-full aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+                                {p.photo ? (
+                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <PackageIcon className="w-8 h-8 text-muted-foreground/30" />
+                                )}
+                              </div>
+                              <div className="p-2.5">
+                                <h3 className="text-xs font-semibold truncate">{p.name}</h3>
+                                <p className="text-sm font-bold text-primary mt-0.5">Rp {p.price.toLocaleString('id-ID')}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Stok: {p.stock} {p.unit}</p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Uncategorized products */}
+                {(() => {
+                  const uncategorized = filtered.filter(p => !categories?.some(c => String(c.id) === String(p.categoryId)));
+                  if (uncategorized.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <span className="text-sm">📦</span>
+                        <h4 className="text-xs font-bold tracking-wide uppercase text-muted-foreground">
+                          Lain-lain
+                        </h4>
+                        <div className="h-[1px] flex-1 bg-border/60 ml-2" />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {uncategorized.map(p => (
+                          <Card key={p.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]" onClick={() => addToCart(p)}>
+                            <CardContent className="p-0">
+                              <div className="w-full aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+                                {p.photo ? (
+                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <PackageIcon className="w-8 h-8 text-muted-foreground/30" />
+                                )}
+                              </div>
+                              <div className="p-2.5">
+                                <h3 className="text-xs font-semibold truncate">{p.name}</h3>
+                                <p className="text-sm font-bold text-primary mt-0.5">Rp {p.price.toLocaleString('id-ID')}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Stok: {p.stock} {p.unit}</p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
