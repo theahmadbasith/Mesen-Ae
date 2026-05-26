@@ -122,6 +122,10 @@ export default function Produk() {
   };
 
   const handleSave = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola produk.');
+      return;
+    }
     if (!name.trim() || !categoryId) return;
 
     setIsSaving(true);
@@ -169,6 +173,10 @@ export default function Produk() {
   };
 
   const handleDelete = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola produk.');
+      return;
+    }
     if (deleteId) {
       const p = products?.find(x => x.id === deleteId);
       if (p?.photo) {

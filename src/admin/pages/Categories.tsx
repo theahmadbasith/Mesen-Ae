@@ -47,6 +47,10 @@ export default function Categories() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola kategori.');
+      return;
+    }
     if (!confirm('Hapus kategori ini secara permanen?')) return;
     try {
       await dbDelete('categories', id);
@@ -58,6 +62,10 @@ export default function Categories() {
 
   const saveCat = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola kategori.');
+      return;
+    }
     if (!name.trim()) return;
     setIsSavingCat(true);
     try {

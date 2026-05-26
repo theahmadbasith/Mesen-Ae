@@ -62,6 +62,10 @@ export default function StockInPage() {
   };
 
   const handleSave = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola stok.');
+      return;
+    }
     const qty = Number(quantity);
     const price = Number(buyPrice);
 

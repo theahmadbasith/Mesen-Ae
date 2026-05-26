@@ -76,6 +76,10 @@ export default function SupplierPage() {
   };
 
   const handleSave = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola supplier.');
+      return;
+    }
     if (!name.trim()) {
       toast.error('Nama supplier wajib diisi');
       return;
@@ -107,6 +111,10 @@ export default function SupplierPage() {
   };
 
   const handleDelete = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengelola supplier.');
+      return;
+    }
     if (!deleteId) return;
 
     try {
