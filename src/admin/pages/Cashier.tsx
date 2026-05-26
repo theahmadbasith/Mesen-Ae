@@ -347,7 +347,7 @@ export default function Kasir() {
 
     const now = new Date();
 
-    const txNeedsKitchen = cart.some(c => categories.find(cat => cat.id === c.product.categoryId)?.needsKitchen !== false);
+    const txNeedsKitchen = cart.some(c => categories.find(cat => String(cat.id) === String(c.product.categoryId))?.needsKitchen !== false);
 
     const txPayload = {
       subtotal,
@@ -550,7 +550,7 @@ export default function Kasir() {
       const finalTaxAndService = overrideData ? overrideData.taxAndService : taxAndService;
       const finalTotal = overrideData ? overrideData.total : total;
 
-      const txNeedsKitchen = cart.some(c => categories.find(cat => cat.id === c.product.categoryId)?.needsKitchen !== false);
+      const txNeedsKitchen = cart.some(c => categories.find(cat => String(cat.id) === String(c.product.categoryId))?.needsKitchen !== false);
 
       const txPayload = {
         subtotal,
