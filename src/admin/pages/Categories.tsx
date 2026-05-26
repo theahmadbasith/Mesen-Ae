@@ -152,13 +152,13 @@ export default function Categories() {
       )}
 
       {/* Dialog Kategori */}
-      <Dialog open={catDialog} onOpenChange={setCatDialog}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[420px] sm:max-w-[500px] rounded-2xl p-0 overflow-hidden bg-background border-border shadow-xl">
           <div className="bg-primary/5 p-5 border-b border-border/40">
             <DialogHeader>
-              <DialogTitle className="text-base font-bold">{catEditId ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
+              <DialogTitle className="text-base font-bold">{editCategory ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
               <DialogDescription className="text-[11px] mt-1">
-                {catEditId ? 'Ubah rincian kategori yang sudah ada.' : 'Buat kategori baru untuk produk Anda.'}
+                {editCategory ? 'Ubah rincian kategori yang sudah ada.' : 'Buat kategori baru untuk produk Anda.'}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -167,8 +167,8 @@ export default function Categories() {
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nama Kategori</Label>
                 <Input
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Cth: Makanan Berat"
                   className="h-10 text-sm rounded-xl"
                   required
