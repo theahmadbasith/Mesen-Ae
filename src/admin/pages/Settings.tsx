@@ -1,6 +1,6 @@
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
 import { type PaymentMethod, type Category, type User, type StoreSettings } from '@/hooks/db-hooks';
-import { type UserPermissions, DEFAULT_USER_PERMISSIONS, type ModulePermission } from '@/hooks/use-permissions';
+import { usePermissions, type UserPermissions, DEFAULT_USER_PERMISSIONS, type ModulePermission } from '@/hooks/use-permissions';
 import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Store, CreditCard, Tag, Plus, Trash2, Edit2,
