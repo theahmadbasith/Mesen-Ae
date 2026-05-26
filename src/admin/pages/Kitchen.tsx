@@ -80,33 +80,7 @@ export default function Kitchen() {
     return () => clearInterval(timer);
   }, []);
 
-  // Smart Trigger: Bunyikan notifikasi native saat ada pesanan baru masuk ke dapur
-  const prevBillsCountRef = React.useRef(processingBills.length);
-  useEffect(() => {
-    if (processingBills.length > prevBillsCountRef.current) {
-      if (Notification.permission === 'granted') {
-        const title = 'Pesanan Baru Masuk! 🔔';
-        const options = {
-          body: 'Ada pesanan pelanggan baru yang harus segera disiapkan di dapur.',
-          icon: '/logo.png',
-          vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
-          requireInteraction: true,
-          silent: false
-        };
-        
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(title, options);
-          }).catch(() => {
-            try { new Notification(title, options); } catch(e) { console.error(e); }
-          });
-        } else {
-          try { new Notification(title, options); } catch(e) { console.error(e); }
-        }
-      }
-    }
-    prevBillsCountRef.current = processingBills.length;
-  }, [processingBills.length]);
+
 
   const handleNextStep = async (bill: Transaction) => {
     try {

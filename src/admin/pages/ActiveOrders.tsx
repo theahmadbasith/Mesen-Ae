@@ -82,35 +82,9 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   ).sort((a, b) => new Date(a.date || a.created_at || 0).getTime() - new Date(b.date || b.created_at || 0).getTime());
 
 
-  // Smart Trigger: Bunyikan notifikasi native saat ada pesanan baru
-  const prevBillsCountRef = React.useRef(openBills.length);
-  React.useEffect(() => {
-    if (openBills.length > prevBillsCountRef.current) {
-      if (Notification.permission === 'granted') {
-        const title = 'Pesanan Baru Masuk! 🔔';
-        const options = {
-          body: 'Ada pesanan pelanggan baru yang harus segera disiapkan di dapur.',
-          icon: '/logo.png',
-          vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
-          requireInteraction: true,
-          silent: false
-        };
-        
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(title, options);
-          }).catch(() => {
-            try { new Notification(title, options); } catch(e) { console.error(e); }
-          });
-        } else {
-          try { new Notification(title, options); } catch(e) { console.error(e); }
-        }
-      }
-    }
-    prevBillsCountRef.current = openBills.length;
-  }, [openBills.length]);
 
   // Handlers
+
   const confirmCancel = (bill: Transaction) => {
     setBillToCancel(bill);
     setCancelConfirmOpen(true);

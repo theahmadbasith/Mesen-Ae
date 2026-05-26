@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Menu, Store, Maximize, Minimize } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Skeleton } from '@/admin/components/SkeletonLoaders';
+import GlobalAdminNotifier from '../GlobalAdminNotifier';
 
 export default function AppLayout() {
   useThemeColor(); // Apply saved theme color on mount
@@ -91,6 +92,7 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
+      <GlobalAdminNotifier />
       {/* Desktop Sidebar */}
       <div className="hidden lg:block h-screen shrink-0">
         <AppSidebar />
