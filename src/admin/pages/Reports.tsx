@@ -82,7 +82,7 @@ export default function Laporan() {
       .slice(0, 5);
   }, [allItems]);
 
-  const rp = (v: number) => `Rp ${v.toLocaleString('id-ID')}`;
+  const rp = (v: number) => `Rp ${(Number(v) || 0).toLocaleString('id-ID')}`;
 
   const handleGenerateReport = (): MesenAeReportData => {
     try {
@@ -243,7 +243,7 @@ export default function Laporan() {
               <BarChart data={chartData}>
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip formatter={(v: number) => [`Rp ${v.toLocaleString('id-ID')}`, 'Penjualan']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Tooltip formatter={(v: number) => [`Rp ${(Number(v) || 0).toLocaleString('id-ID')}`, 'Penjualan']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

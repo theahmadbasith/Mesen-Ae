@@ -93,7 +93,7 @@ export default function StockReport() {
     return Object.entries(map).map(([date, data]) => ({ date, ...data }));
   })();
 
-  const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
+  const formatRupiah = (value: number) => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`;
 
   const handleGenerateReport = async (startDate: string, endDate: string) => {
     const start = startOfDay(new Date(startDate));
