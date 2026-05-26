@@ -97,20 +97,10 @@ export default function BarcodePrint() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background/50 p-6 flex flex-col xl:flex-row gap-6 animate-in fade-in duration-500">
+    <div className="w-full min-h-[calc(100vh-4rem)] pt-2 pb-24 flex flex-col xl:flex-row gap-6 animate-in fade-in duration-500">
       
       {/* Kolom Kiri: Pengaturan & Input */}
       <div className="w-full xl:w-[450px] flex flex-col gap-6 shrink-0">
-        
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Printer className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-foreground">Cetak & Label</h1>
-            <p className="text-sm text-muted-foreground font-medium">Buat dan cetak barcode atau label harga.</p>
-          </div>
-        </div>
 
         <Tabs value={printMode} onValueChange={(v) => setPrintMode(v as any)} className="w-full">
           <TabsList className="grid grid-cols-2 w-full mb-6">
