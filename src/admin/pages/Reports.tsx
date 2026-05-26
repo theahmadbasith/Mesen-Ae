@@ -160,7 +160,7 @@ export default function Laporan() {
 
   return (
     <div className="mx-auto w-full">
-      <div className="px-4 pt-4 pb-24 space-y-6 w-full animate-in fade-in duration-300">
+      <div className="pt- pb-24 space-y-6 w-full animate-in fade-in duration-300">
         {/* Action Header */}
         <div className="flex justify-end">
           <Button

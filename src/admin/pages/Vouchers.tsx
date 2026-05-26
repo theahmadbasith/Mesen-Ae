@@ -99,7 +99,7 @@ export default function Vouchers() {
   };
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold tracking-tight text-foreground">Kelola Voucher</h2>

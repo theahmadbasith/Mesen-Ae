@@ -155,7 +155,7 @@ export default function TransactionHistory() {
   const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
   return (
-    <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       
       {/* Control Panel (Filters & Search) */}
       <div className="bg-card border border-border/50 p-4 sm:p-5 rounded-[2rem] shadow-sm mb-6 space-y-4">

@@ -110,7 +110,7 @@ export default function StockOutPage() {
   };
 
   return (
-    <div className="px-4 pt-3 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Action Header */}
       {hasEditAccess && (
         <div className="flex justify-end items-center gap-4">

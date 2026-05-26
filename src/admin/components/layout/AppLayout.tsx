@@ -115,7 +115,7 @@ export default function AppLayout() {
         />
 
         {/* Main Scrollable Content */}
-        <main className="flex-1 overflow-y-auto w-full px-4 md:px-6 lg:px-8 pt-2 md:pt-3 pb-6">
+        <main className="flex-1 overflow-y-auto w-full px-3 md:px-6 lg:px-8 pt-2 md:pt-3 pb-6">
           <Outlet />
         </main>
       </div>

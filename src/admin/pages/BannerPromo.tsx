@@ -403,7 +403,7 @@ export default function BannerPromo() {
   const currentBanners: PromoBanner[] = storeSettings?.promoBanners || [];
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-xl font-black text-foreground">Pengaturan Banner Penawaran</h3>

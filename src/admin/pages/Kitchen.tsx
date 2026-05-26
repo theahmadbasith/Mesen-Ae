@@ -152,7 +152,7 @@ export default function Kitchen() {
   };
 
   return (
-    <div className="px-5 pt-8 pb-20 space-y-8 animate-in fade-in duration-500 w-full mx-auto min-h-[calc(100vh-4rem)]">
+    <div className="pt-8 pb-20 space-y-8 animate-in fade-in duration-500 w-full mx-auto min-h-[calc(100vh-4rem)]">
       
 
 

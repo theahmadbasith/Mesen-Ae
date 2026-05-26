@@ -54,7 +54,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Date Badge */}
       <div className="flex justify-end">
         <span className="text-[10px] font-bold text-muted-foreground bg-muted/60 border border-border/40 px-3.5 py-1.5 rounded-xl uppercase tracking-wider">

@@ -285,7 +285,7 @@ export default function QrCodeMenu() {
   };
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       {/* Page Content Grid */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
