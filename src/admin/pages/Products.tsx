@@ -87,8 +87,7 @@ export default function Produk() {
 
   const openAdd = () => {
     setEditProduct(null);
-    const generatedSku = `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
-    setName(''); setSku(generatedSku); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode(''); setPhoto(undefined); setVariants([]);
+    setName(''); setSku(''); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode(''); setPhoto(undefined); setVariants([]);
     setDialogOpen(true);
   };
 
@@ -137,6 +136,27 @@ export default function Produk() {
         if (url) finalPhotoUrl = url;
       }
 
+      let finalSku = sku.trim();
+      if (!finalSku) {
+        // Generate SKU based on initials
+        const words = name.trim().split(/[\s-]+/);
+        let initials = words.map(w => w[0].toUpperCase()).join('').substring(0, 3);
+        if (!initials) initials = 'PRD';
+        
+        let maxNumber = 0;
+        products?.forEach(p => {
+          if (p.sku && p.sku.startsWith(initials)) {
+            const numPart = p.sku.substring(initials.length);
+            const num = parseInt(numPart, 10);
+            if (!isNaN(num) && num > maxNumber) {
+              maxNumber = num;
+            }
+          }
+        });
+        
+        finalSku = `${initials}${(maxNumber + 1).toString().padStart(4, '0')}`;
+      }
+
       const data: any = {
         name: name.trim(),
         categoryId: Number(categoryId),
@@ -147,7 +167,7 @@ export default function Produk() {
         variants,
         barcode: barcode.trim() || undefined,
         photo: finalPhotoUrl || undefined,
-        sku: sku.trim() || `SKU-${Math.floor(100000 + Math.random() * 900000)}`, 
+        sku: finalSku, 
         updatedAt: new Date().toISOString(),
       };
 
