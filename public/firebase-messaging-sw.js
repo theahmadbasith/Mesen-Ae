@@ -37,8 +37,14 @@ self.addEventListener('push', function(event) {
     body,
     icon: '/logo.png',
     badge: '/logo.png',
-    // Pola getar keras dan berulang untuk HP
-    vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
+    // Pola getar keras dan berulang untuk HP (30 detik berturut-turut untuk menarik perhatian maksimal)
+    vibrate: [
+      1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000, 200,
+      1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000, 200,
+      1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000, 200,
+      1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000, 200,
+      1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000
+    ],
     data: { url },
     renotify: true,
     requireInteraction: true,
