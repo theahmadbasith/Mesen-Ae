@@ -2,9 +2,10 @@ import { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
-import { Download, Share2, Printer, Loader2, Flame } from 'lucide-react';
+import { Download, Share2, Printer, Loader2, Flame, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import type { Transaction, StoreSettings, TransactionItemRecord } from '@/hooks/db-hooks';
 import { cn } from '@/lib/utils';
@@ -15,9 +16,11 @@ interface KitchenReceiptModalProps {
   transaction: Transaction;
   items: TransactionItemRecord[];
   storeSettings?: StoreSettings;
+  /** Jika ada item varian, parent bisa passing callback ini untuk tampilkan modal label varian */
+  onOpenVariantLabels?: () => void;
 }
 
-export default function KitchenReceiptModal({ open, onClose, transaction, items, storeSettings }: KitchenReceiptModalProps) {
+export default function KitchenReceiptModal({ open, onClose, transaction, items, storeSettings, onOpenVariantLabels }: KitchenReceiptModalProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState<boolean>(false);
   const [printing, setPrinting] = useState<boolean>(false);
@@ -204,9 +207,17 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
               <span className="text-zinc-500">Waktu</span>
               <span>{format(new Date(transaction.date), 'dd/MM/yy HH:mm')}</span>
             </div>
+            {transaction.customerName && (
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Pemesan</span>
+                <span className="font-black uppercase truncate max-w-[130px]">{transaction.customerName}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center bg-zinc-100 border border-zinc-200 p-2 rounded mt-2">
               <span className="text-zinc-600">MEJA</span>
-              <span className="font-black text-xl">{transaction.tableNumber || '-'}</span>
+              <span className="font-black text-xl">
+                {transaction.tableNumber ? transaction.tableNumber : <span className="text-base">Bawa Pulang</span>}
+              </span>
             </div>
           </div>
 
@@ -278,6 +289,20 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
             <span className="text-[10px] font-bold uppercase tracking-wider">Cetak Tiket</span>
           </Button>
         </div>
+
+        {/* Tombol cetak label varian — hanya tampil jika ada item dengan varian */}
+        {onOpenVariantLabels && items.some(it => it.selectedVariants && it.selectedVariants.length > 0) && (
+          <Button
+            className="w-full mt-3 rounded-2xl py-5 font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 hover:border-amber-400/60 transition-all"
+            onClick={() => { onClose(); onOpenVariantLabels(); }}
+          >
+            <Tag className="w-4 h-4 mr-2 text-amber-400" />
+            Cetak Label Varian
+            <Badge className="ml-2 bg-amber-500/30 text-amber-200 border-amber-500/20 text-[10px]">
+              {items.filter(it => it.selectedVariants && it.selectedVariants.length > 0).length} Item
+            </Badge>
+          </Button>
+        )}
 
         <Button 
           variant="ghost" 

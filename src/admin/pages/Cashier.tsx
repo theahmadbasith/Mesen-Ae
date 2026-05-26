@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { sendPushToRole } from '@/lib/fcm';
 import Receipt from '@/components/Receipt';
+import KitchenReceiptModal from '@/kitchen/components/KitchenReceiptModal';
+import VariantLabelModal from '@/components/VariantLabelModal';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
 import PaymentModal from '@/admin/components/PaymentModal';
@@ -70,6 +72,8 @@ export default function Kasir() {
   const [payments, setPayments] = useState<{ methodId: number; methodName: string; amount: number; date: Date }[]>([]);
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [kitchenReceiptOpen, setKitchenReceiptOpen] = useState(false);
+  const [variantLabelOpen, setVariantLabelOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
   const [customerName, setCustomerName] = useState('');
@@ -1382,11 +1386,54 @@ export default function Kasir() {
       {lastTransaction && (
         <Receipt
           open={receiptOpen}
-          onClose={() => setReceiptOpen(false)}
+          onClose={() => {
+            setReceiptOpen(false);
+            // Setelah struk pelanggan ditutup → otomatis tampilkan struk dapur
+            setKitchenReceiptOpen(true);
+          }}
           transaction={lastTransaction}
           items={lastTxItems}
           storeSettings={storeSettings}
           paymentMethodName={paymentMethods?.find(pm => pm.id === lastTransaction.paymentMethodId)?.name || 'Tunai'}
+        />
+      )}
+
+      {/* Struk Dapur — otomatis muncul setelah struk pelanggan ditutup */}
+      {lastTransaction && (
+        <KitchenReceiptModal
+          open={kitchenReceiptOpen}
+          onClose={() => {
+            setKitchenReceiptOpen(false);
+            // Jika ada item yang punya varian, tawarkan cetak label
+            const hasVariants = lastTxItems.some(
+              (it) => it.selectedVariants && it.selectedVariants.length > 0
+            );
+            if (hasVariants) {
+              setVariantLabelOpen(true);
+            }
+          }}
+          onOpenVariantLabels={
+            lastTxItems.some((it) => it.selectedVariants && it.selectedVariants.length > 0)
+              ? () => {
+                  setKitchenReceiptOpen(false);
+                  setVariantLabelOpen(true);
+                }
+              : undefined
+          }
+          transaction={lastTransaction}
+          items={lastTxItems}
+          storeSettings={storeSettings}
+        />
+      )}
+
+      {/* Label Varian per Item — muncul setelah struk dapur ditutup (jika ada produk dengan varian) */}
+      {lastTransaction && lastTxItems.some((it) => it.selectedVariants && it.selectedVariants.length > 0) && (
+        <VariantLabelModal
+          open={variantLabelOpen}
+          onClose={() => setVariantLabelOpen(false)}
+          items={lastTxItems}
+          transaction={lastTransaction}
+          storeSettings={storeSettings}
         />
       )}
 
