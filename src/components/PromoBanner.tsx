@@ -89,30 +89,30 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
         </h4>
       </div>
 
-      {/* LAYER 4: DESCRIPTION BOX */}
-      {banner.description && (
+      {/* LAYER 4: DESCRIPTION & BUTTON BOX */}
+      {(banner.description || onAction || banner.link || banner.buttonText) && (
         <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
-          <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">
-            {banner.description}
-          </p>
-        </div>
-      )}
-
-      {/* LAYER 5: BUTTON BOX */}
-      {(onAction || banner.link || banner.buttonText) && (
-        <div style={{ position: 'absolute', left: `${banner.buttonPos?.x ?? 8}%`, top: `${banner.buttonPos?.y ?? 80}%`, transform: 'translate(0%, -50%)', zIndex: 11 }} className="w-auto">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (banner.link) {
-                if (banner.link.startsWith('http')) window.open(banner.link, '_blank');
-                else window.location.href = banner.link;
-              } else if (onAction) onAction();
-            }}
-            className="text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto hover:bg-slate-100 active:scale-95 transition-all"
-          >
-            {banner.buttonText || 'Lihat Detail'}
-          </button>
+          {banner.description && (
+            <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">
+              {banner.description}
+            </p>
+          )}
+          {(onAction || banner.link || banner.buttonText) && (
+            <div className="mt-[1.5cqw]">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (banner.link) {
+                    if (banner.link.startsWith('http')) window.open(banner.link, '_blank');
+                    else window.location.href = banner.link;
+                  } else if (onAction) onAction();
+                }}
+                className="text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto hover:bg-slate-100 active:scale-95 transition-all inline-block"
+              >
+                {banner.buttonText || 'Lihat Detail'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
