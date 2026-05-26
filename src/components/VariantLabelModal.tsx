@@ -280,17 +280,17 @@ export default function VariantLabelModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-amber-500/20 shadow-2xl">
+      <DialogContent className="max-w-sm w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-primary/20 shadow-2xl">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-lg font-black tracking-tight">
-            <Tag className="text-amber-500 w-5 h-5" />
+            <Tag className="text-primary w-5 h-5" />
             Label Varian
           </DialogTitle>
         </DialogHeader>
 
         {/* Counter item */}
         <div className="flex items-center justify-between mb-4">
-          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold text-xs px-3">
+          <Badge className="bg-primary/10 text-primary border border-primary/20 font-bold text-xs px-3">
             {currentIdx + 1} / {total} Item
           </Badge>
           <span className="text-xs text-muted-foreground font-medium">
@@ -339,7 +339,7 @@ export default function VariantLabelModal({
                 onClick={() => setCurrentIdx(idx)}
                 className={`w-2 h-2 rounded-full transition-all ${
                   idx === currentIdx
-                    ? 'bg-amber-500 w-4'
+                    ? 'bg-primary w-4'
                     : 'bg-muted-foreground/30 hover:bg-muted-foreground/60'
                 }`}
               />
@@ -351,12 +351,12 @@ export default function VariantLabelModal({
         <div className="grid grid-cols-2 gap-3 mb-3">
           <Button
             variant="outline"
-            className="flex flex-col items-center gap-2 h-16 bg-card border border-border hover:bg-muted hover:border-amber-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm"
+            className="flex flex-col items-center gap-2 h-16 bg-card border border-border hover:bg-muted hover:border-primary/50 text-muted-foreground hover:text-primary rounded-2xl transition-all shadow-sm"
             onClick={handleDownloadSingle}
             disabled={downloading || printing}
           >
             {downloading ? (
-              <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
             ) : (
               <Download className="w-5 h-5 text-muted-foreground" />
             )}
@@ -365,14 +365,14 @@ export default function VariantLabelModal({
 
           <Button
             variant="outline"
-            className="flex flex-col items-center gap-2 h-16 bg-amber-600 border border-amber-500 hover:bg-amber-500 text-white shadow-lg shadow-amber-500/30 rounded-2xl transition-all"
+            className="flex flex-col items-center gap-2 h-16 bg-primary border border-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 rounded-2xl transition-all"
             onClick={handleBluetoothPrint}
             disabled={downloading || printing}
           >
             {printing ? (
-              <Loader2 className="w-5 h-5 animate-spin text-white" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary-foreground" />
             ) : (
-              <Printer className="w-5 h-5 text-white" />
+              <Printer className="w-5 h-5 text-primary-foreground" />
             )}
             <span className="text-[10px] font-bold uppercase tracking-wider">Cetak Label</span>
           </Button>
@@ -381,14 +381,14 @@ export default function VariantLabelModal({
         {/* Print All Button */}
         {total > 1 && (
           <Button
-            className="w-full bg-card hover:bg-muted text-foreground border border-border hover:border-amber-500/50 rounded-2xl py-5 font-bold transition-all shadow-sm"
+            className="w-full bg-card hover:bg-muted text-foreground border border-border hover:border-primary/50 rounded-2xl py-5 font-bold transition-all shadow-sm group"
             onClick={handlePrintAll}
             disabled={downloading || printing}
           >
             {printing ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader2 className="w-4 h-4 animate-spin mr-2 text-primary" />
             ) : (
-              <Printer className="w-4 h-4 mr-2" />
+              <Printer className="w-4 h-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
             )}
             Cetak Semua {total} Label Sekaligus
           </Button>

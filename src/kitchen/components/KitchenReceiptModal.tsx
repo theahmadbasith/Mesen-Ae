@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
-import { Download, Share2, Printer, Loader2, Flame, Tag } from 'lucide-react';
+import { Download, Share2, Printer, Loader2, Flame, Tag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -173,10 +173,10 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-orange-500/20 shadow-2xl">
+      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-primary/20 shadow-2xl">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-xl font-black tracking-tight">
-            <Flame className="text-orange-500 w-6 h-6" />
+            <Flame className="text-primary w-6 h-6" />
             TIKET DAPUR
           </DialogTitle>
         </DialogHeader>
@@ -255,27 +255,25 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
           <p className="text-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
             -- SELESAI --
           </p>
-        </div>
-
-        {/* ── Action Buttons ── */}
+             {/* ── Action Buttons ── */}
         <div className="grid grid-cols-2 gap-3 mb-3 mt-6">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center gap-2 h-16 bg-card border-border hover:bg-muted hover:border-orange-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm"
+            className="flex flex-col items-center gap-2 h-16 bg-card border-border hover:bg-muted hover:border-primary/50 text-muted-foreground hover:text-primary rounded-2xl transition-all shadow-sm"
             onClick={handleDownload} 
-            disabled={generating || printing}
+            disabled={downloading || printing}
           >
-            {generating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Download className="w-5 h-5 text-muted-foreground" />}
+            {downloading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Download className="w-5 h-5 text-muted-foreground" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Unduh</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex flex-col items-center gap-2 h-16 bg-orange-600 border border-orange-500 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/30 rounded-2xl transition-all"
+            className="flex flex-col items-center gap-2 h-16 bg-primary border border-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 rounded-2xl transition-all"
             onClick={handleBluetoothPrint} 
-            disabled={generating || printing}
+            disabled={downloading || printing}
           >
-            {printing ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Printer className="w-5 h-5 text-white" />}
+            {printing ? <Loader2 className="w-5 h-5 animate-spin text-primary-foreground" /> : <Printer className="w-5 h-5 text-primary-foreground" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Cetak ESC/POS</span>
           </Button>
         </div>
@@ -283,10 +281,10 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
         {onOpenVariantLabels && items.some(it => it.selectedVariants && it.selectedVariants.length > 0) && (
           <Button 
             variant="outline" 
-            className="w-full bg-card hover:bg-muted text-foreground border border-border hover:border-amber-500/50 rounded-2xl py-6 font-bold shadow-sm transition-all"
+            className="w-full bg-card hover:bg-muted text-foreground border border-border hover:border-primary/50 rounded-2xl py-6 font-bold shadow-sm transition-all group"
             onClick={() => { onClose(); onOpenVariantLabels(); }}
           >
-            <Tag className="w-4 h-4 mr-2 text-amber-500" />
+            <Tag className="w-4 h-4 mr-2 text-primary group-hover:text-primary" />
             Buka Label Varian ({items.filter(it => it.selectedVariants && it.selectedVariants.length > 0).length} Item)
           </Button>
         )}

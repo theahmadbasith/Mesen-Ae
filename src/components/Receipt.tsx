@@ -351,31 +351,31 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         <div className="grid grid-cols-3 gap-3 mt-2">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-card border-border hover:bg-muted hover:border-blue-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm" 
+            className="flex flex-col items-center justify-center gap-2 h-20 bg-card border-border hover:bg-muted hover:border-primary/50 text-muted-foreground hover:text-primary rounded-2xl transition-all shadow-sm" 
             onClick={handleDownload} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-6 h-6 animate-spin text-blue-500" /> : <Download className="w-6 h-6 text-muted-foreground group-hover:text-blue-500" />}
+            {generating ? <Loader2 className="w-6 h-6 animate-spin text-primary" /> : <Download className="w-6 h-6 text-muted-foreground group-hover:text-primary" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Unduh</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-card border-border hover:bg-muted hover:border-blue-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm" 
+            className="flex flex-col items-center justify-center gap-2 h-20 bg-card border-border hover:bg-muted hover:border-primary/50 text-muted-foreground hover:text-primary rounded-2xl transition-all shadow-sm" 
             onClick={handleShare} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-6 h-6 animate-spin text-blue-500" /> : <Share2 className="w-6 h-6 text-muted-foreground group-hover:text-blue-500" />}
+            {generating ? <Loader2 className="w-6 h-6 animate-spin text-primary" /> : <Share2 className="w-6 h-6 text-muted-foreground group-hover:text-primary" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Bagikan</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-blue-600 border-blue-500 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 rounded-2xl transition-all" 
+            className="flex flex-col items-center justify-center gap-2 h-20 bg-primary border-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 rounded-2xl transition-all" 
             onClick={handleBluetoothPrint} 
             disabled={generating || printing}
           >
-            {printing ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : <Printer className="w-6 h-6 text-white" />}
+            {printing ? <Loader2 className="w-6 h-6 animate-spin text-primary-foreground" /> : <Printer className="w-6 h-6 text-primary-foreground" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Cetak Struk</span>
           </Button>
         </div>

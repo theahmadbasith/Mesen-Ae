@@ -104,10 +104,10 @@ export default function PaymentSuccessModal({
             {/* Struk Pelanggan */}
             <button
               onClick={() => setOpenCustomer(true)}
-              className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-blue-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
+              className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-primary/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
             >
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition-colors">
-                <FileText className="w-4 h-4 text-blue-500" />
+              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                <FileText className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="font-bold text-foreground text-sm">Struk Pelanggan</p>
@@ -119,10 +119,10 @@ export default function PaymentSuccessModal({
             {needsKitchen && (
               <button
                 onClick={() => setOpenKitchen(true)}
-                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-orange-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
+                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-primary/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:bg-orange-500/20 transition-colors">
-                  <ChefHat className="w-4 h-4 text-orange-500" />
+                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                  <ChefHat className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <p className="font-bold text-foreground text-sm">Struk Dapur</p>
@@ -135,15 +135,15 @@ export default function PaymentSuccessModal({
             {hasVariants && (
               <button
                 onClick={() => setOpenVariant(true)}
-                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-amber-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
+                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-primary/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
-                  <Tag className="w-4 h-4 text-amber-500" />
+                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                  <Tag className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-bold text-foreground text-sm">Label Varian</p>
-                    <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] px-1.5">
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5">
                       {variantCount} Item
                     </Badge>
                   </div>
