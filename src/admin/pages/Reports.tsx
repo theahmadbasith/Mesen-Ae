@@ -84,51 +84,71 @@ export default function Laporan() {
 
   const rp = (v: number) => `Rp ${(Number(v) || 0).toLocaleString('id-ID')}`;
 
-  const handleGenerateReport = (): MesenAeReportData => {
+  const handleGenerateReport = async (startDateStr: string, endDateStr: string): Promise<MesenAeReportData> => {
     try {
-      const dates = transactions.map(t => new Date(t.date).getTime());
-      const minDate = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
-      const maxDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
-      
-      const sales = transactions.reduce((sum, t) => sum + (t.grandTotal || 0), 0);
-      const profit = transactions.reduce((sum, t) => sum + (t.profit || 0), 0);
-      const hpp = sales - profit;
-      const margin = sales > 0 ? (profit / sales) * 100 : 0;
-      
-      const productMap: Record<string, { qty: number, total: number }> = {};
-      for (const item of allItems) {
+      const start = startOfDay(new Date(startDateStr));
+      const end = new Date(endDateStr);
+      end.setHours(23, 59, 59, 999);
+
+      const filteredTx = allTransactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= start && d <= end;
+      });
+
+      const txIds = new Set(filteredTx.map(t => t.id));
+      const filteredItems = allTxItems.filter((i: any) => txIds.has(i.transactionId));
+
+      const txCount = filteredTx.length;
+      const totalRevenue = filteredTx.reduce((sum, t) => sum + (t.total || 0), 0);
+      const totalDiscount = filteredTx.reduce((sum, t) => sum + (t.discountTotal || 0), 0);
+      const netSales = filteredTx.reduce((sum, t) => sum + (t.grandTotal || 0), 0);
+      const grossProfit = filteredTx.reduce((sum, t) => sum + (t.profit || 0), 0);
+      const totalHpp = netSales - grossProfit;
+      const marginPercent = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
+
+      const productMap: Record<string, { qty: number, revenue: number, profit: number }> = {};
+      for (const item of filteredItems) {
         if (!productMap[item.productName]) {
-          productMap[item.productName] = { qty: 0, total: 0 };
+          productMap[item.productName] = { qty: 0, revenue: 0, profit: 0 };
         }
-        productMap[item.productName].qty += item.quantity;
-        productMap[item.productName].total += item.total;
+        productMap[item.productName].qty += item.quantity || 0;
+        productMap[item.productName].revenue += item.total || 0;
+        productMap[item.productName].profit += item.profit || 0;
       }
-      
-      const top = Object.entries(productMap)
-        .map(([name, d]) => ({ name, qty: d.qty, total: d.total }))
+
+      const topProducts = Object.entries(productMap)
+        .map(([name, d]) => ({ name, qty: d.qty, revenue: d.revenue, profit: d.profit }))
         .sort((a, b) => b.qty - a.qty)
-        .slice(0, 5);
-      
+        .slice(0, 15);
+
       const chart: Record<string, number> = {};
-      for (let i = days - 1; i >= 0; i--) {
-        chart[format(subDays(new Date(), i), 'dd/MM')] = 0;
+      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      
+      for (let i = 0; i <= diffDays; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        chart[format(d, 'dd/MM')] = 0;
       }
-      for (const t of transactions) {
+      for (const t of filteredTx) {
         const key = format(new Date(t.date), 'dd/MM');
         if (key in chart) {
-          chart[key] += t.grandTotal;
+          chart[key] += (t.grandTotal || 0);
         }
       }
 
       return {
-        startDate: minDate,
-        endDate: maxDate,
-        totalSales: sales,
-        totalHpp: hpp,
-        grossProfit: profit,
-        marginPercent: margin,
-        topProducts: top,
-        chartData: chart,
+        storeName: storeSettings?.storeName ?? 'Toko Saya',
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        txCount,
+        totalRevenue,
+        totalDiscount,
+        netSales,
+        totalHpp,
+        grossProfit,
+        marginPercent,
+        topProducts,
+        chartData: Object.entries(chart).map(([date, sales]) => ({ date, sales })),
         themeHue: storeSettings?.themeColor ?? '217',
       };
     } catch (err) {
