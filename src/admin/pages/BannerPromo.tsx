@@ -1,5 +1,5 @@
-import { useDbQuery, dbUpdate, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
-import { type Voucher, type Product, type StoreSettings } from '@/hooks/db-hooks';
+import { useDbQuery, dbUpdate, dbUploadFile, dbDeleteFile, dbInsert, dbDelete } from '@/hooks/db-hooks';
+import { type Voucher, type Product } from '@/hooks/db-hooks';
 import { useState, useRef, useEffect } from 'react';
 import { 
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Gift, Clock, Move, 
@@ -102,10 +102,9 @@ export default function BannerPromo() {
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const storeSettingsList = useDbQuery<StoreSettings>('storeSettings');
-  const storeSettings = storeSettingsList?.[0] || null;
+  const bannerList = useDbQuery<PromoBanner>('banners');
 
-  if (storeSettingsList === undefined) {
+  if (bannerList === undefined) {
     return (
       <div className="flex items-center justify-center p-12">
         <Clock className="w-6 h-6 animate-spin text-primary" />
@@ -277,12 +276,6 @@ export default function BannerPromo() {
       toast.error('Harap isi judul dan deskripsi penawaran');
       return;
     }
-    if (!storeSettings?.id) {
-      toast.error('Pengaturan toko utama belum diatur. Harap isi data di menu Pengaturan terlebih dahulu.');
-      return;
-    }
-
-    const currentBanners: PromoBanner[] = storeSettings.promoBanners || [];
     
     let finalImageUrl = bannerImage;
     if (bannerImage && bannerImage.startsWith('data:image')) {
@@ -312,13 +305,12 @@ export default function BannerPromo() {
       }
     }
     
-    const bannerData: PromoBanner = {
-      id: editBanner ? editBanner.id : Date.now().toString(),
+    const bannerData = {
       type: bannerType,
       title: bannerTitle.trim(),
       description: bannerDesc.trim(),
-      voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) || bannerVoucherId : undefined,
-      productId: bannerType === 'menu' ? Number(bannerProductId) || bannerProductId : undefined,
+      voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) || bannerVoucherId : null,
+      productId: bannerType === 'menu' ? Number(bannerProductId) || bannerProductId : null,
       imageUrl: finalImageUrl,
       overlayImageUrl: finalOverlayUrl,
       titlePos,
@@ -329,32 +321,30 @@ export default function BannerPromo() {
       link: bannerLink.trim(),
       isActive: bannerIsActive,
       bgType: bannerBgType,
-      bgColor: bannerBgType === 'solid' ? bannerBgColor : undefined,
-      bgGradient: bannerBgType === 'gradient' ? bannerBgGradient : undefined,
+      bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
+      bgGradient: bannerBgType === 'gradient' ? bannerBgGradient : null,
       overlayScale,
       overlayRotate,
       overlayFlipX
     };
 
-    let updatedBanners: PromoBanner[];
-    if (editBanner) {
-      if (editBanner.imageUrl && finalImageUrl && editBanner.imageUrl !== finalImageUrl) {
-        if (editBanner.imageUrl.includes('banners')) await dbDeleteFile(editBanner.imageUrl);
-      }
-      if (editBanner.overlayImageUrl && finalOverlayUrl && editBanner.overlayImageUrl !== finalOverlayUrl) {
-        if (editBanner.overlayImageUrl.includes('banners')) await dbDeleteFile(editBanner.overlayImageUrl);
-      }
-      updatedBanners = currentBanners.map(b => b.id === editBanner.id ? bannerData : b);
-    } else {
-      updatedBanners = [...currentBanners, bannerData];
-    }
-
     try {
-      await dbUpdate('storeSettings', storeSettings.id, {
-        ...storeSettings,
-        promoBanners: updatedBanners
-      });
-      toast.success(editBanner ? 'Banner penawaran diperbarui' : 'Banner penawaran baru ditambahkan');
+      if (editBanner) {
+        if (editBanner.imageUrl && finalImageUrl && editBanner.imageUrl !== finalImageUrl) {
+          if (editBanner.imageUrl.includes('banners')) await dbDeleteFile(editBanner.imageUrl);
+        }
+        if (editBanner.overlayImageUrl && finalOverlayUrl && editBanner.overlayImageUrl !== finalOverlayUrl) {
+          if (editBanner.overlayImageUrl.includes('banners')) await dbDeleteFile(editBanner.overlayImageUrl);
+        }
+        await dbUpdate('banners', editBanner.id, bannerData);
+        toast.success('Banner penawaran diperbarui');
+      } else {
+        await dbInsert('banners', {
+          ...bannerData,
+          createdAt: new Date().toISOString()
+        });
+        toast.success('Banner penawaran baru ditambahkan');
+      }
       setBannerDialogOpen(false);
     } catch (err) {
       toast.error('Gagal menyimpan banner penawaran');
@@ -362,9 +352,8 @@ export default function BannerPromo() {
   };
 
   const handleDeleteBanner = async () => {
-    if (deleteBannerId && storeSettings?.id) {
+    if (deleteBannerId) {
       const bannerToDelete = currentBanners.find(b => b.id === deleteBannerId);
-      const updatedBanners = currentBanners.filter(b => b.id !== deleteBannerId);
       
       try {
         if (bannerToDelete?.imageUrl && bannerToDelete.imageUrl.includes('banners')) {
@@ -373,10 +362,7 @@ export default function BannerPromo() {
         if (bannerToDelete?.overlayImageUrl && bannerToDelete.overlayImageUrl.includes('banners')) {
           await dbDeleteFile(bannerToDelete.overlayImageUrl);
         }
-        await dbUpdate('storeSettings', storeSettings.id, {
-          ...storeSettings,
-          promoBanners: updatedBanners
-        });
+        await dbDelete('banners', deleteBannerId);
         toast.success('Banner penawaran berhasil dihapus');
       } catch (err) {
         toast.error('Gagal menghapus banner penawaran');
@@ -387,20 +373,18 @@ export default function BannerPromo() {
   };
 
   const handleToggleBannerActive = async (bId: string | number, currentActive: boolean) => {
-    if (!storeSettings?.id) return;
-    const currentBanners: PromoBanner[] = storeSettings.promoBanners || [];
-    const updatedBanners = currentBanners.map(b => b.id === bId ? { ...b, isActive: !currentActive } : b);
-    
+    const banner = currentBanners.find(b => b.id === bId);
+    if (!banner) return;
     try {
-      await dbUpdate('storeSettings', storeSettings.id, { ...storeSettings, promoBanners: updatedBanners });
+      await dbUpdate('banners', bId, { ...banner, isActive: !currentActive });
       toast.success(!currentActive ? 'Banner penawaran diaktifkan' : 'Banner penawaran dinonaktifkan');
     } catch (err) {
       toast.error('Gagal mengubah status banner');
     }
   };
 
-  const bannerList: PromoBanner[] = storeSettings?.promoBanners || [];
-  const currentBanners: PromoBanner[] = storeSettings?.promoBanners || [];
+  const currentBanners = bannerList || [];
+  const bannerListCopy = bannerList || [];
 
   return (
     <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
