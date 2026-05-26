@@ -173,9 +173,9 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-zinc-950 border border-zinc-800 shadow-[0_10px_40px_rgba(249,115,22,0.1)]">
+      <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-orange-500/20 shadow-2xl">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-center text-white flex items-center justify-center gap-2 text-xl font-black tracking-tight">
+          <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-xl font-black tracking-tight">
             <Flame className="text-orange-500 w-6 h-6" />
             TIKET DAPUR
           </DialogTitle>
@@ -258,57 +258,45 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
         </div>
 
         {/* ── Action Buttons ── */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-2 gap-3 mb-3 mt-6">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-orange-500/50 text-slate-300 hover:text-white rounded-2xl transition-all" 
+            className="flex flex-col items-center gap-2 h-16 bg-card border-border hover:bg-muted hover:border-orange-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm"
             onClick={handleDownload} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-6 h-6 animate-spin text-orange-500" /> : <Download className="w-6 h-6 text-zinc-400 group-hover:text-orange-400" />}
-            <span className="text-[10px] font-bold uppercase tracking-wider">Simpan</span>
+            {generating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Download className="w-5 h-5 text-muted-foreground" />}
+            <span className="text-[10px] font-bold uppercase tracking-wider">Unduh</span>
           </Button>
-
+          
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-orange-500/50 text-slate-300 hover:text-white rounded-2xl transition-all" 
-            onClick={handleShare} 
-            disabled={generating || printing}
-          >
-            {generating ? <Loader2 className="w-6 h-6 animate-spin text-orange-500" /> : <Share2 className="w-6 h-6 text-zinc-400 group-hover:text-orange-400" />}
-            <span className="text-[10px] font-bold uppercase tracking-wider">Bagikan</span>
-          </Button>
-
-          <Button 
-            variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-orange-600 border-orange-500 hover:bg-orange-500 text-white shadow-lg shadow-orange-900/50 rounded-2xl transition-all" 
+            className="flex flex-col items-center gap-2 h-16 bg-orange-600 border border-orange-500 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/30 rounded-2xl transition-all"
             onClick={handleBluetoothPrint} 
             disabled={generating || printing}
           >
-            {printing ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : <Printer className="w-6 h-6 text-white" />}
-            <span className="text-[10px] font-bold uppercase tracking-wider">Cetak Tiket</span>
+            {printing ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Printer className="w-5 h-5 text-white" />}
+            <span className="text-[10px] font-bold uppercase tracking-wider">Cetak ESC/POS</span>
           </Button>
         </div>
 
-        {/* Tombol cetak label varian — hanya tampil jika ada item dengan varian */}
         {onOpenVariantLabels && items.some(it => it.selectedVariants && it.selectedVariants.length > 0) && (
-          <Button
-            className="w-full mt-3 rounded-2xl py-5 font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 hover:border-amber-400/60 transition-all"
+          <Button 
+            variant="outline" 
+            className="w-full bg-card hover:bg-muted text-foreground border border-border hover:border-amber-500/50 rounded-2xl py-6 font-bold shadow-sm transition-all"
             onClick={() => { onClose(); onOpenVariantLabels(); }}
           >
-            <Tag className="w-4 h-4 mr-2 text-amber-400" />
-            Cetak Label Varian
-            <Badge className="ml-2 bg-amber-500/30 text-amber-200 border-amber-500/20 text-[10px]">
-              {items.filter(it => it.selectedVariants && it.selectedVariants.length > 0).length} Item
-            </Badge>
+            <Tag className="w-4 h-4 mr-2 text-amber-500" />
+            Buka Label Varian ({items.filter(it => it.selectedVariants && it.selectedVariants.length > 0).length} Item)
           </Button>
         )}
 
         <Button 
           variant="ghost" 
-          className="w-full mt-2 rounded-xl py-5 font-bold text-zinc-400 hover:text-white hover:bg-zinc-900" 
+          className="w-full mt-2 rounded-xl py-5 font-bold text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center gap-2 transition-all" 
           onClick={onClose}
         >
+          <X className="w-4 h-4" />
           Tutup Modal
         </Button>
       </DialogContent>

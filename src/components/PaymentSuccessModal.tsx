@@ -50,46 +50,46 @@ export default function PaymentSuccessModal({
     <>
       {/* Modal Sukses Pembayaran */}
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-sm w-[92vw] rounded-3xl p-0 bg-zinc-950 border border-zinc-800 shadow-[0_10px_50px_rgba(0,0,0,0.7)] overflow-hidden">
+        <DialogContent className="max-w-sm w-[92vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 bg-background border border-border shadow-2xl">
 
           {/* Hero Section */}
-          <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center border-b border-zinc-800/80">
+          <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center border-b border-border/80">
             {/* Ikon sukses animasi */}
             <div className="relative mb-4">
               <div className="w-20 h-20 rounded-full bg-emerald-500/15 border-2 border-emerald-500/30 flex items-center justify-center animate-in zoom-in duration-500">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400" strokeWidth={2} />
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" strokeWidth={2} />
               </div>
               {/* Ping animation */}
               <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping" style={{ animationDuration: '2s' }} />
             </div>
 
-            <h2 className="text-2xl font-black text-white tracking-tight mb-1">
+            <h2 className="text-2xl font-black text-foreground tracking-tight mb-1">
               Pembayaran Berhasil!
             </h2>
-            <p className="text-zinc-400 text-sm font-medium mb-4">
+            <p className="text-muted-foreground text-sm font-medium mb-4">
               {transaction.receiptNumber}
             </p>
 
             {/* Info ringkas */}
-            <div className="w-full bg-zinc-900 rounded-2xl border border-zinc-800 divide-y divide-zinc-800/80">
+            <div className="w-full bg-muted/50 rounded-2xl border border-border divide-y divide-border/80">
               <div className="flex justify-between items-center px-4 py-3">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total</span>
-                <span className="font-black text-white text-base">{rp(transaction.total)}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</span>
+                <span className="font-black text-foreground text-base">{rp(transaction.total)}</span>
               </div>
               <div className="flex justify-between items-center px-4 py-3">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Metode</span>
-                <span className="font-bold text-zinc-200 text-sm">{paymentMethodName}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Metode</span>
+                <span className="font-bold text-foreground/80 text-sm">{paymentMethodName}</span>
               </div>
               {transaction.tableNumber && (
                 <div className="flex justify-between items-center px-4 py-3">
-                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Meja</span>
-                  <span className="font-black text-white text-sm">{transaction.tableNumber}</span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Meja</span>
+                  <span className="font-black text-foreground text-sm">{transaction.tableNumber}</span>
                 </div>
               )}
               {!transaction.tableNumber && (
                 <div className="flex justify-between items-center px-4 py-3">
-                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Tipe</span>
-                  <span className="font-bold text-zinc-200 text-sm">Bawa Pulang</span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipe</span>
+                  <span className="font-bold text-foreground/80 text-sm">Bawa Pulang</span>
                 </div>
               )}
             </div>
@@ -97,36 +97,36 @@ export default function PaymentSuccessModal({
 
           {/* Tombol-tombol Cetak */}
           <div className="p-5 space-y-2.5">
-            <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-widest text-center mb-3">
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest text-center mb-3">
               Pilihan Cetak
             </p>
 
             {/* Struk Pelanggan */}
             <button
-              onClick={() => { onClose(); setOpenCustomer(true); }}
-              className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-blue-500/50 hover:bg-zinc-800/80 transition-all group text-left"
+              onClick={() => setOpenCustomer(true)}
+              className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-blue-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
             >
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:bg-blue-500/25 transition-colors">
-                <FileText className="w-4 h-4 text-blue-400" />
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition-colors">
+                <FileText className="w-4 h-4 text-blue-500" />
               </div>
               <div>
-                <p className="font-bold text-white text-sm">Struk Pelanggan</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Struk pembayaran lengkap</p>
+                <p className="font-bold text-foreground text-sm">Struk Pelanggan</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Struk pembayaran lengkap</p>
               </div>
             </button>
 
             {/* Struk Dapur */}
             {needsKitchen && (
               <button
-                onClick={() => { onClose(); setOpenKitchen(true); }}
-                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-orange-500/50 hover:bg-zinc-800/80 transition-all group text-left"
+                onClick={() => setOpenKitchen(true)}
+                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-orange-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:bg-orange-500/25 transition-colors">
-                  <ChefHat className="w-4 h-4 text-orange-400" />
+                <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:bg-orange-500/20 transition-colors">
+                  <ChefHat className="w-4 h-4 text-orange-500" />
                 </div>
                 <div>
-                  <p className="font-bold text-white text-sm">Struk Dapur</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Tiket untuk barista / koki</p>
+                  <p className="font-bold text-foreground text-sm">Struk Dapur</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Tiket untuk barista / koki</p>
                 </div>
               </button>
             )}
@@ -134,20 +134,20 @@ export default function PaymentSuccessModal({
             {/* Label Varian */}
             {hasVariants && (
               <button
-                onClick={() => { onClose(); setOpenVariant(true); }}
-                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 hover:bg-zinc-800/80 transition-all group text-left"
+                onClick={() => setOpenVariant(true)}
+                className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-card border border-border hover:border-amber-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:bg-amber-500/25 transition-colors">
-                  <Tag className="w-4 h-4 text-amber-400" />
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
+                  <Tag className="w-4 h-4 text-amber-500" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-white text-sm">Label Varian</p>
-                    <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/20 text-[10px] px-1.5">
+                    <p className="font-bold text-foreground text-sm">Label Varian</p>
+                    <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] px-1.5">
                       {variantCount} Item
                     </Badge>
                   </div>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Label stiker per produk varian</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Label stiker per produk varian</p>
                 </div>
               </button>
             )}
@@ -155,7 +155,7 @@ export default function PaymentSuccessModal({
             {/* Tutup */}
             <Button
               variant="ghost"
-              className="w-full mt-2 rounded-2xl py-5 font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 flex items-center gap-2"
+              className="w-full mt-2 rounded-2xl py-5 font-bold text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-2"
               onClick={onClose}
             >
               <X className="w-4 h-4" />
@@ -187,7 +187,7 @@ export default function PaymentSuccessModal({
           storeSettings={storeSettings}
           onOpenVariantLabels={
             hasVariants
-              ? () => { setOpenKitchen(false); setOpenVariant(true); }
+              ? () => { setOpenVariant(true); }
               : undefined
           }
         />

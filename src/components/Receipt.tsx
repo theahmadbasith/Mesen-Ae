@@ -188,9 +188,9 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-sm w-[92vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-zinc-950 border border-zinc-800 shadow-[0_10px_50px_rgba(0,0,0,0.7)]">
+      <DialogContent className="max-w-sm w-[92vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-border shadow-2xl">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-center text-white flex items-center justify-center gap-2">
+          <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2">
             {isPaidTx ? (
               <>
                 <CheckCircle2 className="text-emerald-500 w-6 h-6" />
@@ -351,27 +351,27 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         <div className="grid grid-cols-3 gap-3 mt-2">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-blue-500/50 text-slate-300 hover:text-white rounded-2xl transition-all" 
+            className="flex flex-col items-center justify-center gap-2 h-20 bg-card border-border hover:bg-muted hover:border-blue-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm" 
             onClick={handleDownload} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-6 h-6 animate-spin text-blue-500" /> : <Download className="w-6 h-6 text-zinc-400 group-hover:text-blue-400" />}
+            {generating ? <Loader2 className="w-6 h-6 animate-spin text-blue-500" /> : <Download className="w-6 h-6 text-muted-foreground group-hover:text-blue-500" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Unduh</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-blue-500/50 text-slate-300 hover:text-white rounded-2xl transition-all" 
+            className="flex flex-col items-center justify-center gap-2 h-20 bg-card border-border hover:bg-muted hover:border-blue-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm" 
             onClick={handleShare} 
             disabled={generating || printing}
           >
-            {generating ? <Loader2 className="w-6 h-6 animate-spin text-blue-500" /> : <Share2 className="w-6 h-6 text-zinc-400 group-hover:text-blue-400" />}
+            {generating ? <Loader2 className="w-6 h-6 animate-spin text-blue-500" /> : <Share2 className="w-6 h-6 text-muted-foreground group-hover:text-blue-500" />}
             <span className="text-[10px] font-bold uppercase tracking-wider">Bagikan</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center gap-2 h-20 bg-blue-600 border-blue-500 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/50 rounded-2xl transition-all" 
+            className="flex flex-col items-center justify-center gap-2 h-20 bg-blue-600 border-blue-500 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 rounded-2xl transition-all" 
             onClick={handleBluetoothPrint} 
             disabled={generating || printing}
           >
@@ -382,7 +382,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
         <Button 
           variant="ghost" 
-          className="w-full mt-2 rounded-2xl py-5 font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 transition-all" 
+          className="w-full mt-2 rounded-2xl py-5 font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-all" 
           onClick={onClose}
         >
           Tutup Modal

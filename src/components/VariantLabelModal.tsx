@@ -280,20 +280,20 @@ export default function VariantLabelModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm w-[95vw] rounded-3xl p-6 bg-gradient-to-b from-amber-950 to-zinc-950 border border-amber-800/40 shadow-[0_10px_40px_rgba(245,158,11,0.15)]">
+      <DialogContent className="max-w-sm w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background border border-amber-500/20 shadow-2xl">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-center text-white flex items-center justify-center gap-2 text-lg font-black tracking-tight">
-            <Tag className="text-amber-400 w-5 h-5" />
+          <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-lg font-black tracking-tight">
+            <Tag className="text-amber-500 w-5 h-5" />
             Label Varian
           </DialogTitle>
         </DialogHeader>
 
         {/* Counter item */}
         <div className="flex items-center justify-between mb-4">
-          <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-xs px-3">
+          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold text-xs px-3">
             {currentIdx + 1} / {total} Item
           </Badge>
-          <span className="text-xs text-zinc-400 font-medium">
+          <span className="text-xs text-muted-foreground font-medium">
             {transaction.tableNumber ? `Meja ${transaction.tableNumber}` : 'Bawa Pulang'}
           </span>
         </div>
@@ -303,7 +303,7 @@ export default function VariantLabelModal({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl disabled:opacity-30"
+            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl disabled:opacity-30"
             disabled={currentIdx === 0}
             onClick={() => setCurrentIdx((i) => i - 1)}
           >
@@ -322,7 +322,7 @@ export default function VariantLabelModal({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl disabled:opacity-30"
+            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl disabled:opacity-30"
             disabled={currentIdx === total - 1}
             onClick={() => setCurrentIdx((i) => i + 1)}
           >
@@ -339,8 +339,8 @@ export default function VariantLabelModal({
                 onClick={() => setCurrentIdx(idx)}
                 className={`w-2 h-2 rounded-full transition-all ${
                   idx === currentIdx
-                    ? 'bg-amber-400 w-4'
-                    : 'bg-zinc-600 hover:bg-zinc-400'
+                    ? 'bg-amber-500 w-4'
+                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/60'
                 }`}
               />
             ))}
@@ -351,21 +351,21 @@ export default function VariantLabelModal({
         <div className="grid grid-cols-2 gap-3 mb-3">
           <Button
             variant="outline"
-            className="flex flex-col items-center gap-2 h-16 bg-zinc-900 border-zinc-700 hover:bg-zinc-800 hover:border-amber-500/50 text-slate-300 hover:text-white rounded-2xl transition-all"
+            className="flex flex-col items-center gap-2 h-16 bg-card border border-border hover:bg-muted hover:border-amber-500/50 text-muted-foreground hover:text-foreground rounded-2xl transition-all shadow-sm"
             onClick={handleDownloadSingle}
             disabled={downloading || printing}
           >
             {downloading ? (
-              <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+              <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
             ) : (
-              <Download className="w-5 h-5 text-zinc-400" />
+              <Download className="w-5 h-5 text-muted-foreground" />
             )}
             <span className="text-[10px] font-bold uppercase tracking-wider">Unduh Label</span>
           </Button>
 
           <Button
             variant="outline"
-            className="flex flex-col items-center gap-2 h-16 bg-amber-600 border-amber-500 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/40 rounded-2xl transition-all"
+            className="flex flex-col items-center gap-2 h-16 bg-amber-600 border border-amber-500 hover:bg-amber-500 text-white shadow-lg shadow-amber-500/30 rounded-2xl transition-all"
             onClick={handleBluetoothPrint}
             disabled={downloading || printing}
           >
@@ -381,7 +381,7 @@ export default function VariantLabelModal({
         {/* Print All Button */}
         {total > 1 && (
           <Button
-            className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 hover:border-amber-500/50 rounded-2xl py-5 font-bold transition-all"
+            className="w-full bg-card hover:bg-muted text-foreground border border-border hover:border-amber-500/50 rounded-2xl py-5 font-bold transition-all shadow-sm"
             onClick={handlePrintAll}
             disabled={downloading || printing}
           >
@@ -397,7 +397,7 @@ export default function VariantLabelModal({
         {/* Close */}
         <Button
           variant="ghost"
-          className="w-full mt-2 rounded-xl py-5 font-bold text-zinc-400 hover:text-white hover:bg-zinc-900 flex items-center gap-2"
+          className="w-full mt-2 rounded-xl py-5 font-bold text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-2 transition-all"
           onClick={onClose}
         >
           <X className="w-4 h-4" />

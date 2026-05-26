@@ -57,14 +57,14 @@ export default function PrintActionModal({
     <>
       {/* Modal Pilihan Cetak */}
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-xs w-[90vw] rounded-3xl p-0 bg-zinc-950 border border-zinc-800 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-hidden">
+        <DialogContent className="max-w-xs w-[90vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 bg-background border border-border shadow-2xl">
           {/* Header */}
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80">
-            <DialogTitle className="text-center text-white flex items-center justify-center gap-2 text-lg font-black tracking-tight">
-              <Printer className="w-5 h-5 text-zinc-400" />
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/80">
+            <DialogTitle className="text-center text-foreground flex items-center justify-center gap-2 text-lg font-black tracking-tight">
+              <Printer className="w-5 h-5 text-muted-foreground" />
               Pilih Cetak
             </DialogTitle>
-            <p className="text-center text-xs text-zinc-500 font-medium mt-1">
+            <p className="text-center text-xs text-muted-foreground font-medium mt-1">
               {transaction.receiptNumber}
               {transaction.tableNumber ? ` · Meja ${transaction.tableNumber}` : ' · Bawa Pulang'}
             </p>
@@ -75,15 +75,15 @@ export default function PrintActionModal({
             {/* Struk Pelanggan */}
             {showCustomerReceipt && (
               <button
-                onClick={() => { onClose(); setOpenCustomer(true); }}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-blue-500/50 hover:bg-zinc-800/80 transition-all group text-left"
+                onClick={() => setOpenCustomer(true)}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-blue-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:bg-blue-500/25 transition-colors">
-                  <FileText className="w-5 h-5 text-blue-400" />
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition-colors">
+                  <FileText className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
-                  <p className="font-bold text-white text-sm">Struk Pelanggan</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">Struk pembayaran lengkap</p>
+                  <p className="font-bold text-foreground text-sm">Struk Pelanggan</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Struk pembayaran lengkap</p>
                 </div>
               </button>
             )}
@@ -91,15 +91,15 @@ export default function PrintActionModal({
             {/* Struk Dapur */}
             {showKitchenReceipt && (
               <button
-                onClick={() => { onClose(); setOpenKitchen(true); }}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-orange-500/50 hover:bg-zinc-800/80 transition-all group text-left"
+                onClick={() => setOpenKitchen(true)}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-orange-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:bg-orange-500/25 transition-colors">
-                  <ChefHat className="w-5 h-5 text-orange-400" />
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:bg-orange-500/20 transition-colors">
+                  <ChefHat className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="font-bold text-white text-sm">Struk Dapur</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">Tiket untuk barista / koki</p>
+                  <p className="font-bold text-foreground text-sm">Struk Dapur</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Tiket untuk barista / koki</p>
                 </div>
               </button>
             )}
@@ -107,20 +107,20 @@ export default function PrintActionModal({
             {/* Label Varian */}
             {hasVariants && (
               <button
-                onClick={() => { onClose(); setOpenVariant(true); }}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 hover:bg-zinc-800/80 transition-all group text-left"
+                onClick={() => setOpenVariant(true)}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-amber-500/50 hover:bg-muted/80 transition-all group text-left shadow-sm"
               >
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:bg-amber-500/25 transition-colors">
-                  <Tag className="w-5 h-5 text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
+                  <Tag className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-white text-sm">Label Varian</p>
-                    <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/20 text-[10px] px-1.5">
+                    <p className="font-bold text-foreground text-sm">Label Varian</p>
+                    <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] px-1.5">
                       {variantCount} Item
                     </Badge>
                   </div>
-                  <p className="text-xs text-zinc-500 mt-0.5">Label stiker per produk varian</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Label stiker per produk varian</p>
                 </div>
               </button>
             )}
@@ -128,7 +128,7 @@ export default function PrintActionModal({
             {/* Tutup */}
             <button
               onClick={onClose}
-              className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 transition-all text-sm font-medium mt-1"
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all text-sm font-medium mt-1"
             >
               <X className="w-4 h-4" />
               Tutup
@@ -159,7 +159,7 @@ export default function PrintActionModal({
           storeSettings={storeSettings}
           onOpenVariantLabels={
             hasVariants
-              ? () => { setOpenKitchen(false); setOpenVariant(true); }
+              ? () => { setOpenVariant(true); }
               : undefined
           }
         />
