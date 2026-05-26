@@ -170,7 +170,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         table_number: data.tableNumber || null,
         remarks: data.remarks || null,
         status: 'lunas',
-        kitchen_status: getBillNeedsKitchen(bill) ? 'diproses' : null,
+        kitchen_status: getBillNeedsKitchen(bill) ? 'diproses' : (bill.remarks === 'Pesanan dari Web' ? (bill.kitchenStatus || 'pending') : null),
         closed_at: new Date().toISOString(),
       };
 
