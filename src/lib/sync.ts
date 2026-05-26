@@ -101,7 +101,7 @@ export function mapTransaction(r: Record<string, unknown>) {
     profit: Number(r.profit),
     date: new Date(r.date as string),
     receiptNumber: r.receipt_number as string,
-    status: r.status as 'open' | 'processing' | 'completed',
+    status: r.status as 'belum lunas' | 'lunas' | 'partial' | 'batal',
     kitchenStatus: r.kitchen_status as string | undefined,
     orderNumber: r.order_number as string | undefined,
     customerName: r.customer_name as string | undefined,

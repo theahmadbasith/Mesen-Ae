@@ -118,7 +118,7 @@ export default function Kasir() {
   const paymentMethods = realtimePaymentMethods;
   const storeSettings = realtimeStoreSettings[0];
   const allBills = realtimeTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const openBills = realtimeTransactions.filter(t => t.status === 'belum lunas' || t.status === 'open').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const openBills = realtimeTransactions.filter(t => t.status === 'belum lunas').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const vouchers = realtimeVouchers.filter(v => v.isActive);
   
   const loading = realtimeProducts.length === 0 && realtimeCategories.length === 0;

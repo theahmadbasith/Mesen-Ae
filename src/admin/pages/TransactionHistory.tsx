@@ -108,7 +108,7 @@ export default function TransactionHistory() {
 
   const dateKeys = useMemo(() => Object.keys(grouped).sort((a, b) => b.localeCompare(a)), [grouped]);
 
-  const filteredTotal = useMemo(() => filtered.filter(t => t.status !== 'open').reduce((s, t) => s + t.total, 0), [filtered]);
+  const filteredTotal = useMemo(() => filtered.filter(t => t.status === 'lunas').reduce((s, t) => s + t.total, 0), [filtered]);
   const hasDateFilter = dateFrom || dateTo;
 
   const openDetail = (tx: Transaction) => {
@@ -297,18 +297,18 @@ export default function TransactionHistory() {
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className={cn(
                         'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-colors',
-                        tx.status === 'open' 
+                        tx.status === 'belum lunas' 
                           ? 'bg-warning/10 text-warning border-warning/20 group-hover:bg-warning/20' 
                           : 'bg-primary/5 text-primary border-primary/10 group-hover:bg-primary/10'
                       )}>
-                        {tx.status === 'open' ? <ShoppingCart className="w-5 h-5" /> : <ReceiptIcon className="w-5 h-5" />}
+                        {tx.status === 'belum lunas' ? <ShoppingCart className="w-5 h-5" /> : <ReceiptIcon className="w-5 h-5" />}
                       </div>
                       
                       <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div className="flex items-start justify-between gap-3 mb-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <p className="text-sm font-bold text-foreground font-mono truncate">{tx.receiptNumber}</p>
-                            {tx.status === 'open' ? (
+                            {tx.status === 'belum lunas' ? (
                               <Badge className="text-[10px] font-black uppercase tracking-wider px-2 py-0 bg-warning text-warning-foreground hover:bg-warning shadow-sm">Open</Badge>
                             ) : (
                               <Badge className="text-[10px] font-black uppercase tracking-wider px-2 py-0 bg-success text-success-foreground hover:bg-success shadow-sm">Lunas</Badge>
@@ -358,8 +358,8 @@ export default function TransactionHistory() {
               <div className="bg-card border border-border/60 rounded-2xl p-4 space-y-2.5 shadow-sm">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground font-medium">Status</span>
-                  <Badge className={cn('font-black uppercase tracking-wider text-[10px]', selectedTx.status === 'open' ? 'bg-warning text-warning-foreground' : 'bg-success text-success-foreground')}>
-                    {selectedTx.status === 'open' ? 'Open Bill' : 'Lunas'}
+                  <Badge className={cn('font-black uppercase tracking-wider text-[10px]', selectedTx.status === 'belum lunas' ? 'bg-warning text-warning-foreground' : 'bg-success text-success-foreground')}>
+                    {selectedTx.status === 'belum lunas' ? 'Belum Lunas' : 'Lunas'}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
@@ -372,7 +372,7 @@ export default function TransactionHistory() {
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground font-medium">Pembayaran</span>
-                  <span className="font-semibold">{selectedTx.status === 'open' ? '-' : getPaymentName(selectedTx.paymentMethodId)}</span>
+                  <span className="font-semibold">{selectedTx.status === 'belum lunas' ? '-' : getPaymentName(selectedTx.paymentMethodId)}</span>
                 </div>
                 {selectedTx.customerName && (
                   <div className="flex justify-between items-center text-sm pt-2 border-t border-dashed border-border/60 mt-2">
@@ -438,7 +438,7 @@ export default function TransactionHistory() {
                   <span className="font-black text-primary">{rp(selectedTx.total)}</span>
                 </div>
                 
-                {selectedTx.status !== 'open' ? (
+                {selectedTx.status === 'lunas' ? (
                   <div className="pt-3 mt-3 border-t border-border/50 space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
                       <span className="text-muted-foreground">Uang Dibayar</span>
@@ -458,7 +458,7 @@ export default function TransactionHistory() {
 
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
-                {selectedTx.status === 'open' ? (
+                {selectedTx.status === 'belum lunas' ? (
                   <Button className="w-full h-12 rounded-xl font-bold shadow-md active:scale-[0.98] transition-all" onClick={() => { setDetailOpen(false); navigate('/admin/cashier'); }}>
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Lanjutkan Pembayaran di Kasir

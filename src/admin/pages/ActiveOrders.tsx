@@ -71,7 +71,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
 
   const openBills = (useDbQuery<Transaction>('transactions') || []).filter(
     (t) => {
-      const isUnpaid = t.status === 'belum lunas' || t.status === 'open';
+      const isUnpaid = t.status === 'belum lunas';
       const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
       return isUnpaid || isPaidButCooking;
     }

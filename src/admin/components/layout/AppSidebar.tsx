@@ -93,7 +93,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   const storeSettings = storeSettingsList[0] || null;
 
   const openBillsCount = (useDbQuery<any>('transactions') || []).filter((t: any) => {
-    const isUnpaid = t.status === 'belum lunas' || t.status === 'open';
+    const isUnpaid = t.status === 'belum lunas';
     const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'batal'].includes(t.kitchenStatus);
     return isUnpaid || isPaidButCooking;
   }).length;

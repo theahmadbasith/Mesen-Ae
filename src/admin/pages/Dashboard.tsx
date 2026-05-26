@@ -17,8 +17,8 @@ export default function Dashboard() {
   today.setHours(0, 0, 0, 0);
 
   const allTransactions = useDbQuery<any>('transactions') || [];
-  const todayTransactions = allTransactions.filter(t => new Date(t.date) >= today && t.status !== 'open');
-  const openBillsCount = allTransactions.filter(t => t.status === 'open').length;
+  const todayTransactions = allTransactions.filter(t => new Date(t.date) >= today && t.status === 'lunas');
+  const openBillsCount = allTransactions.filter(t => t.status === 'belum lunas').length;
 
   const allProducts = useDbQuery<any>('products') || [];
   const lowStockProducts = allProducts.filter(p => p.stock <= 5);

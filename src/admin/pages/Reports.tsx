@@ -26,7 +26,7 @@ export default function Laporan() {
 
   const transactions = useMemo(() => {
     const since = startOfDay(subDays(new Date(), days));
-    return allTransactions.filter(t => new Date(t.date) >= since);
+    return allTransactions.filter(t => t.status === 'lunas' && new Date(t.date) >= since);
   }, [allTransactions, days]);
 
   const allItems = useMemo(() => {
@@ -37,10 +37,10 @@ export default function Laporan() {
 
   const txCount = transactions.length;
 
-  const totalSales = useMemo(() => transactions.reduce((sum, t) => sum + (t.grandTotal || 0), 0), [transactions]);
+  const totalSales = useMemo(() => transactions.reduce((sum, t) => sum + (t.total || 0), 0), [transactions]);
   const totalProfit = useMemo(() => transactions.reduce((sum, t) => sum + (t.profit || 0), 0), [transactions]);
-  const totalRevenue = useMemo(() => transactions.reduce((sum, t) => sum + (t.total || 0), 0), [transactions]);
-  const totalDiscount = useMemo(() => transactions.reduce((sum, t) => sum + (t.discountTotal || 0), 0), [transactions]);
+  const totalRevenue = useMemo(() => transactions.reduce((sum, t) => sum + (t.subtotal || 0), 0), [transactions]);
+  const totalDiscount = useMemo(() => transactions.reduce((sum, t) => sum + (t.discountAmount || 0), 0), [transactions]);
   const netSales = totalSales;
   const totalHpp = totalSales - totalProfit;
   const grossProfit = totalProfit;
@@ -59,7 +59,7 @@ export default function Laporan() {
     for (const t of transactions) {
       const dateStr = format(new Date(t.date), 'dd MMM');
       if (dateStr in data) {
-        data[dateStr] += (t.grandTotal || 0);
+        data[dateStr] += (t.total || 0);
       }
     }
 
@@ -73,7 +73,7 @@ export default function Laporan() {
         map[i.productName] = { name: i.productName, qty: 0, revenue: 0, profit: 0 };
       }
       map[i.productName].qty += (i.quantity || 0);
-      map[i.productName].revenue += (i.total || 0);
+      map[i.productName].revenue += (i.subtotal || 0);
       map[i.productName].profit += (i.profit || 0);
     }
 
@@ -91,6 +91,7 @@ export default function Laporan() {
       end.setHours(23, 59, 59, 999);
 
       const filteredTx = allTransactions.filter(t => {
+        if (t.status !== 'lunas') return false;
         const d = new Date(t.date);
         return d >= start && d <= end;
       });
@@ -99,9 +100,9 @@ export default function Laporan() {
       const filteredItems = allTxItems.filter((i: any) => txIds.has(i.transactionId));
 
       const txCount = filteredTx.length;
-      const totalRevenue = filteredTx.reduce((sum, t) => sum + (t.total || 0), 0);
-      const totalDiscount = filteredTx.reduce((sum, t) => sum + (t.discountTotal || 0), 0);
-      const netSales = filteredTx.reduce((sum, t) => sum + (t.grandTotal || 0), 0);
+      const totalRevenue = filteredTx.reduce((sum, t) => sum + (t.subtotal || 0), 0);
+      const totalDiscount = filteredTx.reduce((sum, t) => sum + (t.discountAmount || 0), 0);
+      const netSales = filteredTx.reduce((sum, t) => sum + (t.total || 0), 0);
       const grossProfit = filteredTx.reduce((sum, t) => sum + (t.profit || 0), 0);
       const totalHpp = netSales - grossProfit;
       const marginPercent = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
@@ -112,7 +113,7 @@ export default function Laporan() {
           productMap[item.productName] = { qty: 0, revenue: 0, profit: 0 };
         }
         productMap[item.productName].qty += item.quantity || 0;
-        productMap[item.productName].revenue += item.total || 0;
+        productMap[item.productName].revenue += item.subtotal || 0;
         productMap[item.productName].profit += item.profit || 0;
       }
 
@@ -132,7 +133,7 @@ export default function Laporan() {
       for (const t of filteredTx) {
         const key = format(new Date(t.date), 'dd/MM');
         if (key in chart) {
-          chart[key] += (t.grandTotal || 0);
+          chart[key] += (t.total || 0);
         }
       }
 
