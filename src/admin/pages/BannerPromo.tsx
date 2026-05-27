@@ -1,6 +1,4 @@
-import { useDbQuery, dbUpdate, dbUploadFile, dbDeleteFile, dbInsert, dbDelete } from '@/hooks/db-hooks';
-import { type Voucher, type Product } from '@/hooks/db-hooks';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Clock, Minus,
   RotateCcw, RotateCw, FlipHorizontal, MousePointer2, X, Bold, Italic,
@@ -10,117 +8,38 @@ import {
   PanelLeft, CornerDownRight, Maximize2, FlipVertical, SquareDashed,
   Pipette, Sun, Contrast, Droplets, Blend, SlidersHorizontal, ArrowUpDown,
   GripVertical, Star, Square, Circle, Triangle, Hexagon, ArrowRight,
-  ChevronLeft, ChevronRight, MoreVertical, Crosshair, Wand2, Pen
+  ChevronLeft, ChevronRight, MoreVertical, Crosshair, Wand2, Pen,
+  Moon
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { FORMAT_IDR } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
-// ─── TYPES ─────────────────────────────────────────────────────────────────────
+// ============================================================================
+// 1. MOCK DATABASE & STORAGE HOOKS (Simulasi db-hooks untuk Standalone)
+// ============================================================================
+// Ini memungkinkan aplikasi berjalan mandiri di preview tanpa error import.
+// Jika Anda ingin menggunakan hook asli, Anda bisa mengganti bagian ini.
 
-export interface TextLayer {
-  id: string;
-  type: 'text';
-  content: string;
-  x: number; y: number;
-  fontSize: number;
-  fontWeight: 'normal' | 'bold' | '900';
-  fontStyle: 'normal' | 'italic';
-  textAlign: 'left' | 'center' | 'right';
-  color: string;
-  bgColor: string;
-  bgOpacity: number;
-  shadow: boolean;
-  letterSpacing: number;
-  lineHeight: number;
-  opacity: number;
-  rotate: number;
-  width: number;
-  locked: boolean;
-  visible: boolean;
-  zIndex: number;
-  fontFamily: string;
-  textDecoration: 'none' | 'underline';
-  uppercase: boolean;
-  padding: number;
-  borderRadius: number;
-  backdropBlur: boolean;
-}
+const useLocalStorage = (key, initialValue) => {
+  const [value, setValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch { return initialValue; }
+  });
+  const setStoredValue = (newValue) => {
+    setValue(newValue);
+    window.localStorage.setItem(key, JSON.stringify(newValue));
+  };
+  return [value, setStoredValue];
+};
 
-export interface ImageLayer {
-  id: string;
-  type: 'image';
-  src: string;
-  x: number; y: number;
-  width: number;
-  rotate: number;
-  flipX: boolean;
-  flipY: boolean;
-  opacity: number;
-  brightness: number;
-  contrast: number;
-  saturate: number;
-  blur: number;
-  mixBlendMode: string;
-  locked: boolean;
-  visible: boolean;
-  zIndex: number;
-  borderRadius: number;
-  shadow: boolean;
-  grayscale: boolean;
-  sepia: boolean;
-}
+const useDbQuery = (table) => {
+  const [data] = useLocalStorage(`mock_db_${table}`, []);
+  return data;
+};
 
-export interface ShapeLayer {
-  id: string;
-  type: 'shape';
-  shape: 'rect' | 'circle' | 'triangle' | 'hexagon' | 'star' | 'arrow';
-  x: number; y: number;
-  width: number; height: number;
-  rotate: number;
-  fillColor: string;
-  strokeColor: string;
-  strokeWidth: number;
-  opacity: number;
-  locked: boolean;
-  visible: boolean;
-  zIndex: number;
-  shadow: boolean;
-  borderRadius: number;
-}
-
-export type CanvasLayer = TextLayer | ImageLayer | ShapeLayer;
-
-export interface PromoBanner {
-  id: number | string;
-  type: 'voucher' | 'menu' | 'custom';
-  title: string;
-  description: string;
-  voucherId?: string | number;
-  productId?: string | number;
-  imageUrl?: string | null;
-  isActive: boolean;
-  bgType?: 'image' | 'solid' | 'gradient' | 'pattern';
-  bgColor?: string;
-  bgGradient?: string;
-  bgPattern?: string;
-  canvasLayers?: CanvasLayer[];
-  canvasBgFilter?: { brightness: number; contrast: number; saturate: number; blur: number };
-  buttonText?: string;
-  link?: string;
-}
-
-// ─── CONSTANTS ─────────────────────────────────────────────────────────────────
+// ============================================================================
+// 2. TYPES & CONSTANTS
+// ============================================================================
 
 const FONT_FAMILIES = [
   'Poppins', 'Inter', 'Playfair Display', 'Montserrat', 'Raleway',
@@ -159,26 +78,27 @@ const COLOR_PALETTE = [
 ];
 
 const SHAPE_PRESETS = [
-  { type: 'rect' as const, icon: Square, label: 'Kotak' },
-  { type: 'circle' as const, icon: Circle, label: 'Lingkaran' },
-  { type: 'triangle' as const, icon: Triangle, label: 'Segitiga' },
+  { type: 'rect', icon: Square, label: 'Kotak' },
+  { type: 'circle', icon: Circle, label: 'Lingkaran' },
+  { type: 'triangle', icon: Triangle, label: 'Segitiga' },
+  { type: 'star', icon: Star, label: 'Bintang' },
 ];
 
-// ─── HELPERS ───────────────────────────────────────────────────────────────────
-
+// Helpers
+const cn = (...classes) => classes.filter(Boolean).join(' ');
 const generateId = () => Math.random().toString(36).slice(2, 9);
 
-const defaultTextLayer = (extra?: Partial<TextLayer>): TextLayer => ({
+const defaultTextLayer = (extra = {}) => ({
   id: generateId(), type: 'text', content: 'Teks Baru',
-  x: 50, y: 50, fontSize: 28, fontWeight: 'bold', fontStyle: 'normal',
+  x: 50, y: 50, fontSize: 32, fontWeight: 'bold', fontStyle: 'normal',
   textAlign: 'left', color: '#FFFFFF', bgColor: '#000000', bgOpacity: 0,
   shadow: true, letterSpacing: 0, lineHeight: 1.3, opacity: 100, rotate: 0,
-  width: 40, locked: false, visible: true, zIndex: 10, fontFamily: 'Poppins',
+  width: 50, locked: false, visible: true, zIndex: 10, fontFamily: 'Poppins',
   textDecoration: 'none', uppercase: false, padding: 8, borderRadius: 8,
   backdropBlur: false, ...extra
 });
 
-const defaultImageLayer = (src: string, extra?: Partial<ImageLayer>): ImageLayer => ({
+const defaultImageLayer = (src, extra = {}) => ({
   id: generateId(), type: 'image', src,
   x: 50, y: 50, width: 30, rotate: 0, flipX: false, flipY: false,
   opacity: 100, brightness: 100, contrast: 100, saturate: 100, blur: 0,
@@ -186,16 +106,84 @@ const defaultImageLayer = (src: string, extra?: Partial<ImageLayer>): ImageLayer
   borderRadius: 0, shadow: false, grayscale: false, sepia: false, ...extra
 });
 
-const defaultShapeLayer = (shape: ShapeLayer['shape']): ShapeLayer => ({
+const defaultShapeLayer = (shape) => ({
   id: generateId(), type: 'shape', shape,
-  x: 50, y: 50, width: 20, height: 15, rotate: 0,
+  x: 50, y: 50, width: 20, height: 20, rotate: 0,
   fillColor: '#3B82F6', strokeColor: 'transparent', strokeWidth: 0,
   opacity: 100, locked: false, visible: true, zIndex: 5, shadow: false, borderRadius: 0
 });
 
-// ─── SHAPE SVG RENDER ───────────────────────────────────────────────────────────
+// ============================================================================
+// 3. INLINE UI COMPONENTS (Tailwind)
+// ============================================================================
 
-function ShapeSVG({ layer }: { layer: ShapeLayer }) {
+const Button = ({ children, className, variant = 'primary', size = 'md', ...props }) => {
+  const base = "inline-flex items-center justify-center rounded-xl font-bold transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
+  const variants = {
+    primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-md",
+    secondary: "bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100",
+    outline: "border-2 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent text-zinc-900 dark:text-zinc-100",
+    ghost: "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
+    danger: "bg-red-500 hover:bg-red-600 text-white shadow-md",
+  };
+  const sizes = {
+    sm: "h-8 px-3 text-xs",
+    md: "h-10 px-4 text-sm",
+    lg: "h-12 px-6 text-base",
+    icon: "h-10 w-10 p-0",
+  };
+  return <button className={cn(base, variants[variant], sizes[size], className)} {...props}>{children}</button>;
+};
+
+const Input = ({ className, ...props }) => (
+  <input className={cn("flex h-10 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-900 dark:text-zinc-100 transition-all", className)} {...props} />
+);
+
+const Label = ({ className, children, ...props }) => (
+  <label className={cn("text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1.5", className)} {...props}>{children}</label>
+);
+
+const Switch = ({ checked, onCheckedChange }) => (
+  <button type="button" role="switch" aria-checked={checked} onClick={() => onCheckedChange(!checked)}
+    className={cn("relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2", checked ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700")}>
+    <span className={cn("pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform", checked ? "translate-x-5" : "translate-x-0")} />
+  </button>
+);
+
+const Slider = ({ value, min, max, step = 1, onValueChange, className }) => (
+  <input type="range" min={min} max={max} step={step} value={value[0]} onChange={(e) => onValueChange([parseFloat(e.target.value)])}
+    className={cn("w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600", className)} />
+);
+
+const Badge = ({ children, variant = 'default', className }) => {
+  const variants = {
+    default: "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100",
+    primary: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
+    success: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
+  };
+  return <span className={cn("inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ring-zinc-500/20", variants[variant], className)}>{children}</span>;
+}
+
+const Card = ({ children, className }) => (
+  <div className={cn("rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50 shadow-sm", className)}>{children}</div>
+);
+
+// Toast Notification System
+const useToast = () => {
+  const [toasts, setToasts] = useState([]);
+  const addToast = (message, type = 'success') => {
+    const id = generateId();
+    setToasts(t => [...t, { id, message, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  };
+  return { toasts, toast: { success: (m) => addToast(m, 'success'), error: (m) => addToast(m, 'error') } };
+};
+
+// ============================================================================
+// 4. EDITOR SUB-COMPONENTS
+// ============================================================================
+
+function ShapeSVG({ layer }) {
   const s = layer.strokeWidth > 0 ? layer.strokeColor : 'none';
   const f = layer.fillColor;
   switch (layer.shape) {
@@ -207,72 +195,75 @@ function ShapeSVG({ layer }: { layer: ShapeLayer }) {
   }
 }
 
-// ─── PANEL SECTION ──────────────────────────────────────────────────────────────
-
-function PanelSection({ title, icon: Icon, children, defaultOpen = true }: {
-  title: string; icon?: any; children: React.ReactNode; defaultOpen?: boolean;
-}) {
+function PanelSection({ title, icon: Icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-white/10 last:border-0">
-      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 text-xs font-black uppercase tracking-widest text-white/60 hover:text-white/90 transition-colors">
-        <div className="flex items-center gap-2">{Icon && <Icon className="w-3.5 h-3.5" />}{title}</div>
-        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+    <div className="border-b border-zinc-200 dark:border-zinc-800 last:border-0">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+        <div className="flex items-center gap-2">{Icon && <Icon className="w-4 h-4" />}{title}</div>
+        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
-      {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
+      {open && <div className="px-4 pb-4 space-y-4">{children}</div>}
     </div>
   );
 }
 
-// ─── COLOR PICKER MINI ──────────────────────────────────────────────────────────
-
-function ColorGrid({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+function ColorGrid({ value, onChange }) {
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-8 gap-1">
+    <div className="space-y-3">
+      <div className="grid grid-cols-8 gap-1.5">
         {COLOR_PALETTE.map(c => (
           <button key={c} onClick={() => onChange(c)}
-            className={cn("w-6 h-6 rounded-md border-2 transition-transform hover:scale-110", value.toUpperCase() === c.toUpperCase() ? 'border-white scale-110' : 'border-transparent')}
+            className={cn("w-full aspect-square rounded-md border-2 transition-transform hover:scale-110", value.toUpperCase() === c.toUpperCase() ? 'border-blue-500 scale-110 shadow-md' : 'border-zinc-200 dark:border-zinc-700 shadow-sm')}
             style={{ backgroundColor: c }} />
         ))}
       </div>
-      <div className="flex items-center gap-2 mt-1">
-        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="w-8 h-8 p-0.5 cursor-pointer rounded-lg bg-transparent border border-white/20 shrink-0" />
-        <Input value={value} onChange={e => onChange(e.target.value)} className="h-8 bg-white/10 border-white/20 text-white text-xs font-mono uppercase rounded-lg" />
+      <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800/50 p-2 rounded-xl">
+        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="w-10 h-10 p-0.5 cursor-pointer rounded-lg bg-transparent border border-zinc-300 dark:border-zinc-600 shrink-0" />
+        <Input value={value} onChange={e => onChange(e.target.value)} className="h-10 text-xs font-mono uppercase bg-white dark:bg-zinc-900" />
       </div>
     </div>
   );
 }
 
-// ─── SLIDER ROW ─────────────────────────────────────────────────────────────────
-
-function SliderRow({ label, value, min, max, step = 1, unit = '', onChange }: {
-  label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (v: number) => void;
-}) {
+function SliderRow({ label, value, min, max, step = 1, unit = '', onChange }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{label}</span>
-        <span className="text-[10px] font-mono font-black text-white/80">{value}{unit}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{label}</span>
+        <span className="text-[11px] font-mono font-black text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">{value}{unit}</span>
       </div>
-      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} className="accent-primary" />
+      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} />
     </div>
   );
 }
 
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────────
+// ============================================================================
+// 5. MAIN COMPONENT
+// ============================================================================
 
-export default function BannerPromo() {
-  const vouchers = (useDbQuery<Voucher>('vouchers') as Voucher[]) ?? [];
-  const products = (useDbQuery<Product>('products') as Product[]) ?? [];
-  const bannerList = useDbQuery<PromoBanner>('banners');
+export default function App() {
+  // --- Global State & Theme ---
+  const [theme, setTheme] = useState('dark');
+  useEffect(() => {
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  }, [theme]);
 
-  const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
-  const [deleteBannerId, setDeleteBannerId] = useState<string | number | null>(null);
-  const [editBanner, setEditBanner] = useState<PromoBanner | null>(null);
+  const { toasts, toast } = useToast();
+  
+  // --- Data Stores ---
+  const [banners, setBanners] = useLocalStorage('mock_db_banners', []);
+  const [vouchers] = useLocalStorage('mock_db_vouchers', [{ id: 1, code: 'DISKON50' }, { id: 2, code: 'GRATISONGKIR' }]);
+  const [products] = useLocalStorage('mock_db_products', [{ id: 1, name: 'Kopi Susu Gula Aren' }, { id: 2, name: 'Croissant Butter' }]);
 
-  // Quick-form state
-  const [bannerType, setBannerType] = useState<'voucher' | 'menu' | 'custom'>('custom');
+  // --- Screens ---
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editBanner, setEditBanner] = useState(null);
+  const [deleteBannerId, setDeleteBannerId] = useState(null);
+
+  // --- Quick Form State ---
+  const [bannerType, setBannerType] = useState('custom');
   const [bannerTitle, setBannerTitle] = useState('');
   const [bannerDesc, setBannerDesc] = useState('');
   const [bannerVoucherId, setBannerVoucherId] = useState('');
@@ -280,31 +271,31 @@ export default function BannerPromo() {
   const [bannerLink, setBannerLink] = useState('');
   const [bannerButtonText, setBannerButtonText] = useState('');
   const [bannerIsActive, setBannerIsActive] = useState(true);
-  const [bannerBgType, setBannerBgType] = useState<'image' | 'solid' | 'gradient'>('gradient');
+  const [bannerBgType, setBannerBgType] = useState('gradient');
   const [bannerBgColor, setBannerBgColor] = useState('#1E293B');
   const [bannerBgGradient, setBannerBgGradient] = useState(GRADIENT_PRESETS[0].value);
-  const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [bannerImage, setBannerImage] = useState(null);
 
-  // ── Canvas Editor State ──────────────────────────────────────────────────────
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [layers, setLayers] = useState<CanvasLayer[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<'layers' | 'elements' | 'bg' | 'props'>('elements');
+  // --- Canvas Editor State ---
+  const [layers, setLayers] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [activePanel, setActivePanel] = useState('elements');
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [bgFilter, setBgFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
-  const [history, setHistory] = useState<CanvasLayer[][]>([[]]);
+  const [history, setHistory] = useState([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  
+  // For mobile bottom sheet
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
 
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const bgFileInputRef = useRef<HTMLInputElement>(null);
-  const overlayFileInputRef = useRef<HTMLInputElement>(null);
-  const dragState = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const canvasRef = useRef(null);
+  const bgFileInputRef = useRef(null);
+  const overlayFileInputRef = useRef(null);
+  const dragState = useRef(null);
 
-  // ── Layer helpers ────────────────────────────────────────────────────────────
-
-  const pushHistory = useCallback((newLayers: CanvasLayer[]) => {
+  // --- Layer Management ---
+  const pushHistory = useCallback((newLayers) => {
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIndex + 1);
       return [...trimmed, newLayers].slice(-30);
@@ -312,15 +303,15 @@ export default function BannerPromo() {
     setHistoryIndex(i => Math.min(i + 1, 29));
   }, [historyIndex]);
 
-  const updateLayer = useCallback(<T extends CanvasLayer>(id: string, patch: Partial<T>) => {
+  const updateLayer = useCallback((id, patch) => {
     setLayers(prev => {
-      const next = prev.map(l => l.id === id ? { ...l, ...patch } as CanvasLayer : l);
+      const next = prev.map(l => l.id === id ? { ...l, ...patch } : l);
       pushHistory(next);
       return next;
     });
   }, [pushHistory]);
 
-  const addLayer = useCallback((layer: CanvasLayer) => {
+  const addLayer = useCallback((layer) => {
     setLayers(prev => {
       const next = [...prev, layer];
       pushHistory(next);
@@ -328,9 +319,10 @@ export default function BannerPromo() {
     });
     setSelectedId(layer.id);
     setActivePanel('props');
+    if (window.innerWidth < 768) setIsMobilePanelOpen(true);
   }, [pushHistory]);
 
-  const removeLayer = useCallback((id: string) => {
+  const removeLayer = useCallback((id) => {
     setLayers(prev => {
       const next = prev.filter(l => l.id !== id);
       pushHistory(next);
@@ -339,11 +331,11 @@ export default function BannerPromo() {
     if (selectedId === id) setSelectedId(null);
   }, [selectedId, pushHistory]);
 
-  const duplicateLayer = useCallback((id: string) => {
+  const duplicateLayer = useCallback((id) => {
     const layer = layers.find(l => l.id === id);
     if (!layer) return;
-    const copy = { ...layer, id: generateId(), x: layer.x + 3, y: layer.y + 3, zIndex: layer.zIndex + 1 };
-    addLayer(copy as CanvasLayer);
+    const copy = { ...layer, id: generateId(), x: Math.min(100, layer.x + 3), y: Math.min(100, layer.y + 3), zIndex: layer.zIndex + 1 };
+    addLayer(copy);
   }, [layers, addLayer]);
 
   const undo = () => {
@@ -353,6 +345,7 @@ export default function BannerPromo() {
       setHistoryIndex(idx);
     }
   };
+  
   const redo = () => {
     if (historyIndex < history.length - 1) {
       const idx = historyIndex + 1;
@@ -363,88 +356,122 @@ export default function BannerPromo() {
 
   const selectedLayer = layers.find(l => l.id === selectedId) || null;
 
-  // ── Drag on canvas ───────────────────────────────────────────────────────────
+  // --- Keyboard Shortcuts ---
+  useEffect(() => {
+    if (!isEditorOpen) return;
+    const handleKeyDown = (e) => {
+      // Don't trigger if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        removeLayer(selectedId);
+      }
+      
+      if (selectedId && (e.key.startsWith('Arrow'))) {
+        e.preventDefault();
+        const layer = layers.find(l => l.id === selectedId);
+        if (!layer) return;
+        const step = e.shiftKey ? 5 : 1;
+        let nx = layer.x; let ny = layer.y;
+        if (e.key === 'ArrowUp') ny -= step;
+        if (e.key === 'ArrowDown') ny += step;
+        if (e.key === 'ArrowLeft') nx -= step;
+        if (e.key === 'ArrowRight') nx += step;
+        updateLayer(selectedId, { x: nx, y: ny });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditorOpen, selectedId, layers, removeLayer, updateLayer]);
 
-  const onLayerPointerDown = (e: React.PointerEvent, id: string) => {
+  // --- Drag on Canvas (Touch & Mouse) ---
+  const onLayerPointerDown = (e, id) => {
     e.stopPropagation();
     const layer = layers.find(l => l.id === id);
     if (!layer || layer.locked) return;
+    
     setSelectedId(id);
     setActivePanel('props');
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+    
     dragState.current = { id, startX: e.clientX, startY: e.clientY, origX: layer.x, origY: layer.y };
 
-    const onMove = (me: PointerEvent) => {
+    const onMove = (me) => {
       if (!dragState.current) return;
+      // Prevent default to stop scrolling on mobile while dragging
+      if (me.cancelable) me.preventDefault(); 
+
       const dx = (me.clientX - dragState.current.startX) / rect.width * 100;
       const dy = (me.clientY - dragState.current.startY) / rect.height * 100;
       let nx = Math.round((dragState.current.origX + dx) * 10) / 10;
       let ny = Math.round((dragState.current.origY + dy) * 10) / 10;
-      // Snap to center
+      
+      // Snap to center/edges
       if (Math.abs(nx - 50) < 1.5) nx = 50;
       if (Math.abs(ny - 50) < 1.5) ny = 50;
-      nx = Math.max(0, Math.min(100, nx));
-      ny = Math.max(0, Math.min(100, ny));
-      setLayers(prev => prev.map(l => l.id === id ? { ...l, x: nx, y: ny } as CanvasLayer : l));
+      if (Math.abs(nx - 0) < 1.5) nx = 0;
+      if (Math.abs(nx - 100) < 1.5) nx = 100;
+      if (Math.abs(ny - 0) < 1.5) ny = 0;
+      if (Math.abs(ny - 100) < 1.5) ny = 100;
+      
+      setLayers(prev => prev.map(l => l.id === id ? { ...l, x: nx, y: ny } : l));
     };
+    
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       if (dragState.current) {
-        const layer = layers.find(l => l.id === id);
-        if (layer) pushHistory(layers);
+        pushHistory(layers); // Save state after drag
       }
       dragState.current = null;
     };
-    window.addEventListener('pointermove', onMove);
+    
+    window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
   };
 
-  // ── Background image select ──────────────────────────────────────────────────
-
-  const handleBgImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- Background/Image Handlers ---
+  const handleBgImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => setBannerImage(ev.target?.result as string);
+    reader.onload = ev => setBannerImage(ev.target.result);
     reader.readAsDataURL(file);
     if (bgFileInputRef.current) bgFileInputRef.current.value = '';
   };
 
-  // ── Overlay / image layer from file ─────────────────────────────────────────
-
-  const handleAddImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddImageFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      const src = ev.target?.result as string;
-      addLayer(defaultImageLayer(src));
+      addLayer(defaultImageLayer(ev.target.result));
     };
     reader.readAsDataURL(file);
     if (overlayFileInputRef.current) overlayFileInputRef.current.value = '';
   };
 
-  // ── Open editor ──────────────────────────────────────────────────────────────
-
-  const openEditor = (banner?: PromoBanner) => {
+  // --- Editor Open/Close ---
+  const openEditor = (banner = null) => {
     if (banner) {
       setEditBanner(banner);
-      setBannerType(banner.type);
-      setBannerTitle(banner.title);
-      setBannerDesc(banner.description);
+      setBannerType(banner.type || 'custom');
+      setBannerTitle(banner.title || '');
+      setBannerDesc(banner.description || '');
       setBannerVoucherId(String(banner.voucherId || ''));
       setBannerProductId(String(banner.productId || ''));
       setBannerLink(banner.link || '');
       setBannerButtonText(banner.buttonText || '');
-      setBannerIsActive(banner.isActive);
-      setBannerBgType((banner.bgType as any) || 'gradient');
+      setBannerIsActive(banner.isActive !== false);
+      setBannerBgType(banner.bgType || 'gradient');
       setBannerBgColor(banner.bgColor || '#1E293B');
       setBannerBgGradient(banner.bgGradient || GRADIENT_PRESETS[0].value);
       setBannerImage(banner.imageUrl || null);
-      const initialLayers = (banner.canvasLayers || []) as CanvasLayer[];
+      
+      const initialLayers = banner.canvasLayers || [];
       setLayers(initialLayers);
       setHistory([initialLayers]);
       setHistoryIndex(0);
@@ -456,11 +483,11 @@ export default function BannerPromo() {
       setBannerButtonText(''); setBannerIsActive(true);
       setBannerBgType('gradient'); setBannerBgColor('#1E293B');
       setBannerBgGradient(GRADIENT_PRESETS[0].value); setBannerImage(null);
-      // Seed with default text layers
-      const seedLayers: CanvasLayer[] = [
-        defaultTextLayer({ id: generateId(), content: 'Judul Banner Kamu', x: 8, y: 35, fontSize: 40, fontWeight: '900', color: '#FFFFFF', shadow: true, zIndex: 20, width: 55 }),
-        defaultTextLayer({ id: generateId(), content: 'Deskripsi promo singkat di sini. Tarik perhatian pelanggan!', x: 8, y: 62, fontSize: 16, fontWeight: 'normal', color: '#CBD5E1', shadow: false, zIndex: 15, width: 55, lineHeight: 1.5 }),
-        defaultTextLayer({ id: generateId(), content: 'Lihat Detail', x: 8, y: 82, fontSize: 14, fontWeight: 'bold', color: '#000000', bgColor: '#FFFFFF', bgOpacity: 100, shadow: false, zIndex: 15, width: 18, textAlign: 'center', padding: 12, borderRadius: 10 }),
+      
+      const seedLayers = [
+        defaultTextLayer({ content: 'PROMO SPESIAL', x: 50, y: 35, fontSize: 48, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 80 }),
+        defaultTextLayer({ content: 'Diskon hingga 50% untuk semua produk pilihan!', x: 50, y: 55, fontSize: 18, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'center', shadow: false, width: 70, lineHeight: 1.5 }),
+        defaultTextLayer({ content: 'BELI SEKARANG', x: 50, y: 75, fontSize: 14, fontWeight: 'bold', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 25, padding: 12, borderRadius: 12 }),
       ];
       setLayers(seedLayers);
       setHistory([seedLayers]);
@@ -472,87 +499,61 @@ export default function BannerPromo() {
     setZoom(100);
     setShowGrid(false);
     setIsEditorOpen(true);
+    setIsMobilePanelOpen(false);
   };
 
-  // ── Save banner ──────────────────────────────────────────────────────────────
-
-  const handleSaveBanner = async () => {
+  const handleSaveBanner = () => {
     if (!bannerTitle.trim()) { toast.error('Judul banner wajib diisi'); return; }
 
-    let finalImageUrl = bannerImage;
-    if (bannerImage?.startsWith('data:image')) {
-      toast.loading('Mengunggah gambar latar...', { id: 'bg-up' });
-      try {
-        const url = await dbUploadFile('banners', `banner-bg-${Date.now()}.jpg`, bannerImage);
-        if (url) finalImageUrl = url;
-        toast.dismiss('bg-up');
-      } catch { toast.dismiss('bg-up'); toast.error('Gagal upload gambar latar'); return; }
-    }
-
-    // Upload image layers with data URLs
-    const processedLayers = await Promise.all(layers.map(async (layer) => {
-      if (layer.type === 'image' && layer.src.startsWith('data:image')) {
-        try {
-          const url = await dbUploadFile('banners', `layer-img-${Date.now()}-${generateId()}.png`, layer.src);
-          return { ...layer, src: url || layer.src };
-        } catch { return layer; }
-      }
-      return layer;
-    }));
-
     const bannerData = {
-      type: bannerType, title: bannerTitle.trim(), description: bannerDesc.trim(),
-      voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) || null : null,
-      productId: bannerType === 'menu' ? Number(bannerProductId) || null : null,
-      imageUrl: finalImageUrl, buttonText: bannerButtonText.trim(), link: bannerLink.trim(),
-      isActive: bannerIsActive, bgType: bannerBgType,
+      id: editBanner ? editBanner.id : generateId(),
+      type: bannerType, 
+      title: bannerTitle.trim(), 
+      description: bannerDesc.trim(),
+      voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) : null,
+      productId: bannerType === 'menu' ? Number(bannerProductId) : null,
+      imageUrl: bannerImage, 
+      buttonText: bannerButtonText.trim(), 
+      link: bannerLink.trim(),
+      isActive: bannerIsActive, 
+      bgType: bannerBgType,
       bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
       bgGradient: bannerBgType === 'gradient' ? bannerBgGradient : null,
-      canvasLayers: processedLayers,
+      canvasLayers: layers,
       canvasBgFilter: bgFilter,
+      createdAt: editBanner ? editBanner.createdAt : new Date().toISOString()
     };
 
-    try {
-      if (editBanner) {
-        if (editBanner.imageUrl && finalImageUrl && editBanner.imageUrl !== finalImageUrl && editBanner.imageUrl.includes('banners')) await dbDeleteFile(editBanner.imageUrl);
-        await dbUpdate('banners', editBanner.id, bannerData);
-        toast.success('Banner diperbarui');
-      } else {
-        await dbInsert('banners', { ...bannerData, createdAt: new Date().toISOString() });
-        toast.success('Banner baru diterbitkan!');
-      }
-      setIsEditorOpen(false);
-    } catch { toast.error('Gagal menyimpan banner'); }
+    if (editBanner) {
+      setBanners(banners.map(b => b.id === editBanner.id ? bannerData : b));
+      toast.success('Banner diperbarui');
+    } else {
+      setBanners([...banners, bannerData]);
+      toast.success('Banner baru diterbitkan!');
+    }
+    setIsEditorOpen(false);
   };
 
-  const handleDeleteBanner = async () => {
+  const handleDeleteBanner = () => {
     if (!deleteBannerId) return;
-    const b = bannerList?.find(b => b.id === deleteBannerId);
-    try {
-      if (b?.imageUrl?.includes('banners')) await dbDeleteFile(b.imageUrl);
-      await dbDelete('banners', deleteBannerId);
-      toast.success('Banner dihapus');
-    } catch { toast.error('Gagal menghapus banner'); } finally { setDeleteBannerId(null); }
+    setBanners(banners.filter(b => b.id !== deleteBannerId));
+    toast.success('Banner dihapus');
+    setDeleteBannerId(null);
   };
 
-  const handleToggleActive = async (bId: string | number, cur: boolean) => {
-    const b = bannerList?.find(b => b.id === bId);
-    if (!b) return;
-    await dbUpdate('banners', bId, { ...b, isActive: !cur });
+  const handleToggleActive = (id, cur) => {
+    setBanners(banners.map(b => b.id === id ? { ...b, isActive: !cur } : b));
     toast.success(!cur ? 'Banner diaktifkan' : 'Banner dinonaktifkan');
   };
 
-  // ── Canvas background style ──────────────────────────────────────────────────
-
+  // --- Rendering Functions ---
   const canvasBg = bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : undefined;
   const bgFilterStyle = `brightness(${bgFilter.brightness}%) contrast(${bgFilter.contrast}%) saturate(${bgFilter.saturate}%) blur(${bgFilter.blur}px)`;
 
-  // ── Layer render on canvas ───────────────────────────────────────────────────
-
-  const renderCanvasLayer = (layer: CanvasLayer) => {
+  const renderCanvasLayer = (layer) => {
     if (!layer.visible) return null;
     const isSelected = selectedId === layer.id;
-    const baseStyle: React.CSSProperties = {
+    const baseStyle = {
       position: 'absolute',
       left: `${layer.x}%`,
       top: `${layer.y}%`,
@@ -561,292 +562,141 @@ export default function BannerPromo() {
       opacity: layer.opacity / 100,
       cursor: layer.locked ? 'not-allowed' : 'grab',
       userSelect: 'none',
+      touchAction: 'none', // Critical for mobile touch
     };
 
     if (layer.type === 'text') {
-      const t = layer as TextLayer;
       return (
-        <div key={t.id} style={{ ...baseStyle, width: `${t.width}%` }}
-          className={cn(isSelected && 'ring-2 ring-blue-400 ring-offset-1 ring-offset-black/30 rounded-lg')}
-          onPointerDown={e => onLayerPointerDown(e, t.id)}>
+        <div key={layer.id} style={{ ...baseStyle, width: `${layer.width}%` }}
+          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg')}
+          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
           <p style={{
-            fontSize: `${t.fontSize}px`, fontWeight: t.fontWeight, fontStyle: t.fontStyle,
-            textAlign: t.textAlign, color: t.color, letterSpacing: `${t.letterSpacing}px`,
-            lineHeight: t.lineHeight, fontFamily: t.fontFamily,
-            textDecoration: t.textDecoration, textTransform: t.uppercase ? 'uppercase' : 'none',
-            padding: `${t.padding}px`, borderRadius: `${t.borderRadius}px`,
-            backgroundColor: t.bgOpacity > 0 ? `${t.bgColor}${Math.round(t.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent',
-            backdropFilter: t.backdropBlur ? 'blur(8px)' : undefined,
-            textShadow: t.shadow ? '0 2px 12px rgba(0,0,0,0.8)' : undefined,
+            fontSize: `${layer.fontSize}px`, fontWeight: layer.fontWeight, fontStyle: layer.fontStyle,
+            textAlign: layer.textAlign, color: layer.color, letterSpacing: `${layer.letterSpacing}px`,
+            lineHeight: layer.lineHeight, fontFamily: layer.fontFamily,
+            textDecoration: layer.textDecoration, textTransform: layer.uppercase ? 'uppercase' : 'none',
+            padding: `${layer.padding}px`, borderRadius: `${layer.borderRadius}px`,
+            backgroundColor: layer.bgOpacity > 0 ? `${layer.bgColor}${Math.round(layer.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent',
+            backdropFilter: layer.backdropBlur ? 'blur(8px)' : undefined,
+            textShadow: layer.shadow ? '0 4px 16px rgba(0,0,0,0.6)' : undefined,
             margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-            transform: `rotate(${t.rotate}deg)`,
+            transform: `rotate(${layer.rotate}deg)`,
           }}>
-            {t.content}
+            {layer.content}
           </p>
         </div>
       );
     }
 
     if (layer.type === 'image') {
-      const im = layer as ImageLayer;
-      const filterStr = `brightness(${im.brightness}%) contrast(${im.contrast}%) saturate(${im.saturate}%) blur(${im.blur}px) ${im.grayscale ? 'grayscale(100%)' : ''} ${im.sepia ? 'sepia(100%)' : ''}`;
+      const filterStr = `brightness(${layer.brightness}%) contrast(${layer.contrast}%) saturate(${layer.saturate}%) blur(${layer.blur}px) ${layer.grayscale ? 'grayscale(100%)' : ''} ${layer.sepia ? 'sepia(100%)' : ''}`;
       return (
-        <div key={im.id} style={{ ...baseStyle, width: `${im.width}%` }}
-          className={cn(isSelected && 'ring-2 ring-blue-400 ring-offset-1 ring-offset-black/30 rounded-lg')}
-          onPointerDown={e => onLayerPointerDown(e, im.id)}>
-          <img src={im.src} alt=""
+        <div key={layer.id} style={{ ...baseStyle, width: `${layer.width}%` }}
+          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg')}
+          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
+          <img src={layer.src} alt="" draggable={false}
             style={{
               width: '100%', height: 'auto', display: 'block',
-              transform: `rotate(${im.rotate}deg) scaleX(${im.flipX ? -1 : 1}) scaleY(${im.flipY ? -1 : 1})`,
-              filter: filterStr, mixBlendMode: im.mixBlendMode as any,
-              borderRadius: `${im.borderRadius}px`,
-              boxShadow: im.shadow ? '0 8px 32px rgba(0,0,0,0.5)' : undefined,
+              transform: `rotate(${layer.rotate}deg) scaleX(${layer.flipX ? -1 : 1}) scaleY(${layer.flipY ? -1 : 1})`,
+              filter: filterStr, mixBlendMode: layer.mixBlendMode,
+              borderRadius: `${layer.borderRadius}px`,
+              boxShadow: layer.shadow ? '0 12px 32px rgba(0,0,0,0.4)' : undefined,
             }} />
         </div>
       );
     }
 
     if (layer.type === 'shape') {
-      const sh = layer as ShapeLayer;
       return (
-        <div key={sh.id} style={{ ...baseStyle, width: `${sh.width}%`, aspectRatio: sh.shape === 'circle' ? '1' : 'auto' }}
-          className={cn(isSelected && 'ring-2 ring-blue-400 ring-offset-1 ring-offset-black/30 rounded')}
-          onPointerDown={e => onLayerPointerDown(e, sh.id)}>
-          <svg viewBox={sh.shape === 'triangle' ? '0 0 100 100' : sh.shape === 'star' ? '0 0 100 100' : undefined}
-            style={{ width: '100%', aspectRatio: sh.shape === 'rect' ? `${sh.width}/${sh.height}` : '1', transform: `rotate(${sh.rotate}deg)`, filter: sh.shadow ? 'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' : undefined }}>
-            <ShapeSVG layer={sh} />
+        <div key={layer.id} style={{ ...baseStyle, width: `${layer.width}%`, aspectRatio: layer.shape === 'circle' ? '1' : 'auto' }}
+          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded')}
+          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
+          <svg viewBox={['triangle', 'star'].includes(layer.shape) ? '0 0 100 100' : undefined}
+            style={{ width: '100%', aspectRatio: layer.shape === 'rect' ? `${layer.width}/${layer.height}` : '1', transform: `rotate(${layer.rotate}deg)`, filter: layer.shadow ? 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))' : undefined }}>
+            <ShapeSVG layer={layer} />
           </svg>
         </div>
       );
     }
-
     return null;
   };
 
-  // ── Right panel: properties ──────────────────────────────────────────────────
-
-  const renderPropsPanel = () => {
-    if (!selectedLayer) {
-      return (
-        <div className="flex flex-col items-center justify-center h-40 text-white/30 text-xs text-center px-4">
-          <MousePointer2 className="w-8 h-8 mb-3 opacity-30" />
-          Klik elemen di kanvas untuk mengedit propertinya
+  // --- Panels (Elements, Layers, Bg, Props) ---
+  const renderElementsPanel = () => (
+    <div className="space-y-6 px-4 py-5">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Preset Teks</p>
+        <div className="grid grid-cols-1 gap-2">
+          {[
+            { label: 'Heading', fontSize: 56, fontWeight: '900', content: 'HEADING UTAMA', width: 80 },
+            { label: 'Subheading', fontSize: 28, fontWeight: 'bold', content: 'Subheading Keren', width: 60 },
+            { label: 'Body Text', fontSize: 18, fontWeight: 'normal', content: 'Teks deskripsi promo ada di sini...', width: 50 },
+            { label: 'Badge', fontSize: 14, fontWeight: 'bold', content: 'PROMO BARU', uppercase: true, bgOpacity: 100, bgColor: '#EF4444', borderRadius: 20, padding: 10, width: 25, textAlign: 'center' },
+          ].map(preset => (
+            <button key={preset.label} onClick={() => addLayer(defaultTextLayer(preset))}
+              className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-left transition-all group flex items-center justify-between">
+              <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{preset.label}</span>
+              <Plus className="w-4 h-4 text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+            </button>
+          ))}
         </div>
-      );
-    }
+      </div>
 
-    if (selectedLayer.type === 'text') {
-      const t = selectedLayer as TextLayer;
-      const upd = (p: Partial<TextLayer>) => updateLayer<TextLayer>(t.id, p);
-      return (
-        <div className="space-y-0">
-          <PanelSection title="Konten" icon={Type}>
-            <textarea value={t.content} onChange={e => upd({ content: e.target.value })} rows={3}
-              className="w-full bg-white/10 border border-white/20 rounded-xl text-white text-sm p-3 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400 font-medium" />
-          </PanelSection>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Upload Gambar</p>
+        <input ref={overlayFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAddImageFile} />
+        <button onClick={() => overlayFileInputRef.current?.click()}
+          className="w-full h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border-2 border-dashed border-blue-200 dark:border-blue-800/50 hover:border-blue-400 transition-all flex items-center justify-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400">
+          <ImageIcon className="w-5 h-5" /> Pilih PNG / JPG
+        </button>
+      </div>
 
-          <PanelSection title="Font & Ukuran" icon={Bold}>
-            <Select value={t.fontFamily} onValueChange={v => upd({ fontFamily: v })}>
-              <SelectTrigger className="h-9 bg-white/10 border-white/20 text-white text-xs rounded-xl font-bold"><SelectValue /></SelectTrigger>
-              <SelectContent className="rounded-xl max-h-48 overflow-y-auto">
-                {FONT_FAMILIES.map(f => <SelectItem key={f} value={f} style={{ fontFamily: f }} className="text-sm">{f}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <SliderRow label="Ukuran" value={t.fontSize} min={8} max={120} onChange={v => upd({ fontSize: v })} unit="px" />
-            <SliderRow label="Lebar" value={t.width} min={5} max={100} onChange={v => upd({ width: v })} unit="%" />
-            <div className="flex gap-2">
-              {(['normal', 'bold', '900'] as const).map(w => (
-                <button key={w} onClick={() => upd({ fontWeight: w })}
-                  className={cn('flex-1 h-9 rounded-lg text-xs border transition-all', t.fontWeight === w ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20')}
-                  style={{ fontWeight: w === '900' ? 900 : w === 'bold' ? 700 : 400 }}>
-                  {w === '900' ? 'Black' : w === 'bold' ? 'Bold' : 'Normal'}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              {(['left', 'center', 'right'] as const).map(a => (
-                <button key={a} onClick={() => upd({ textAlign: a })}
-                  className={cn('flex-1 h-9 rounded-lg border transition-all flex items-center justify-center', t.textAlign === a ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20')}>
-                  {a === 'left' ? <AlignLeft className="w-4 h-4" /> : a === 'center' ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => upd({ fontStyle: t.fontStyle === 'italic' ? 'normal' : 'italic' })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold italic transition-all', t.fontStyle === 'italic' ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20')}>I</button>
-              <button onClick={() => upd({ textDecoration: t.textDecoration === 'underline' ? 'none' : 'underline' })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold underline transition-all', t.textDecoration === 'underline' ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20')}>U</button>
-              <button onClick={() => upd({ uppercase: !t.uppercase })}
-                className={cn('flex-1 h-9 rounded-lg border text-[10px] font-black uppercase transition-all', t.uppercase ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20')}>AA</button>
-            </div>
-            <SliderRow label="Jarak Huruf" value={t.letterSpacing} min={-5} max={20} onChange={v => upd({ letterSpacing: v })} unit="px" />
-            <SliderRow label="Tinggi Baris" value={t.lineHeight * 10} min={8} max={30} onChange={v => upd({ lineHeight: v / 10 })} unit="" />
-          </PanelSection>
-
-          <PanelSection title="Warna Teks" icon={Palette}>
-            <ColorGrid value={t.color} onChange={v => upd({ color: v })} />
-          </PanelSection>
-
-          <PanelSection title="Background Teks" icon={Droplets} defaultOpen={false}>
-            <ColorGrid value={t.bgColor} onChange={v => upd({ bgColor: v })} />
-            <SliderRow label="Opasitas BG" value={t.bgOpacity} min={0} max={100} onChange={v => upd({ bgOpacity: v })} unit="%" />
-            <SliderRow label="Sudut" value={t.borderRadius} min={0} max={50} onChange={v => upd({ borderRadius: v })} unit="px" />
-            <SliderRow label="Padding" value={t.padding} min={0} max={40} onChange={v => upd({ padding: v })} unit="px" />
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => upd({ backdropBlur: !t.backdropBlur })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold transition-all', t.backdropBlur ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70')}>
-                Blur BG
-              </button>
-            </div>
-          </PanelSection>
-
-          <PanelSection title="Transformasi" icon={CornerDownRight} defaultOpen={false}>
-            <SliderRow label="Rotasi" value={t.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
-            <SliderRow label="Opasitas" value={t.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">Bayangan</span>
-              <Switch checked={t.shadow} onCheckedChange={v => upd({ shadow: v })} className="scale-75" />
-            </div>
-          </PanelSection>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Bentuk (Shape)</p>
+        <div className="grid grid-cols-2 gap-3">
+          {SHAPE_PRESETS.map(s => (
+            <button key={s.type} onClick={() => addLayer(defaultShapeLayer(s.type))}
+              className="h-20 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all flex flex-col items-center justify-center gap-2 group">
+              <s.icon className="w-6 h-6 text-zinc-400 group-hover:text-blue-500" />
+              <span className="text-[10px] font-bold text-zinc-500 group-hover:text-blue-500">{s.label}</span>
+            </button>
+          ))}
         </div>
-      );
-    }
-
-    if (selectedLayer.type === 'image') {
-      const im = selectedLayer as ImageLayer;
-      const upd = (p: Partial<ImageLayer>) => updateLayer<ImageLayer>(im.id, p);
-      return (
-        <div className="space-y-0">
-          <PanelSection title="Ukuran & Posisi" icon={Move}>
-            <SliderRow label="Lebar" value={im.width} min={5} max={100} onChange={v => upd({ width: v })} unit="%" />
-          </PanelSection>
-
-          <PanelSection title="Transformasi" icon={RotateCw}>
-            <SliderRow label="Rotasi" value={im.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => upd({ flipX: !im.flipX })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1.5', im.flipX ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70')}>
-                <FlipHorizontal className="w-3.5 h-3.5" /> H
-              </button>
-              <button onClick={() => upd({ flipY: !im.flipY })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1.5', im.flipY ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70')}>
-                <FlipVertical className="w-3.5 h-3.5" /> V
-              </button>
-            </div>
-            <SliderRow label="Opasitas" value={im.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
-            <SliderRow label="Sudut" value={im.borderRadius} min={0} max={100} onChange={v => upd({ borderRadius: v })} unit="px" />
-          </PanelSection>
-
-          <PanelSection title="Filter Gambar" icon={Sliders} defaultOpen={false}>
-            <SliderRow label="Kecerahan" value={im.brightness} min={0} max={200} onChange={v => upd({ brightness: v })} unit="%" />
-            <SliderRow label="Kontras" value={im.contrast} min={0} max={200} onChange={v => upd({ contrast: v })} unit="%" />
-            <SliderRow label="Saturasi" value={im.saturate} min={0} max={200} onChange={v => upd({ saturate: v })} unit="%" />
-            <SliderRow label="Blur" value={im.blur} min={0} max={20} onChange={v => upd({ blur: v })} unit="px" />
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => upd({ grayscale: !im.grayscale })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold transition-all', im.grayscale ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70')}>
-                Grayscale
-              </button>
-              <button onClick={() => upd({ sepia: !im.sepia })}
-                className={cn('flex-1 h-9 rounded-lg border text-xs font-bold transition-all', im.sepia ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70')}>
-                Sepia
-              </button>
-            </div>
-          </PanelSection>
-
-          <PanelSection title="Blend Mode" icon={Blend} defaultOpen={false}>
-            <Select value={im.mixBlendMode} onValueChange={v => upd({ mixBlendMode: v })}>
-              <SelectTrigger className="h-9 bg-white/10 border-white/20 text-white text-xs rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {BLEND_MODES.map(m => <SelectItem key={m} value={m} className="text-xs capitalize">{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </PanelSection>
-
-          <PanelSection title="Efek" icon={Sparkles} defaultOpen={false}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">Bayangan</span>
-              <Switch checked={im.shadow} onCheckedChange={v => upd({ shadow: v })} className="scale-75" />
-            </div>
-          </PanelSection>
-        </div>
-      );
-    }
-
-    if (selectedLayer.type === 'shape') {
-      const sh = selectedLayer as ShapeLayer;
-      const upd = (p: Partial<ShapeLayer>) => updateLayer<ShapeLayer>(sh.id, p);
-      return (
-        <div className="space-y-0">
-          <PanelSection title="Ukuran" icon={Move}>
-            <SliderRow label="Lebar" value={sh.width} min={3} max={100} onChange={v => upd({ width: v })} unit="%" />
-            <SliderRow label="Tinggi" value={sh.height} min={3} max={100} onChange={v => upd({ height: v })} unit="%" />
-          </PanelSection>
-
-          <PanelSection title="Warna" icon={Palette}>
-            <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold mb-2">Isian</p>
-            <ColorGrid value={sh.fillColor} onChange={v => upd({ fillColor: v })} />
-          </PanelSection>
-
-          <PanelSection title="Border" icon={SquareDashed} defaultOpen={false}>
-            <ColorGrid value={sh.strokeColor} onChange={v => upd({ strokeColor: v })} />
-            <SliderRow label="Tebal Border" value={sh.strokeWidth} min={0} max={20} onChange={v => upd({ strokeWidth: v })} unit="px" />
-            <SliderRow label="Sudut" value={sh.borderRadius} min={0} max={50} onChange={v => upd({ borderRadius: v })} unit="px" />
-          </PanelSection>
-
-          <PanelSection title="Transformasi" icon={CornerDownRight} defaultOpen={false}>
-            <SliderRow label="Rotasi" value={sh.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
-            <SliderRow label="Opasitas" value={sh.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">Bayangan</span>
-              <Switch checked={sh.shadow} onCheckedChange={v => upd({ shadow: v })} className="scale-75" />
-            </div>
-          </PanelSection>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // ── Layers panel ─────────────────────────────────────────────────────────────
+      </div>
+    </div>
+  );
 
   const renderLayersPanel = () => {
     const sorted = [...layers].sort((a, b) => b.zIndex - a.zIndex);
     return (
-      <div className="space-y-1 px-3 py-2">
+      <div className="space-y-2 px-3 py-4">
         {sorted.length === 0 && (
-          <p className="text-white/30 text-xs text-center py-8">Belum ada layer. Tambahkan elemen dari tab Elements.</p>
+          <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+            <Layers className="w-8 h-8 mb-3 opacity-20" />
+            <p className="text-xs">Belum ada layer.</p>
+          </div>
         )}
         {sorted.map(layer => (
           <div key={layer.id}
-            onClick={() => { setSelectedId(layer.id); setActivePanel('props'); }}
-            className={cn('flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all group',
-              selectedId === layer.id ? 'bg-blue-500/20 border border-blue-400/40' : 'hover:bg-white/5 border border-transparent')}>
-            <div className="w-5 h-5 shrink-0 flex items-center justify-center text-white/40">
-              {layer.type === 'text' ? <Type className="w-3.5 h-3.5" /> : layer.type === 'image' ? <ImageIcon className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+            onClick={() => { setSelectedId(layer.id); setActivePanel('props'); if(window.innerWidth < 768) setIsMobilePanelOpen(true); }}
+            className={cn('flex items-center gap-3 px-3 py-3 rounded-2xl cursor-pointer transition-all border',
+              selectedId === layer.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700')}>
+            <div className="w-8 h-8 shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
+              {layer.type === 'text' ? <Type className="w-4 h-4" /> : layer.type === 'image' ? <ImageIcon className="w-4 h-4" /> : <Square className="w-4 h-4" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-white/80 truncate">
-                {layer.type === 'text' ? (layer as TextLayer).content.slice(0, 20) : layer.type === 'image' ? 'Gambar' : `Shape: ${(layer as ShapeLayer).shape}`}
+              <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                {layer.type === 'text' ? layer.content : layer.type === 'image' ? 'Gambar' : `Shape: ${layer.shape}`}
               </p>
-              <p className="text-[10px] text-white/30 capitalize">{layer.type}</p>
             </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1">
               <button onClick={e => { e.stopPropagation(); updateLayer(layer.id, { visible: !layer.visible }); }}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/20 text-white/50">
-                {layer.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-              </button>
-              <button onClick={e => { e.stopPropagation(); updateLayer(layer.id, { locked: !layer.locked }); }}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/20 text-white/50">
-                {layer.locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-              </button>
-              <button onClick={e => { e.stopPropagation(); duplicateLayer(layer.id); }}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/20 text-white/50">
-                <Copy className="w-3 h-3" />
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400">
+                {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
               <button onClick={e => { e.stopPropagation(); removeLayer(layer.id); }}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-red-500/30 text-white/50 hover:text-red-400">
-                <Trash className="w-3 h-3" />
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-zinc-400 hover:text-red-500">
+                <Trash className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -855,69 +705,15 @@ export default function BannerPromo() {
     );
   };
 
-  // ── Elements panel ───────────────────────────────────────────────────────────
-
-  const renderElementsPanel = () => (
-    <div className="space-y-4 px-4 py-4">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mb-2">Tambah Teks</p>
-        <div className="grid grid-cols-1 gap-2">
-          {[
-            { label: 'Heading', fontSize: 48, fontWeight: '900' as const, content: 'HEADING BESAR' },
-            { label: 'Subheading', fontSize: 28, fontWeight: 'bold' as const, content: 'Subheading Keren' },
-            { label: 'Body Text', fontSize: 16, fontWeight: 'normal' as const, content: 'Teks deskripsi di sini...' },
-            { label: 'Badge / Label', fontSize: 13, fontWeight: 'bold' as const, content: 'PROMO EKSKLUSIF', uppercase: true, bgOpacity: 80, bgColor: '#3B82F6', borderRadius: 20, padding: 10 },
-            { label: 'Tombol CTA', fontSize: 15, fontWeight: 'bold' as const, content: 'Lihat Detail', bgOpacity: 100, bgColor: '#FFFFFF', color: '#000000', borderRadius: 10, padding: 14, textAlign: 'center' as const, width: 20 },
-          ].map(preset => (
-            <button key={preset.label} onClick={() => addLayer(defaultTextLayer(preset))}
-              className="w-full px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-left transition-all group flex items-center justify-between">
-              <span className="text-xs font-bold text-white/80 group-hover:text-white">{preset.label}</span>
-              <Plus className="w-3.5 h-3.5 text-white/30 group-hover:text-white/70" />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mb-2">Tambah Gambar</p>
-        <input ref={overlayFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAddImageFile} />
-        <button onClick={() => overlayFileInputRef.current?.click()}
-          className="w-full h-12 rounded-xl bg-white/5 hover:bg-white/15 border border-dashed border-white/20 hover:border-white/40 transition-all flex items-center justify-center gap-2 text-xs font-bold text-white/60 hover:text-white">
-          <ImageIcon className="w-4 h-4" /> Upload PNG / JPG
-        </button>
-      </div>
-
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mb-2">Tambah Shape</p>
-        <div className="grid grid-cols-3 gap-2">
-          {SHAPE_PRESETS.map(s => (
-            <button key={s.type} onClick={() => addLayer(defaultShapeLayer(s.type))}
-              className="h-16 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all flex flex-col items-center justify-center gap-1.5 group">
-              <s.icon className="w-5 h-5 text-white/50 group-hover:text-white" />
-              <span className="text-[9px] font-bold text-white/30 group-hover:text-white/70">{s.label}</span>
-            </button>
-          ))}
-          <button onClick={() => addLayer(defaultShapeLayer('star'))}
-            className="h-16 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all flex flex-col items-center justify-center gap-1.5 group">
-            <Star className="w-5 h-5 text-white/50 group-hover:text-white" />
-            <span className="text-[9px] font-bold text-white/30 group-hover:text-white/70">Bintang</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ── Background panel ─────────────────────────────────────────────────────────
-
   const renderBgPanel = () => (
-    <div className="space-y-4 px-4 py-4">
+    <div className="space-y-6 px-4 py-5">
       <div>
-        <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mb-2">Tipe Background</p>
-        <div className="grid grid-cols-3 gap-2">
-          {(['solid', 'gradient', 'image'] as const).map(t => (
+        <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Tipe Background</p>
+        <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+          {['solid', 'gradient', 'image'].map(t => (
             <button key={t} onClick={() => setBannerBgType(t)}
-              className={cn('h-9 rounded-xl border text-xs font-bold capitalize transition-all', bannerBgType === t ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20')}>
-              {t === 'solid' ? 'Solid' : t === 'gradient' ? 'Gradasi' : 'Gambar'}
+              className={cn('flex-1 h-9 rounded-lg text-xs font-bold capitalize transition-all', bannerBgType === t ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300')}>
+              {t}
             </button>
           ))}
         </div>
@@ -925,439 +721,673 @@ export default function BannerPromo() {
 
       {bannerBgType === 'solid' && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mb-2">Warna</p>
+          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Warna Solid</p>
           <ColorGrid value={bannerBgColor} onChange={setBannerBgColor} />
         </div>
       )}
 
       {bannerBgType === 'gradient' && (
-        <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-wider text-white/40">Preset Gradasi</p>
+        <div className="space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Preset Gradasi</p>
           <div className="grid grid-cols-2 gap-2">
             {GRADIENT_PRESETS.map(g => (
               <button key={g.name} onClick={() => setBannerBgGradient(g.value)}
-                className={cn('h-10 rounded-xl border text-xs font-black transition-all', bannerBgGradient === g.value ? 'border-white scale-[1.02]' : 'border-transparent hover:border-white/30')}
+                className={cn('h-12 rounded-xl border-2 font-black transition-all text-white shadow-sm', bannerBgGradient === g.value ? 'border-blue-500 scale-105' : 'border-transparent')}
                 style={{ background: g.value }}>
-                <span className="text-white drop-shadow-md">{g.name}</span>
+                <span className="drop-shadow-md text-sm">{g.name}</span>
               </button>
             ))}
           </div>
-          <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mt-2">CSS Custom</p>
-          <Input value={bannerBgGradient} onChange={e => setBannerBgGradient(e.target.value)} className="h-9 bg-white/10 border-white/20 text-white text-xs font-mono rounded-xl" />
         </div>
       )}
 
       {bannerBgType === 'image' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <input ref={bgFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleBgImageSelect} />
-          <div className="w-full aspect-video rounded-xl border border-white/20 overflow-hidden bg-black/30 flex items-center justify-center cursor-pointer group hover:border-white/40 transition-all" onClick={() => bgFileInputRef.current?.click()}>
+          <div className="w-full aspect-video rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center cursor-pointer group hover:border-blue-400 transition-all relative" onClick={() => bgFileInputRef.current?.click()}>
             {bannerImage ? (
-              <img src={bannerImage} alt="BG" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+              <img src={bannerImage} alt="BG" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" style={{ filter: bgFilterStyle }} />
             ) : (
-              <div className="flex flex-col items-center gap-2 text-white/30 group-hover:text-white/60 transition-colors">
+              <div className="flex flex-col items-center gap-2 text-zinc-400 group-hover:text-blue-500">
                 <ImageIcon className="w-8 h-8" />
-                <span className="text-xs font-bold">Pilih gambar latar</span>
+                <span className="text-xs font-bold">Upload Gambar Latar</span>
               </div>
+            )}
+            {bannerImage && (
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-sm">Ganti Gambar</div>
             )}
           </div>
           {bannerImage && (
-            <button onClick={() => setBannerImage(null)} className="w-full h-9 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold hover:bg-red-500/30 transition-all">
-              Hapus Gambar Latar
-            </button>
+            <Button variant="danger" className="w-full" onClick={() => setBannerImage(null)}>Hapus Gambar</Button>
           )}
 
-          <p className="text-[10px] font-black uppercase tracking-wider text-white/40 mt-3">Filter Gambar Latar</p>
-          <SliderRow label="Kecerahan" value={bgFilter.brightness} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, brightness: v }))} unit="%" />
-          <SliderRow label="Kontras" value={bgFilter.contrast} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, contrast: v }))} unit="%" />
-          <SliderRow label="Saturasi" value={bgFilter.saturate} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, saturate: v }))} unit="%" />
-          <SliderRow label="Blur" value={bgFilter.blur} min={0} max={20} onChange={v => setBgFilter(f => ({ ...f, blur: v }))} unit="px" />
+          <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Latar Belakang</p>
+            <SliderRow label="Kecerahan" value={bgFilter.brightness} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, brightness: v }))} unit="%" />
+            <SliderRow label="Kontras" value={bgFilter.contrast} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, contrast: v }))} unit="%" />
+            <SliderRow label="Blur" value={bgFilter.blur} min={0} max={20} onChange={v => setBgFilter(f => ({ ...f, blur: v }))} unit="px" />
+          </div>
         </div>
       )}
     </div>
   );
 
-  // ── Banner info panel ────────────────────────────────────────────────────────
+  const renderPropsPanel = () => {
+    if (!selectedLayer) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-zinc-400 text-sm text-center px-6">
+          <MousePointer2 className="w-10 h-10 mb-4 opacity-20" />
+          Pilih elemen di kanvas untuk mengedit propertinya
+        </div>
+      );
+    }
+
+    if (selectedLayer.type === 'text') {
+      const t = selectedLayer;
+      const upd = (p) => updateLayer(t.id, p);
+      return (
+        <div className="space-y-0 pb-12">
+          <PanelSection title="Konten Teks" icon={Type}>
+            <textarea value={t.content} onChange={e => upd({ content: e.target.value })} rows={3}
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm p-3 resize-none focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
+          </PanelSection>
+
+          <PanelSection title="Tipografi" icon={Bold}>
+            <div className="space-y-4">
+              <select value={t.fontFamily} onChange={e => upd({ fontFamily: e.target.value })} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold outline-none">
+                {FONT_FAMILIES.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+              </select>
+              
+              <SliderRow label="Ukuran Teks" value={t.fontSize} min={8} max={160} onChange={v => upd({ fontSize: v })} unit="px" />
+              <SliderRow label="Lebar Area" value={t.width} min={5} max={100} onChange={v => upd({ width: v })} unit="%" />
+              
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+                {['left', 'center', 'right'].map(a => (
+                  <button key={a} onClick={() => upd({ textAlign: a })}
+                    className={cn('flex-1 h-9 rounded-lg flex items-center justify-center transition-all', t.textAlign === a ? 'bg-white dark:bg-zinc-700 shadow text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200')}>
+                    {a === 'left' ? <AlignLeft className="w-4 h-4" /> : a === 'center' ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex gap-2">
+                <button onClick={() => upd({ fontWeight: t.fontWeight === 'bold' ? 'normal' : 'bold' })}
+                  className={cn('flex-1 h-10 rounded-xl border font-bold transition-all', t.fontWeight === 'bold' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>B</button>
+                <button onClick={() => upd({ fontStyle: t.fontStyle === 'italic' ? 'normal' : 'italic' })}
+                  className={cn('flex-1 h-10 rounded-xl border italic font-bold transition-all', t.fontStyle === 'italic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>I</button>
+                <button onClick={() => upd({ uppercase: !t.uppercase })}
+                  className={cn('flex-1 h-10 rounded-xl border text-xs font-black uppercase transition-all', t.uppercase ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>AA</button>
+              </div>
+              
+              <SliderRow label="Spasi Huruf" value={t.letterSpacing} min={-5} max={30} onChange={v => upd({ letterSpacing: v })} unit="px" />
+              <SliderRow label="Jarak Baris" value={t.lineHeight * 10} min={8} max={30} onChange={v => upd({ lineHeight: v / 10 })} unit="" />
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Warna Teks" icon={Palette}>
+            <ColorGrid value={t.color} onChange={v => upd({ color: v })} />
+          </PanelSection>
+
+          <PanelSection title="Background & Padding" icon={SquareDashed} defaultOpen={false}>
+            <div className="space-y-4">
+              <ColorGrid value={t.bgColor} onChange={v => upd({ bgColor: v })} />
+              <SliderRow label="Opasitas BG" value={t.bgOpacity} min={0} max={100} onChange={v => upd({ bgOpacity: v })} unit="%" />
+              <SliderRow label="Sudut Melengkung" value={t.borderRadius} min={0} max={50} onChange={v => upd({ borderRadius: v })} unit="px" />
+              <SliderRow label="Padding Dalam" value={t.padding} min={0} max={60} onChange={v => upd({ padding: v })} unit="px" />
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Efek & Transformasi" icon={Sparkles} defaultOpen={false}>
+            <div className="space-y-4">
+              <SliderRow label="Rotasi" value={t.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
+              <SliderRow label="Transparansi" value={t.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
+              <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl">
+                <span className="text-xs font-bold">Bayangan (Shadow)</span>
+                <Switch checked={t.shadow} onCheckedChange={v => upd({ shadow: v })} />
+              </div>
+              <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl">
+                <span className="text-xs font-bold">Efek Glass (Blur BG)</span>
+                <Switch checked={t.backdropBlur} onCheckedChange={v => upd({ backdropBlur: v })} />
+              </div>
+            </div>
+          </PanelSection>
+        </div>
+      );
+    }
+
+    if (selectedLayer.type === 'image') {
+      const im = selectedLayer;
+      const upd = (p) => updateLayer(im.id, p);
+      return (
+        <div className="space-y-0 pb-12">
+          <PanelSection title="Ukuran & Posisi" icon={Move}>
+            <SliderRow label="Lebar" value={im.width} min={5} max={150} onChange={v => upd({ width: v })} unit="%" />
+          </PanelSection>
+
+          <PanelSection title="Transformasi" icon={RotateCw}>
+             <div className="space-y-4">
+               <SliderRow label="Rotasi" value={im.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
+               <div className="flex gap-2">
+                 <button onClick={() => upd({ flipX: !im.flipX })}
+                   className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2', im.flipX ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
+                   <FlipHorizontal className="w-4 h-4" /> Balik H
+                 </button>
+                 <button onClick={() => upd({ flipY: !im.flipY })}
+                   className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2', im.flipY ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
+                   <FlipVertical className="w-4 h-4" /> Balik V
+                 </button>
+               </div>
+               <SliderRow label="Opasitas" value={im.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
+               <SliderRow label="Radius Sudut" value={im.borderRadius} min={0} max={100} onChange={v => upd({ borderRadius: v })} unit="px" />
+               <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl mt-2">
+                 <span className="text-xs font-bold">Bayangan Lulus (Shadow)</span>
+                 <Switch checked={im.shadow} onCheckedChange={v => upd({ shadow: v })} />
+               </div>
+             </div>
+          </PanelSection>
+
+          <PanelSection title="Filter Warna" icon={Sliders}>
+            <div className="space-y-4">
+              <SliderRow label="Kecerahan" value={im.brightness} min={0} max={200} onChange={v => upd({ brightness: v })} unit="%" />
+              <SliderRow label="Kontras" value={im.contrast} min={0} max={200} onChange={v => upd({ contrast: v })} unit="%" />
+              <SliderRow label="Saturasi" value={im.saturate} min={0} max={200} onChange={v => upd({ saturate: v })} unit="%" />
+              <SliderRow label="Blur" value={im.blur} min={0} max={20} onChange={v => upd({ blur: v })} unit="px" />
+              <div className="flex gap-2">
+                <button onClick={() => upd({ grayscale: !im.grayscale })}
+                  className={cn('flex-1 h-10 rounded-xl border font-bold text-xs transition-all', im.grayscale ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
+                  Grayscale
+                </button>
+                <button onClick={() => upd({ sepia: !im.sepia })}
+                  className={cn('flex-1 h-10 rounded-xl border font-bold text-xs transition-all', im.sepia ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
+                  Sepia
+                </button>
+              </div>
+            </div>
+          </PanelSection>
+        </div>
+      );
+    }
+
+    if (selectedLayer.type === 'shape') {
+      const sh = selectedLayer;
+      const upd = (p) => updateLayer(sh.id, p);
+      return (
+        <div className="space-y-0 pb-12">
+          <PanelSection title="Dimensi" icon={Move}>
+            <SliderRow label="Lebar" value={sh.width} min={3} max={150} onChange={v => upd({ width: v })} unit="%" />
+            <SliderRow label="Tinggi" value={sh.height} min={3} max={150} onChange={v => upd({ height: v })} unit="%" />
+          </PanelSection>
+
+          <PanelSection title="Warna Isi" icon={Palette}>
+            <ColorGrid value={sh.fillColor} onChange={v => upd({ fillColor: v })} />
+          </PanelSection>
+
+          <PanelSection title="Garis Tepi (Stroke)" icon={SquareDashed} defaultOpen={false}>
+            <div className="space-y-4">
+              <ColorGrid value={sh.strokeColor} onChange={v => upd({ strokeColor: v })} />
+              <SliderRow label="Ketebalan Garis" value={sh.strokeWidth} min={0} max={40} onChange={v => upd({ strokeWidth: v })} unit="px" />
+              {sh.shape === 'rect' && (
+                <SliderRow label="Sudut Melengkung" value={sh.borderRadius} min={0} max={100} onChange={v => upd({ borderRadius: v })} unit="px" />
+              )}
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Efek Lain" icon={Sparkles} defaultOpen={false}>
+            <div className="space-y-4">
+              <SliderRow label="Rotasi" value={sh.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
+              <SliderRow label="Transparansi" value={sh.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
+              <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl">
+                <span className="text-xs font-bold">Bayangan</span>
+                <Switch checked={sh.shadow} onCheckedChange={v => upd({ shadow: v })} />
+              </div>
+            </div>
+          </PanelSection>
+        </div>
+      );
+    }
+  };
 
   const renderInfoPanel = () => (
-    <div className="space-y-4 px-4 py-4">
-      <div className="space-y-2">
-        <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">Tipe Banner</Label>
-        <Select value={bannerType} onValueChange={(v: any) => setBannerType(v)}>
-          <SelectTrigger className="h-10 bg-white/10 border-white/20 text-white text-xs rounded-xl font-bold"><SelectValue /></SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="voucher">Promo Voucher</SelectItem>
-            <SelectItem value="menu">Menu / Produk</SelectItem>
-            <SelectItem value="custom">Kustom Bebas</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="space-y-5 px-4 py-5 pb-12">
+      <div>
+        <Label>Tipe Banner</Label>
+        <select value={bannerType} onChange={(e) => setBannerType(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
+          <option value="custom">Kustom Bebas</option>
+          <option value="voucher">Promo Voucher</option>
+          <option value="menu">Menu / Produk</option>
+        </select>
       </div>
+
       {bannerType === 'voucher' && (
-        <div className="space-y-2">
-          <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">Voucher</Label>
-          <Select value={bannerVoucherId} onValueChange={setBannerVoucherId}>
-            <SelectTrigger className="h-10 bg-white/10 border-white/20 text-white text-xs rounded-xl font-bold"><SelectValue placeholder="Pilih voucher..." /></SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {vouchers.map(v => <SelectItem key={v.id} value={v.id!.toString()}>{v.code}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div>
+          <Label>Voucher Terkait</Label>
+          <select value={bannerVoucherId} onChange={(e) => setBannerVoucherId(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
+            <option value="">-- Pilih Voucher --</option>
+            {vouchers.map(v => <option key={v.id} value={v.id}>{v.code}</option>)}
+          </select>
         </div>
       )}
+
       {bannerType === 'menu' && (
-        <div className="space-y-2">
-          <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">Produk</Label>
-          <Select value={bannerProductId} onValueChange={setBannerProductId}>
-            <SelectTrigger className="h-10 bg-white/10 border-white/20 text-white text-xs rounded-xl font-bold"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {products.map(p => <SelectItem key={p.id} value={p.id!.toString()}>{p.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div>
+          <Label>Produk Terkait</Label>
+          <select value={bannerProductId} onChange={(e) => setBannerProductId(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
+            <option value="">-- Pilih Produk --</option>
+            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
         </div>
       )}
-      <div className="space-y-2">
-        <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">Judul Banner</Label>
-        <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} maxLength={60} className="h-10 bg-white/10 border-white/20 text-white text-sm rounded-xl font-semibold" />
+
+      <div>
+        <Label>Judul Internal (Admin)</Label>
+        <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="Promo Kemerdekaan..." />
       </div>
-      <div className="space-y-2">
-        <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">Deskripsi</Label>
-        <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} maxLength={150}
-          className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none font-medium" />
+
+      <div>
+        <Label>Deskripsi Internal</Label>
+        <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} placeholder="Catatan internal..."
+          className="w-full p-3 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500" />
       </div>
-      <div className="space-y-2">
-        <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">Teks Tombol</Label>
-        <Input value={bannerButtonText} onChange={e => setBannerButtonText(e.target.value)} placeholder="Lihat Detail" className="h-10 bg-white/10 border-white/20 text-white text-sm rounded-xl" />
-      </div>
+
       {bannerType === 'custom' && (
-        <div className="space-y-2">
-          <Label className="text-[10px] font-black uppercase tracking-wider text-white/40">URL Tujuan</Label>
-          <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://..." className="h-10 bg-white/10 border-white/20 text-white text-sm rounded-xl" />
+        <div>
+          <Label>Link Tujuan (Opsional)</Label>
+          <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://..." />
         </div>
       )}
-      <div className="flex items-center justify-between py-2">
-        <span className="text-xs font-bold text-white/60">Status Aktif</span>
-        <Switch checked={bannerIsActive} onCheckedChange={setBannerIsActive} className="data-[state=checked]:bg-green-500" />
+
+      <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl">
+        <div>
+          <p className="text-sm font-bold">Status Tayang</p>
+          <p className="text-xs text-zinc-500">Tampilkan di aplikasi pelanggan</p>
+        </div>
+        <Switch checked={bannerIsActive} onCheckedChange={setBannerIsActive} />
       </div>
     </div>
   );
 
-  if (bannerList === undefined) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Clock className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // ── FULL-SCREEN EDITOR ───────────────────────────────────────────────────────
-
+  // ============================================================================
+  // RENDER EDITOR VIEW
+  // ============================================================================
   if (isEditorOpen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-[#0D0D10] flex flex-col overflow-hidden" style={{ fontFamily: 'system-ui, sans-serif' }}>
+      <div className="fixed inset-0 z-50 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col overflow-hidden transition-colors duration-300">
+        
+        {/* Toast Layer */}
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none">
+          {toasts.map(t => (
+            <div key={t.id} className={cn("px-4 py-2 rounded-full font-bold text-sm shadow-xl pointer-events-auto transition-all animate-in slide-in-from-top-5", t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900')}>
+              {t.message}
+            </div>
+          ))}
+        </div>
 
-        {/* ─ Topbar ─ */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-[#141418] shrink-0 z-50">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setIsEditorOpen(false)} className="h-9 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all">
-              <ChevronLeft className="w-4 h-4" /> Kembali
-            </button>
-            <div className="h-5 w-[1px] bg-white/10" />
-            <div className="flex items-center gap-1">
-              <button onClick={undo} disabled={historyIndex === 0} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 disabled:opacity-25 transition-all">
+        {/* --- Topbar --- */}
+        <div className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 z-40 relative">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => setIsEditorOpen(false)} className="rounded-full">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
+            
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 rounded-full p-1">
+              <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full" onClick={undo} disabled={historyIndex === 0}>
                 <RotateCcw className="w-4 h-4" />
-              </button>
-              <button onClick={redo} disabled={historyIndex >= history.length - 1} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 disabled:opacity-25 transition-all">
+              </Button>
+              <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full" onClick={redo} disabled={historyIndex >= history.length - 1}>
                 <RotateCw className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
-            <div className="h-5 w-[1px] bg-white/10" />
-            <button onClick={() => setShowGrid(g => !g)}
-              className={cn('w-9 h-9 rounded-xl flex items-center justify-center transition-all', showGrid ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30' : 'text-white/50 hover:text-white hover:bg-white/10')}>
-              <Grid className="w-4 h-4" />
-            </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-black text-white/80 hidden sm:block">Canvas Editor</span>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-blue-500 hidden sm:block" />
+            <span className="text-sm font-black tracking-tight hidden sm:block">Creative Studio</span>
+            <span className="text-sm font-black tracking-tight sm:hidden">{bannerTitle || 'Banner Baru'}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 h-9">
-              <button onClick={() => setZoom(z => Math.max(30, z - 10))} className="text-white/50 hover:text-white"><ZoomOut className="w-3.5 h-3.5" /></button>
-              <span className="text-xs font-mono font-black text-white/70 w-10 text-center">{zoom}%</span>
-              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="text-white/50 hover:text-white"><ZoomIn className="w-3.5 h-3.5" /></button>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="hidden sm:flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 rounded-full px-3 h-10">
+              <button onClick={() => setZoom(z => Math.max(30, z - 10))} className="p-1 hover:text-blue-500 transition-colors"><ZoomOut className="w-4 h-4" /></button>
+              <span className="text-xs font-mono font-bold w-12 text-center">{zoom}%</span>
+              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 hover:text-blue-500 transition-colors"><ZoomIn className="w-4 h-4" /></button>
             </div>
-            <button onClick={handleSaveBanner}
-              className="h-9 px-5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-lg shadow-blue-500/20">
-              <Check className="w-4 h-4" /> {editBanner ? 'Simpan' : 'Terbitkan'}
-            </button>
+            
+            <Button variant="primary" size="sm" onClick={handleSaveBanner} className="rounded-full px-5 h-9 sm:h-10 text-xs sm:text-sm shadow-blue-500/20">
+              <Check className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{editBanner ? 'Simpan' : 'Terbitkan'}</span>
+            </Button>
           </div>
         </div>
 
-        {/* ─ Body ─ */}
-        <div className="flex-1 flex overflow-hidden">
+        {/* --- Main Workspace --- */}
+        <div className="flex-1 flex overflow-hidden relative bg-zinc-50 dark:bg-[#09090b]">
 
-          {/* ─ Left sidebar ─ */}
-          <div className="w-[260px] shrink-0 bg-[#141418] border-r border-white/10 flex flex-col overflow-hidden">
-            {/* Sidebar tab bar */}
-            <div className="flex border-b border-white/10 shrink-0">
-              {([
-                { key: 'elements', icon: Plus, label: 'Elemen' },
-                { key: 'layers', icon: Layers, label: 'Layer' },
-                { key: 'bg', icon: Palette, label: 'BG' },
-                { key: 'props', icon: SlidersHorizontal, label: 'Info' },
-              ] as const).map(tab => (
-                <button key={tab.key} onClick={() => setActivePanel(tab.key as any)}
-                  className={cn('flex-1 flex flex-col items-center gap-1 py-2.5 text-[9px] font-black uppercase tracking-wider transition-all', activePanel === tab.key ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-500/5' : 'text-white/30 hover:text-white/60')}>
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
+          {/* Desktop Left Sidebar (Elements, Layers) */}
+          <div className="hidden md:flex w-[320px] shrink-0 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-hidden z-20">
+            <div className="flex p-2 border-b border-zinc-200 dark:border-zinc-800 gap-2 shrink-0">
+              {['elements', 'layers'].map(tab => (
+                <button key={tab} onClick={() => setActivePanel(tab)}
+                  className={cn("flex-1 h-10 rounded-xl text-xs font-bold capitalize transition-all", activePanel === tab ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100" : "text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/50")}>
+                  {tab === 'elements' ? 'Tambah' : 'Layer'}
                 </button>
               ))}
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               {activePanel === 'elements' && renderElementsPanel()}
               {activePanel === 'layers' && renderLayersPanel()}
-              {activePanel === 'bg' && renderBgPanel()}
-              {activePanel === 'props' && renderInfoPanel()}
+              {/* Fallback if user clicked a right-panel tab on mobile then resized to desktop */}
+              {(activePanel === 'props' || activePanel === 'bg') && renderElementsPanel()} 
             </div>
           </div>
 
-          {/* ─ Canvas Area ─ */}
-          <div className="flex-1 relative overflow-auto bg-[#0D0D10] flex items-center justify-center p-8"
-            style={{ backgroundImage: showGrid ? 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.07) 1px, transparent 0)' : undefined, backgroundSize: showGrid ? '24px 24px' : undefined }}
+          {/* Center Canvas Area */}
+          <div className="flex-1 relative overflow-auto flex items-center justify-center p-4 sm:p-12 pb-24 md:pb-12"
+            style={{ 
+              backgroundImage: showGrid ? 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)' : undefined, 
+              backgroundSize: showGrid ? '32px 32px' : undefined,
+              color: 'var(--tw-prose-body, rgba(150,150,150,0.1))'
+            }}
             onPointerDown={() => setSelectedId(null)}>
-            {/* Snap guides */}
-            {dragState.current && (
-              <>
-                <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-blue-400/30 pointer-events-none" style={{ zIndex: 9999 }} />
-                <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-blue-400/30 pointer-events-none" style={{ zIndex: 9999 }} />
-              </>
-            )}
-
-            <div
-              ref={canvasRef}
-              className="relative shadow-2xl overflow-hidden select-none"
+            
+            {/* Canvas Container */}
+            <div ref={canvasRef} className="relative shadow-2xl overflow-hidden"
               style={{
-                width: `${zoom}%`, maxWidth: '1400px', aspectRatio: '21/9',
-                background: canvasBg || '#0F172A',
-                containerType: 'inline-size',
+                width: `${zoom}%`, minWidth: '300px', maxWidth: '1200px', aspectRatio: '21/9',
+                background: canvasBg || '#ffffff',
                 borderRadius: '16px',
-                outline: selectedId ? undefined : '2px solid rgba(255,255,255,0.05)',
+                border: selectedId ? 'none' : '2px solid transparent',
+                outline: selectedId ? undefined : '1px solid rgba(150,150,150,0.2)'
               }}>
-              {/* Background image */}
+              
+              {/* Canvas Background Image */}
               {bannerBgType === 'image' && bannerImage && (
                 <div className="absolute inset-0 z-0 pointer-events-none">
-                  <img src={bannerImage} alt="bg" className="w-full h-full object-cover"
-                    style={{ filter: bgFilterStyle }} />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+                  <img src={bannerImage} alt="bg" className="w-full h-full object-cover" style={{ filter: bgFilterStyle }} />
                 </div>
               )}
               {bannerBgType === 'image' && !bannerImage && (
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 pointer-events-none" />
+                <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 pointer-events-none flex flex-col items-center justify-center text-zinc-400">
+                  <ImageIcon className="w-12 h-12 mb-2 opacity-20" />
+                  <span className="text-sm font-bold opacity-50">Latar Belakang Kosong</span>
+                </div>
               )}
 
-              {/* Canvas Layers */}
+              {/* Layers */}
               {[...layers].sort((a, b) => a.zIndex - b.zIndex).map(renderCanvasLayer)}
             </div>
+
+            {/* Floating Action Menu inside canvas (Desktop) */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-zinc-200/50 dark:border-zinc-800/50 z-30">
+               <button onClick={() => setShowGrid(!showGrid)} className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all", showGrid ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")}>
+                 <Grid className="w-4 h-4" />
+               </button>
+               <div className="w-[1px] h-6 bg-zinc-200 dark:bg-zinc-700" />
+               <span className="text-xs font-bold text-zinc-500 px-2">{layers.length} Objek</span>
+               <div className="w-[1px] h-6 bg-zinc-200 dark:bg-zinc-700" />
+               <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+               </button>
+            </div>
           </div>
 
-          {/* ─ Right sidebar: properties ─ */}
-          {selectedId && (
-            <div className="w-[260px] shrink-0 bg-[#141418] border-l border-white/10 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
-                <span className="text-xs font-black uppercase tracking-wider text-white/60 flex items-center gap-2">
-                  <SlidersHorizontal className="w-3.5 h-3.5" /> Properti
-                </span>
-                <div className="flex items-center gap-1">
-                  {selectedLayer && (
-                    <>
-                      <button onClick={() => duplicateLayer(selectedId)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => { removeLayer(selectedId); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all">
-                        <Trash className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setSelectedId(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </>
-                  )}
+          {/* Desktop Right Sidebar (Props, Bg, Info) */}
+          <div className="hidden md:flex w-[320px] shrink-0 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex-col overflow-hidden z-20">
+             <div className="flex p-2 border-b border-zinc-200 dark:border-zinc-800 gap-2 shrink-0">
+               {['props', 'bg', 'info'].map(tab => {
+                 let label = tab === 'props' ? 'Properti' : tab === 'bg' ? 'Latar' : 'Detail';
+                 return (
+                   <button key={tab} onClick={() => { setActivePanel(tab); if(tab === 'props' && !selectedId && layers.length > 0) setSelectedId(layers[layers.length-1].id); }}
+                     className={cn("flex-1 h-10 rounded-xl text-xs font-bold capitalize transition-all", activePanel === tab ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100" : "text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/50")}>
+                     {label}
+                   </button>
+                 );
+               })}
+             </div>
+             
+             {/* Quick Actions for Selected Layer */}
+             {selectedLayer && activePanel === 'props' && (
+                <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shrink-0">
+                  <div className="flex bg-zinc-200 dark:bg-zinc-800 rounded-lg p-0.5">
+                    <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) - 1 })} className="w-7 h-7 flex items-center justify-center rounded hover:bg-white dark:hover:bg-zinc-700 shadow-sm"><ChevronDown className="w-4 h-4" /></button>
+                    <span className="w-8 flex items-center justify-center text-xs font-mono font-bold">{selectedLayer.zIndex}</span>
+                    <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) + 1 })} className="w-7 h-7 flex items-center justify-center rounded hover:bg-white dark:hover:bg-zinc-700 shadow-sm"><ChevronUp className="w-4 h-4" /></button>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => duplicateLayer(selectedId)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"><Copy className="w-4 h-4 text-zinc-700 dark:text-zinc-300" /></button>
+                    <button onClick={() => removeLayer(selectedId)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"><Trash className="w-4 h-4 text-red-600 dark:text-red-400" /></button>
+                  </div>
                 </div>
-              </div>
+             )}
 
-              {/* Z-index quick control */}
-              {selectedLayer && (
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 flex-1">Z-Index</span>
-                  <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) - 1 })}
-                    className="w-7 h-7 bg-white/5 hover:bg-white/15 rounded-lg text-white/60 hover:text-white flex items-center justify-center transition-all">
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                  <span className="text-xs font-mono font-black text-white/70 w-8 text-center">{selectedLayer.zIndex}</span>
-                  <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) + 1 })}
-                    className="w-7 h-7 bg-white/5 hover:bg-white/15 rounded-lg text-white/60 hover:text-white flex items-center justify-center transition-all">
-                    <ChevronUp className="w-4 h-4" />
-                  </button>
-                </div>
+             <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {activePanel === 'props' && renderPropsPanel()}
+                {activePanel === 'bg' && renderBgPanel()}
+                {activePanel === 'info' && renderInfoPanel()}
+                {/* Fallback */}
+                {(activePanel === 'elements' || activePanel === 'layers') && renderPropsPanel()}
+             </div>
+          </div>
+
+          {/* --- MOBILE BOTTOM TABS & SHEET --- */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex flex-col justify-end h-full">
+            
+            {/* Overlay for Bottom Sheet */}
+            {isMobilePanelOpen && (
+              <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm pointer-events-auto transition-opacity" onClick={() => setIsMobilePanelOpen(false)} />
+            )}
+
+            {/* Slide-up Sheet */}
+            <div className={cn("bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-zinc-200 dark:border-zinc-800 transition-transform duration-300 ease-out pointer-events-auto flex flex-col max-h-[70vh]", isMobilePanelOpen ? "translate-y-0" : "translate-y-full")}>
+              {/* Drag Handle & Close */}
+              <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+                <span className="text-sm font-black uppercase tracking-wider">{activePanel === 'elements' ? 'Tambah Elemen' : activePanel === 'layers' ? 'Layer Kanvas' : activePanel === 'props' ? 'Properti Objek' : activePanel === 'bg' ? 'Latar Belakang' : 'Detail Banner'}</span>
+                <button onClick={() => setIsMobilePanelOpen(false)} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center"><X className="w-4 h-4" /></button>
+              </div>
+              
+              {/* Quick action bar for Props in mobile */}
+              {activePanel === 'props' && selectedLayer && (
+                 <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 shrink-0 overflow-x-auto gap-2">
+                    <button onClick={() => duplicateLayer(selectedId)} className="shrink-0 h-8 px-3 rounded bg-zinc-100 dark:bg-zinc-800 text-xs font-bold flex items-center gap-2"><Copy className="w-3.5 h-3.5"/> Duplikat</button>
+                    <button onClick={() => removeLayer(selectedId)} className="shrink-0 h-8 px-3 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2"><Trash className="w-3.5 h-3.5"/> Hapus</button>
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded p-0.5 shrink-0">
+                      <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) - 1 })} className="w-7 h-7 flex items-center justify-center"><ChevronDown className="w-4 h-4" /></button>
+                      <span className="w-6 flex items-center justify-center text-[10px] font-mono font-bold">Z</span>
+                      <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) + 1 })} className="w-7 h-7 flex items-center justify-center"><ChevronUp className="w-4 h-4" /></button>
+                    </div>
+                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {renderPropsPanel()}
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar pb-8">
+                {activePanel === 'elements' && renderElementsPanel()}
+                {activePanel === 'layers' && renderLayersPanel()}
+                {activePanel === 'props' && renderPropsPanel()}
+                {activePanel === 'bg' && renderBgPanel()}
+                {activePanel === 'info' && renderInfoPanel()}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* ─ Bottom statusbar ─ */}
-        <div className="h-9 border-t border-white/10 bg-[#141418] flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-4 text-[10px] font-bold text-white/30">
-            <span>{layers.length} layer</span>
-            <span>|</span>
-            <span>Rasio 21:9</span>
-            <span>|</span>
-            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Auto-save aktif</span>
+            {/* Bottom Tab Bar */}
+            <div className="h-16 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-around shrink-0 pointer-events-auto pb-safe">
+               {[
+                 { id: 'elements', icon: Plus, label: 'Tambah' },
+                 { id: 'layers', icon: Layers, label: 'Layer' },
+                 { id: 'props', icon: SlidersHorizontal, label: 'Edit' },
+                 { id: 'bg', icon: ImageIcon, label: 'Latar' },
+                 { id: 'info', icon: Layout, label: 'Detail' }
+               ].map(tab => (
+                 <button key={tab.id} onClick={() => { setActivePanel(tab.id); setIsMobilePanelOpen(true); }}
+                   className={cn("flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors", activePanel === tab.id && isMobilePanelOpen ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200")}>
+                   <tab.icon className={cn("w-5 h-5", activePanel === tab.id && isMobilePanelOpen && "scale-110 transition-transform")} />
+                   <span className="text-[9px] font-bold">{tab.label}</span>
+                 </button>
+               ))}
+            </div>
           </div>
-          <div className="text-[10px] font-bold text-white/20">
-            {selectedLayer ? `${selectedLayer.type.toUpperCase()} • x:${selectedLayer.x}% y:${selectedLayer.y}%` : 'Klik elemen untuk memilih'}
-          </div>
+
         </div>
       </div>
     );
   }
 
-  // ── MAIN LIST VIEW ───────────────────────────────────────────────────────────
-
+  // ============================================================================
+  // RENDER MAIN LIST
+  // ============================================================================
   return (
-    <div className="pt-8 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h3 className="text-2xl font-black text-foreground tracking-tight">Pengaturan Banner</h3>
-          <p className="text-sm text-muted-foreground mt-1">Buat dan kelola banner promo di Beranda Pelanggan.</p>
-        </div>
-        <Button onClick={() => openEditor()} className="h-11 px-5 rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all shrink-0">
-          <Plus className="w-5 h-5 mr-2" strokeWidth={3} /> Buat Banner
-        </Button>
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 p-4 sm:p-8 md:p-12 transition-colors duration-300">
+      
+      {/* Toast Layer */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
+        {toasts.map(t => (
+          <div key={t.id} className={cn("px-4 py-2 rounded-full font-bold text-sm shadow-xl transition-all animate-in slide-in-from-top-5", t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900')}>
+            {t.message}
+          </div>
+        ))}
       </div>
 
-      {bannerList.length === 0 ? (
-        <div className="bg-card border border-dashed border-border rounded-[2rem] p-12 flex flex-col items-center justify-center text-center mt-6">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Sparkles className="w-10 h-10 text-primary/50" strokeWidth={1.5} />
+      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 bg-white dark:bg-zinc-900 p-6 rounded-3xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h2 className="text-3xl font-black tracking-tight">Manajer Banner</h2>
+            </div>
+            <p className="text-zinc-500 dark:text-zinc-400">Buat desain banner interaktif langsung di peramban.</p>
           </div>
-          <h3 className="text-lg font-bold text-foreground mb-1">Belum Ada Banner</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">Buat banner pertamamu dengan editor seperti Canva!</p>
-          <Button variant="outline" className="mt-6 rounded-xl font-bold" onClick={() => openEditor()}>
-            Buka Editor
-          </Button>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-2xl shrink-0 hidden sm:flex">
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
+            <Button variant="primary" size="lg" onClick={() => openEditor()} className="rounded-2xl flex-1 sm:flex-none shadow-blue-500/25">
+              <Plus className="w-5 h-5 mr-2" /> Buat Banner Baru
+            </Button>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 mt-6">
-          {bannerList.map(b => (
-            <Card key={b.id} className="border border-border/60 rounded-[2rem] overflow-hidden flex flex-col bg-card hover:shadow-xl transition-all duration-300">
-              <div className="p-6 flex flex-col lg:flex-row gap-6 items-center">
-                {/* Preview */}
-                <div className="w-full lg:w-[420px] aspect-[21/9] rounded-2xl relative overflow-hidden shadow-md shrink-0 select-none bg-black border border-border/50 text-white"
-                  style={{ background: b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined, containerType: 'inline-size' }}>
+
+        {/* Content List */}
+        {banners.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-16 flex flex-col items-center justify-center text-center">
+            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-6">
+              <Layout className="w-12 h-12 text-zinc-400" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-2xl font-black mb-2">Kanvas Kosong</h3>
+            <p className="text-zinc-500 dark:text-zinc-400 max-w-sm mb-8">Belum ada banner yang dibuat. Klik tombol di atas untuk memulai mahakarya Anda!</p>
+            <Button variant="primary" onClick={() => openEditor()} className="rounded-full px-8 shadow-lg">Mulai Desain</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {banners.map(b => (
+              <Card key={b.id} className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500/50">
+                
+                {/* Visual Preview */}
+                <div className="aspect-[21/9] w-full relative bg-zinc-950 overflow-hidden shrink-0 border-b border-zinc-200 dark:border-zinc-800"
+                  style={{ background: b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined }}>
+                  
                   {b.imageUrl && (
                     <div className="absolute inset-0 z-0">
-                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover opacity-60 mix-blend-overlay" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" style={{ filter: `brightness(${b.canvasBgFilter?.brightness || 100}%) blur(${b.canvasBgFilter?.blur || 0}px)` }} />
                     </div>
                   )}
 
-                  {(b.canvasLayers || []).filter(l => l.visible !== false).sort((a, b) => a.zIndex - b.zIndex).map(layer => {
-                    if (layer.type === 'text') {
-                      const t = layer as TextLayer;
-                      return (
-                        <div key={t.id} style={{ position: 'absolute', left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%, -50%)', zIndex: t.zIndex, opacity: t.opacity / 100, width: `${t.width}%` }}>
-                          <p style={{
-                            fontSize: `${t.fontSize * 0.4}px`, fontWeight: t.fontWeight, fontStyle: t.fontStyle,
-                            textAlign: t.textAlign, color: t.color, letterSpacing: `${t.letterSpacing * 0.4}px`,
-                            lineHeight: t.lineHeight, fontFamily: t.fontFamily,
-                            textDecoration: t.textDecoration, textTransform: t.uppercase ? 'uppercase' : 'none',
-                            padding: `${t.padding * 0.4}px`, borderRadius: `${t.borderRadius * 0.4}px`,
-                            backgroundColor: t.bgOpacity > 0 ? `${t.bgColor}${Math.round(t.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent',
-                            textShadow: t.shadow ? '0 1px 6px rgba(0,0,0,0.8)' : undefined, margin: 0,
-                            transform: `rotate(${t.rotate}deg)`, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                          }}>{t.content}</p>
-                        </div>
-                      );
-                    }
-                    if (layer.type === 'image') {
-                      const im = layer as ImageLayer;
-                      return (
-                        <div key={im.id} style={{ position: 'absolute', left: `${im.x}%`, top: `${im.y}%`, transform: 'translate(-50%, -50%)', zIndex: im.zIndex, opacity: im.opacity / 100, width: `${im.width}%` }}>
-                          <img src={im.src} style={{ width: '100%', height: 'auto', transform: `rotate(${im.rotate}deg) scaleX(${im.flipX ? -1 : 1}) scaleY(${im.flipY ? -1 : 1})`, borderRadius: `${im.borderRadius}px`, filter: `brightness(${im.brightness}%) contrast(${im.contrast}%) saturate(${im.saturate}%) ${im.grayscale ? 'grayscale(100%)' : ''} ${im.sepia ? 'sepia(100%)' : ''}`, mixBlendMode: im.mixBlendMode as any }} alt="" />
-                        </div>
-                      );
-                    }
-                    if (layer.type === 'shape') {
-                      const sh = layer as ShapeLayer;
-                      return (
-                        <div key={sh.id} style={{ position: 'absolute', left: `${sh.x}%`, top: `${sh.y}%`, transform: 'translate(-50%, -50%)', zIndex: sh.zIndex, opacity: sh.opacity / 100, width: `${sh.width}%` }}>
-                          <svg viewBox={sh.shape === 'triangle' || sh.shape === 'star' ? '0 0 100 100' : undefined} style={{ width: '100%', aspectRatio: '1', transform: `rotate(${sh.rotate}deg)` }}>
-                            <ShapeSVG layer={sh} />
-                          </svg>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
+                  <div className="absolute inset-0 pointer-events-none transform origin-top-left" style={{ transform: 'scale(0.5)', width: '200%', height: '200%' }}>
+                    {(b.canvasLayers || []).filter(l => l.visible).sort((a, b) => a.zIndex - b.zIndex).map(layer => {
+                      if (layer.type === 'text') {
+                        return (
+                          <div key={layer.id} style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, transform: 'translate(-50%, -50%)', zIndex: layer.zIndex, opacity: layer.opacity / 100, width: `${layer.width}%` }}>
+                            <p style={{
+                              fontSize: `${layer.fontSize}px`, fontWeight: layer.fontWeight, fontStyle: layer.fontStyle, textAlign: layer.textAlign, color: layer.color, letterSpacing: `${layer.letterSpacing}px`, lineHeight: layer.lineHeight, fontFamily: layer.fontFamily, textDecoration: layer.textDecoration, textTransform: layer.uppercase ? 'uppercase' : 'none', padding: `${layer.padding}px`, borderRadius: `${layer.borderRadius}px`, backgroundColor: layer.bgOpacity > 0 ? `${layer.bgColor}${Math.round(layer.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent', textShadow: layer.shadow ? '0 4px 16px rgba(0,0,0,0.8)' : undefined, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', transform: `rotate(${layer.rotate}deg)`,
+                            }}>{layer.content}</p>
+                          </div>
+                        );
+                      }
+                      if (layer.type === 'image') {
+                        return (
+                          <div key={layer.id} style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, transform: 'translate(-50%, -50%)', zIndex: layer.zIndex, opacity: layer.opacity / 100, width: `${layer.width}%` }}>
+                            <img src={layer.src} style={{ width: '100%', height: 'auto', transform: `rotate(${layer.rotate}deg) scaleX(${layer.flipX ? -1 : 1}) scaleY(${layer.flipY ? -1 : 1})`, borderRadius: `${layer.borderRadius}px`, mixBlendMode: layer.mixBlendMode }} alt="" />
+                          </div>
+                        );
+                      }
+                      if (layer.type === 'shape') {
+                        return (
+                          <div key={layer.id} style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, transform: 'translate(-50%, -50%)', zIndex: layer.zIndex, opacity: layer.opacity / 100, width: `${layer.width}%` }}>
+                            <svg viewBox={['triangle','star'].includes(layer.shape) ? '0 0 100 100' : undefined} style={{ width: '100%', aspectRatio: '1', transform: `rotate(${layer.rotate}deg)` }}>
+                              <ShapeSVG layer={layer} />
+                            </svg>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                  
+                  {/* Status Overlay */}
+                  <div className="absolute top-4 right-4 flex gap-2">
+                     <Badge variant={b.isActive ? "success" : "default"} className="shadow-lg backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 text-xs">
+                       {b.isActive ? 'Sedang Tayang' : 'Disembunyikan'}
+                     </Badge>
+                  </div>
                 </div>
 
-                <div className="flex-1 w-full flex flex-col justify-between py-2">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={cn("text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md border-none tracking-widest", b.isActive ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
-                        {b.isActive ? 'Aktif' : 'Nonaktif'}
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-md">
-                        {b.type === 'voucher' ? 'Voucher' : b.type === 'menu' ? 'Produk' : 'Kustom'}
-                      </Badge>
-                      {b.canvasLayers && <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md">{b.canvasLayers.length} layer</Badge>}
-                    </div>
-                    <h4 className="font-extrabold text-xl text-foreground leading-snug">{b.title || '(tanpa judul)'}</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{b.description}</p>
+                {/* Info & Actions */}
+                <div className="p-6 flex flex-col flex-1 bg-white dark:bg-zinc-950">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="primary" className="text-[10px] uppercase px-2">{b.type}</Badge>
+                    <span className="text-xs font-bold text-zinc-400">{b.canvasLayers?.length || 0} Layer</span>
                   </div>
-
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-border w-full">
+                  <h4 className="text-xl font-black mb-2 line-clamp-1">{b.title || '(Tanpa Judul)'}</h4>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-6 flex-1">{b.description || 'Tidak ada deskripsi'}</p>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tampil</span>
-                      <Switch checked={b.isActive} onCheckedChange={() => handleToggleActive(b.id, b.isActive)} className="data-[state=checked]:bg-green-500 scale-90" />
+                       <Switch checked={b.isActive} onCheckedChange={() => handleToggleActive(b.id, b.isActive)} />
+                       <span className="text-xs font-bold text-zinc-500">Tampil</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl font-bold text-xs flex items-center gap-1.5" onClick={() => openEditor(b)}>
-                        <Edit2 className="w-3.5 h-3.5" /> Edit di Canvas
+                      <Button variant="ghost" size="icon" className="rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-blue-600" onClick={() => openEditor(b)}>
+                        <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeleteBannerId(b.id)}>
+                      <Button variant="ghost" size="icon" className="rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-500 hover:text-red-500" onClick={() => setDeleteBannerId(b.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modern Delete Dialog */}
+      {deleteBannerId && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-black text-center mb-2">Hapus Banner?</h3>
+            <p className="text-center text-zinc-500 dark:text-zinc-400 mb-8">
+              Aksi ini tidak dapat dibatalkan. Semua layer dan desain akan terhapus secara permanen.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1 rounded-2xl h-12" onClick={() => setDeleteBannerId(null)}>Batal</Button>
+              <Button variant="danger" className="flex-1 rounded-2xl h-12" onClick={handleDeleteBanner}>Ya, Hapus</Button>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteBannerId} onOpenChange={() => setDeleteBannerId(null)}>
-        <AlertDialogContent className="max-w-[400px] rounded-3xl p-6">
-          <AlertDialogHeader>
-            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-3 mx-auto">
-              <Trash2 className="w-7 h-7 text-destructive" />
-            </div>
-            <AlertDialogTitle className="text-center text-xl font-extrabold tracking-tight">Hapus Banner?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-muted-foreground mt-2">
-              Banner ini akan dihapus permanen beserta semua layer-nya.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-8 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-12 font-bold border-border">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteBanner} className="flex-1 rounded-xl h-12 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-lg">Ya, Hapus</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
+      {/* Global Style overrides */}
+      <style dangerouslySetInnerHTML={{__html:`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(150,150,150,0.3); border-radius: 10px; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      `}} />
     </div>
   );
 }
