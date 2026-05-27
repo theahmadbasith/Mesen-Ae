@@ -30,7 +30,6 @@ const Kitchen = lazy(() => import("./pages/Kitchen"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
 const Vouchers = lazy(() => import("./pages/Vouchers"));
 const BannerPromo = lazy(() => import("./pages/BannerPromo"));
-const BannerEditor = lazy(() => import("./pages/BannerEditor"));
 const BarcodePrint = lazy(() => import("./pages/BarcodePrint"));
 
 // Protected Route Wrapper
@@ -213,13 +212,6 @@ export default function AdminApp() {
           <ProtectedModuleRoute moduleName="marketing">
             <Suspense fallback={<PageSkeleton />}>
               <BannerPromo />
-            </Suspense>
-          </ProtectedModuleRoute>
-        } />
-        <Route path="banner/edit/:id" element={
-          <ProtectedModuleRoute moduleName="marketing">
-            <Suspense fallback={<PageSkeleton />}>
-              <BannerEditor />
             </Suspense>
           </ProtectedModuleRoute>
         } />
