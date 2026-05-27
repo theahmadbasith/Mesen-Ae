@@ -11,31 +11,8 @@ import {
   ChevronLeft, ChevronRight, MoreVertical, Crosshair, Wand2, Pen,
   Moon
 } from 'lucide-react';
-
-// ============================================================================
-// 1. MOCK DATABASE & STORAGE HOOKS (Simulasi db-hooks untuk Standalone)
-// ============================================================================
-// Ini memungkinkan aplikasi berjalan mandiri di preview tanpa error import.
-// Jika Anda ingin menggunakan hook asli, Anda bisa mengganti bagian ini.
-
-const useLocalStorage = (key, initialValue) => {
-  const [value, setValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch { return initialValue; }
-  });
-  const setStoredValue = (newValue) => {
-    setValue(newValue);
-    window.localStorage.setItem(key, JSON.stringify(newValue));
-  };
-  return [value, setStoredValue];
-};
-
-const useDbQuery = (table) => {
-  const [data] = useLocalStorage(`mock_db_${table}`, []);
-  return data;
-};
+import { toast } from 'sonner';
+import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
 
 // ============================================================================
 // 2. TYPES & CONSTANTS
@@ -52,19 +29,6 @@ const BLEND_MODES = [
   'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference'
 ];
 
-const GRADIENT_PRESETS = [
-  { name: 'Ocean', value: 'linear-gradient(135deg, #0061ff, #60efff)' },
-  { name: 'Sunset', value: 'linear-gradient(135deg, #f093fb, #f5576c)' },
-  { name: 'Forest', value: 'linear-gradient(135deg, #11998e, #38ef7d)' },
-  { name: 'Royal', value: 'linear-gradient(135deg, #1a1a2e, #6a0dad)' },
-  { name: 'Gold', value: 'linear-gradient(135deg, #f7971e, #ffd200)' },
-  { name: 'Midnight', value: 'linear-gradient(135deg, #0f0c29, #302b63)' },
-  { name: 'Rose', value: 'linear-gradient(135deg, #f953c6, #b91d73)' },
-  { name: 'Slate', value: 'linear-gradient(135deg, #1E293B, #0F172A)' },
-  { name: 'Crimson', value: 'linear-gradient(135deg, #7f0000, #ef4444)' },
-  { name: 'Teal', value: 'linear-gradient(135deg, #134e5e, #71b280)' },
-];
-
 const COLOR_PALETTE = [
   '#FFFFFF', '#F8FAFC', '#E2E8F0', '#94A3B8', '#475569', '#1E293B', '#0F172A', '#000000',
   '#FEF2F2', '#FCA5A5', '#EF4444', '#B91C1C', '#7F1D1D',
@@ -75,13 +39,6 @@ const COLOR_PALETTE = [
   '#EFF6FF', '#93C5FD', '#3B82F6', '#1D4ED8', '#1E3A8A',
   '#F5F3FF', '#C4B5FD', '#8B5CF6', '#6D28D9', '#4C1D95',
   '#FDF4FF', '#E879F9', '#A21CAF', '#701A75',
-];
-
-const SHAPE_PRESETS = [
-  { type: 'rect', icon: Square, label: 'Kotak' },
-  { type: 'circle', icon: Circle, label: 'Lingkaran' },
-  { type: 'triangle', icon: Triangle, label: 'Segitiga' },
-  { type: 'star', icon: Star, label: 'Bintang' },
 ];
 
 // Helpers
@@ -104,13 +61,6 @@ const defaultImageLayer = (src, extra = {}) => ({
   opacity: 100, brightness: 100, contrast: 100, saturate: 100, blur: 0,
   mixBlendMode: 'normal', locked: false, visible: true, zIndex: 20,
   borderRadius: 0, shadow: false, grayscale: false, sepia: false, ...extra
-});
-
-const defaultShapeLayer = (shape) => ({
-  id: generateId(), type: 'shape', shape,
-  x: 50, y: 50, width: 20, height: 20, rotate: 0,
-  fillColor: '#3B82F6', strokeColor: 'transparent', strokeWidth: 0,
-  opacity: 100, locked: false, visible: true, zIndex: 5, shadow: false, borderRadius: 0
 });
 
 // ============================================================================
@@ -168,32 +118,9 @@ const Card = ({ children, className }) => (
   <div className={cn("rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50 shadow-sm", className)}>{children}</div>
 );
 
-// Toast Notification System
-const useToast = () => {
-  const [toasts, setToasts] = useState([]);
-  const addToast = (message, type = 'success') => {
-    const id = generateId();
-    setToasts(t => [...t, { id, message, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
-  };
-  return { toasts, toast: { success: (m) => addToast(m, 'success'), error: (m) => addToast(m, 'error') } };
-};
-
 // ============================================================================
 // 4. EDITOR SUB-COMPONENTS
 // ============================================================================
-
-function ShapeSVG({ layer }) {
-  const s = layer.strokeWidth > 0 ? layer.strokeColor : 'none';
-  const f = layer.fillColor;
-  switch (layer.shape) {
-    case 'rect': return <rect x={layer.strokeWidth / 2} y={layer.strokeWidth / 2} width={`calc(100% - ${layer.strokeWidth}px)`} height={`calc(100% - ${layer.strokeWidth}px)`} rx={layer.borderRadius} fill={f} stroke={s} strokeWidth={layer.strokeWidth} />;
-    case 'circle': return <ellipse cx="50%" cy="50%" rx={`calc(50% - ${layer.strokeWidth / 2}px)`} ry={`calc(50% - ${layer.strokeWidth / 2}px)`} fill={f} stroke={s} strokeWidth={layer.strokeWidth} />;
-    case 'triangle': return <polygon points="50,0 100,100 0,100" fill={f} stroke={s} strokeWidth={layer.strokeWidth} style={{ vectorEffect: 'non-scaling-stroke' }} />;
-    case 'star': return <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill={f} stroke={s} strokeWidth={layer.strokeWidth} style={{ vectorEffect: 'non-scaling-stroke' }} />;
-    default: return <rect width="100%" height="100%" fill={f} stroke={s} strokeWidth={layer.strokeWidth} />;
-  }
-}
 
 function PanelSection({ title, icon: Icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -243,19 +170,10 @@ function SliderRow({ label, value, min, max, step = 1, unit = '', onChange }) {
 // ============================================================================
 
 export default function App() {
-  // --- Global State & Theme ---
-  const [theme, setTheme] = useState('dark');
-  useEffect(() => {
-    if (theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-  }, [theme]);
-
-  const { toasts, toast } = useToast();
-  
   // --- Data Stores ---
-  const [banners, setBanners] = useLocalStorage('mock_db_banners', []);
-  const [vouchers] = useLocalStorage('mock_db_vouchers', [{ id: 1, code: 'DISKON50' }, { id: 2, code: 'GRATISONGKIR' }]);
-  const [products] = useLocalStorage('mock_db_products', [{ id: 1, name: 'Kopi Susu Gula Aren' }, { id: 2, name: 'Croissant Butter' }]);
+  const banners = useDbQuery('banners');
+  const vouchers = useDbQuery('vouchers');
+  const products = useDbQuery('products');
 
   // --- Screens ---
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -273,7 +191,9 @@ export default function App() {
   const [bannerIsActive, setBannerIsActive] = useState(true);
   const [bannerBgType, setBannerBgType] = useState('gradient');
   const [bannerBgColor, setBannerBgColor] = useState('#1E293B');
-  const [bannerBgGradient, setBannerBgGradient] = useState(GRADIENT_PRESETS[0].value);
+  const [bannerGradientLeft, setBannerGradientLeft] = useState('#0061ff');
+  const [bannerGradientRight, setBannerGradientRight] = useState('#60efff');
+  const [bannerGradientAngle, setBannerGradientAngle] = useState(135);
   const [bannerImage, setBannerImage] = useState(null);
 
   // --- Canvas Editor State ---
@@ -468,7 +388,22 @@ export default function App() {
       setBannerIsActive(banner.isActive !== false);
       setBannerBgType(banner.bgType || 'gradient');
       setBannerBgColor(banner.bgColor || '#1E293B');
-      setBannerBgGradient(banner.bgGradient || GRADIENT_PRESETS[0].value);
+      if (banner.bgGradient) {
+        const match = banner.bgGradient.match(/linear-gradient\((\d+)deg,\s*(.+?),\s*(.+?)\)/);
+        if (match) {
+          setBannerGradientAngle(Number(match[1]));
+          setBannerGradientLeft(match[2]);
+          setBannerGradientRight(match[3]);
+        } else {
+          setBannerGradientLeft('#0061ff');
+          setBannerGradientRight('#60efff');
+          setBannerGradientAngle(135);
+        }
+      } else {
+        setBannerGradientLeft('#0061ff');
+        setBannerGradientRight('#60efff');
+        setBannerGradientAngle(135);
+      }
       setBannerImage(banner.imageUrl || null);
       
       const initialLayers = banner.canvasLayers || [];
@@ -482,7 +417,8 @@ export default function App() {
       setBannerVoucherId(''); setBannerProductId(''); setBannerLink('');
       setBannerButtonText(''); setBannerIsActive(true);
       setBannerBgType('gradient'); setBannerBgColor('#1E293B');
-      setBannerBgGradient(GRADIENT_PRESETS[0].value); setBannerImage(null);
+      setBannerGradientLeft('#0061ff'); setBannerGradientRight('#60efff'); setBannerGradientAngle(135);
+      setBannerImage(null);
       
       const seedLayers = [
         defaultTextLayer({ content: 'PROMO SPESIAL', x: 50, y: 35, fontSize: 48, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 80 }),
@@ -502,52 +438,82 @@ export default function App() {
     setIsMobilePanelOpen(false);
   };
 
-  const handleSaveBanner = () => {
+  const handleSaveBanner = async () => {
     if (!bannerTitle.trim()) { toast.error('Judul banner wajib diisi'); return; }
 
-    const bannerData = {
-      id: editBanner ? editBanner.id : generateId(),
-      type: bannerType, 
-      title: bannerTitle.trim(), 
-      description: bannerDesc.trim(),
-      voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) : null,
-      productId: bannerType === 'menu' ? Number(bannerProductId) : null,
-      imageUrl: bannerImage, 
-      buttonText: bannerButtonText.trim(), 
-      link: bannerLink.trim(),
-      isActive: bannerIsActive, 
-      bgType: bannerBgType,
-      bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
-      bgGradient: bannerBgType === 'gradient' ? bannerBgGradient : null,
-      canvasLayers: layers,
-      canvasBgFilter: bgFilter,
-      createdAt: editBanner ? editBanner.createdAt : new Date().toISOString()
-    };
+    const loadingToastId = toast.loading('Menyimpan banner...');
+    
+    try {
+      let finalBannerImage = bannerImage;
+      if (bannerImage && bannerImage.startsWith('data:image')) {
+        const url = await dbUploadFile('banners', `bg_${Date.now()}`, bannerImage);
+        if (url) finalBannerImage = url;
+      }
 
-    if (editBanner) {
-      setBanners(banners.map(b => b.id === editBanner.id ? bannerData : b));
-      toast.success('Banner diperbarui');
-    } else {
-      setBanners([...banners, bannerData]);
-      toast.success('Banner baru diterbitkan!');
+      const finalLayers = [];
+      for (const layer of layers) {
+        if (layer.type === 'image' && layer.src && layer.src.startsWith('data:image')) {
+          const url = await dbUploadFile('banners', `layer_${layer.id}_${Date.now()}`, layer.src);
+          finalLayers.push({ ...layer, src: url || layer.src });
+        } else {
+          finalLayers.push(layer);
+        }
+      }
+
+      const bannerData = {
+        type: bannerType, 
+        title: bannerTitle.trim(), 
+        description: bannerDesc.trim(),
+        voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) : null,
+        productId: bannerType === 'menu' ? Number(bannerProductId) : null,
+        imageUrl: finalBannerImage, 
+        buttonText: bannerButtonText.trim(), 
+        link: bannerLink.trim(),
+        isActive: bannerIsActive, 
+        bgType: bannerBgType,
+        bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
+        bgGradient: bannerBgType === 'gradient' ? `linear-gradient(${bannerGradientAngle}deg, ${bannerGradientLeft}, ${bannerGradientRight})` : null,
+        canvasLayers: finalLayers,
+        canvasBgFilter: bgFilter,
+        createdAt: editBanner ? editBanner.createdAt : new Date().toISOString()
+      };
+
+      if (editBanner) {
+        await dbUpdate('banners', editBanner.id, bannerData);
+        toast.success('Banner diperbarui', { id: loadingToastId });
+      } else {
+        await dbInsert('banners', bannerData);
+        toast.success('Banner baru diterbitkan!', { id: loadingToastId });
+      }
+      setIsEditorOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan banner', { id: loadingToastId });
     }
-    setIsEditorOpen(false);
   };
 
-  const handleDeleteBanner = () => {
+  const handleDeleteBanner = async () => {
     if (!deleteBannerId) return;
-    setBanners(banners.filter(b => b.id !== deleteBannerId));
-    toast.success('Banner dihapus');
-    setDeleteBannerId(null);
+    try {
+      await dbDelete('banners', deleteBannerId);
+      toast.success('Banner dihapus');
+      setDeleteBannerId(null);
+    } catch (err) {
+      toast.error('Gagal menghapus banner');
+    }
   };
 
-  const handleToggleActive = (id, cur) => {
-    setBanners(banners.map(b => b.id === id ? { ...b, isActive: !cur } : b));
-    toast.success(!cur ? 'Banner diaktifkan' : 'Banner dinonaktifkan');
+  const handleToggleActive = async (id, cur) => {
+    try {
+      await dbUpdate('banners', id, { isActive: !cur });
+      toast.success(!cur ? 'Banner diaktifkan' : 'Banner dinonaktifkan');
+    } catch (err) {
+      toast.error('Gagal mengubah status');
+    }
   };
 
   // --- Rendering Functions ---
-  const canvasBg = bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? bannerBgGradient : undefined;
+  const canvasBg = bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? `linear-gradient(${bannerGradientAngle}deg, ${bannerGradientLeft}, ${bannerGradientRight})` : undefined;
   const bgFilterStyle = `brightness(${bgFilter.brightness}%) contrast(${bgFilter.contrast}%) saturate(${bgFilter.saturate}%) blur(${bgFilter.blur}px)`;
 
   const renderCanvasLayer = (layer) => {
@@ -606,18 +572,6 @@ export default function App() {
       );
     }
 
-    if (layer.type === 'shape') {
-      return (
-        <div key={layer.id} style={{ ...baseStyle, width: `${layer.width}%`, aspectRatio: layer.shape === 'circle' ? '1' : 'auto' }}
-          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded')}
-          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <svg viewBox={['triangle', 'star'].includes(layer.shape) ? '0 0 100 100' : undefined}
-            style={{ width: '100%', aspectRatio: layer.shape === 'rect' ? `${layer.width}/${layer.height}` : '1', transform: `rotate(${layer.rotate}deg)`, filter: layer.shadow ? 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))' : undefined }}>
-            <ShapeSVG layer={layer} />
-          </svg>
-        </div>
-      );
-    }
     return null;
   };
 
@@ -650,19 +604,6 @@ export default function App() {
           <ImageIcon className="w-5 h-5" /> Pilih PNG / JPG
         </button>
       </div>
-
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Bentuk (Shape)</p>
-        <div className="grid grid-cols-2 gap-3">
-          {SHAPE_PRESETS.map(s => (
-            <button key={s.type} onClick={() => addLayer(defaultShapeLayer(s.type))}
-              className="h-20 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all flex flex-col items-center justify-center gap-2 group">
-              <s.icon className="w-6 h-6 text-zinc-400 group-hover:text-blue-500" />
-              <span className="text-[10px] font-bold text-zinc-500 group-hover:text-blue-500">{s.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -682,11 +623,11 @@ export default function App() {
             className={cn('flex items-center gap-3 px-3 py-3 rounded-2xl cursor-pointer transition-all border',
               selectedId === layer.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700')}>
             <div className="w-8 h-8 shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-              {layer.type === 'text' ? <Type className="w-4 h-4" /> : layer.type === 'image' ? <ImageIcon className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+              {layer.type === 'text' ? <Type className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                {layer.type === 'text' ? layer.content : layer.type === 'image' ? 'Gambar' : `Shape: ${layer.shape}`}
+                {layer.type === 'text' ? layer.content : 'Gambar'}
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -728,15 +669,19 @@ export default function App() {
 
       {bannerBgType === 'gradient' && (
         <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Preset Gradasi</p>
-          <div className="grid grid-cols-2 gap-2">
-            {GRADIENT_PRESETS.map(g => (
-              <button key={g.name} onClick={() => setBannerBgGradient(g.value)}
-                className={cn('h-12 rounded-xl border-2 font-black transition-all text-white shadow-sm', bannerBgGradient === g.value ? 'border-blue-500 scale-105' : 'border-transparent')}
-                style={{ background: g.value }}>
-                <span className="drop-shadow-md text-sm">{g.name}</span>
-              </button>
-            ))}
+          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Pengaturan Gradasi</p>
+          <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900">
+            <div>
+              <Label>Warna Kiri (Mulai)</Label>
+              <ColorGrid value={bannerGradientLeft} onChange={setBannerGradientLeft} />
+            </div>
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <Label>Warna Kanan (Akhir)</Label>
+              <ColorGrid value={bannerGradientRight} onChange={setBannerGradientRight} />
+            </div>
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <SliderRow label="Sudut Kemiringan" value={bannerGradientAngle} min={0} max={360} onChange={setBannerGradientAngle} unit="°" />
+            </div>
           </div>
         </div>
       )}
@@ -908,43 +853,6 @@ export default function App() {
       );
     }
 
-    if (selectedLayer.type === 'shape') {
-      const sh = selectedLayer;
-      const upd = (p) => updateLayer(sh.id, p);
-      return (
-        <div className="space-y-0 pb-12">
-          <PanelSection title="Dimensi" icon={Move}>
-            <SliderRow label="Lebar" value={sh.width} min={3} max={150} onChange={v => upd({ width: v })} unit="%" />
-            <SliderRow label="Tinggi" value={sh.height} min={3} max={150} onChange={v => upd({ height: v })} unit="%" />
-          </PanelSection>
-
-          <PanelSection title="Warna Isi" icon={Palette}>
-            <ColorGrid value={sh.fillColor} onChange={v => upd({ fillColor: v })} />
-          </PanelSection>
-
-          <PanelSection title="Garis Tepi (Stroke)" icon={SquareDashed} defaultOpen={false}>
-            <div className="space-y-4">
-              <ColorGrid value={sh.strokeColor} onChange={v => upd({ strokeColor: v })} />
-              <SliderRow label="Ketebalan Garis" value={sh.strokeWidth} min={0} max={40} onChange={v => upd({ strokeWidth: v })} unit="px" />
-              {sh.shape === 'rect' && (
-                <SliderRow label="Sudut Melengkung" value={sh.borderRadius} min={0} max={100} onChange={v => upd({ borderRadius: v })} unit="px" />
-              )}
-            </div>
-          </PanelSection>
-
-          <PanelSection title="Efek Lain" icon={Sparkles} defaultOpen={false}>
-            <div className="space-y-4">
-              <SliderRow label="Rotasi" value={sh.rotate} min={-180} max={180} onChange={v => upd({ rotate: v })} unit="°" />
-              <SliderRow label="Transparansi" value={sh.opacity} min={0} max={100} onChange={v => upd({ opacity: v })} unit="%" />
-              <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl">
-                <span className="text-xs font-bold">Bayangan</span>
-                <Switch checked={sh.shadow} onCheckedChange={v => upd({ shadow: v })} />
-              </div>
-            </div>
-          </PanelSection>
-        </div>
-      );
-    }
   };
 
   const renderInfoPanel = () => (
@@ -1013,15 +921,6 @@ export default function App() {
     return (
       <div className="fixed inset-0 z-50 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col overflow-hidden transition-colors duration-300">
         
-        {/* Toast Layer */}
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none">
-          {toasts.map(t => (
-            <div key={t.id} className={cn("px-4 py-2 rounded-full font-bold text-sm shadow-xl pointer-events-auto transition-all animate-in slide-in-from-top-5", t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900')}>
-              {t.message}
-            </div>
-          ))}
-        </div>
-
         {/* --- Topbar --- */}
         <div className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 z-40 relative">
           <div className="flex items-center gap-2 sm:gap-4">
@@ -1123,10 +1022,6 @@ export default function App() {
                </button>
                <div className="w-[1px] h-6 bg-zinc-200 dark:bg-zinc-700" />
                <span className="text-xs font-bold text-zinc-500 px-2">{layers.length} Objek</span>
-               <div className="w-[1px] h-6 bg-zinc-200 dark:bg-zinc-700" />
-               <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
-                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-               </button>
             </div>
           </div>
 
@@ -1236,15 +1131,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 p-4 sm:p-8 md:p-12 transition-colors duration-300">
       
-      {/* Toast Layer */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
-        {toasts.map(t => (
-          <div key={t.id} className={cn("px-4 py-2 rounded-full font-bold text-sm shadow-xl transition-all animate-in slide-in-from-top-5", t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900')}>
-            {t.message}
-          </div>
-        ))}
-      </div>
-
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
         
         {/* Header */}
@@ -1259,9 +1145,6 @@ export default function App() {
             <p className="text-zinc-500 dark:text-zinc-400">Buat desain banner interaktif langsung di peramban.</p>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-2xl shrink-0 hidden sm:flex">
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
             <Button variant="primary" size="lg" onClick={() => openEditor()} className="rounded-2xl flex-1 sm:flex-none shadow-blue-500/25">
               <Plus className="w-5 h-5 mr-2" /> Buat Banner Baru
             </Button>
@@ -1308,15 +1191,6 @@ export default function App() {
                         return (
                           <div key={layer.id} style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, transform: 'translate(-50%, -50%)', zIndex: layer.zIndex, opacity: layer.opacity / 100, width: `${layer.width}%` }}>
                             <img src={layer.src} style={{ width: '100%', height: 'auto', transform: `rotate(${layer.rotate}deg) scaleX(${layer.flipX ? -1 : 1}) scaleY(${layer.flipY ? -1 : 1})`, borderRadius: `${layer.borderRadius}px`, mixBlendMode: layer.mixBlendMode }} alt="" />
-                          </div>
-                        );
-                      }
-                      if (layer.type === 'shape') {
-                        return (
-                          <div key={layer.id} style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, transform: 'translate(-50%, -50%)', zIndex: layer.zIndex, opacity: layer.opacity / 100, width: `${layer.width}%` }}>
-                            <svg viewBox={['triangle','star'].includes(layer.shape) ? '0 0 100 100' : undefined} style={{ width: '100%', aspectRatio: '1', transform: `rotate(${layer.rotate}deg)` }}>
-                              <ShapeSVG layer={layer} />
-                            </svg>
                           </div>
                         );
                       }
