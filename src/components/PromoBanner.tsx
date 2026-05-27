@@ -83,9 +83,10 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
                     onClick={(e) => {
                       if (isButton) {
                         e.stopPropagation();
-                        if (banner.link) {
-                          if (banner.link.startsWith('http')) window.open(banner.link, '_blank');
-                          else window.location.href = banner.link;
+                        const targetLink = layer.link || banner.link;
+                        if (targetLink) {
+                          if (targetLink.startsWith('http')) window.open(targetLink, '_blank');
+                          else window.location.href = targetLink;
                         } else if (onAction) onAction();
                       }
                     }}

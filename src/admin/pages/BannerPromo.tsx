@@ -197,7 +197,7 @@ export default function App() {
   // --- Canvas Editor State ---
   const [layers, setLayers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [activePanel, setActivePanel] = useState('elements');
+  const [activePanel, setActivePanel] = useState('layers');
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [bgFilter, setBgFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
@@ -234,6 +234,62 @@ export default function App() {
       return next;
     });
   }, [pushHistory]);
+
+  const handleProductSelect = useCallback((prodId) => {
+    setBannerProductId(prodId);
+    if (!prodId) {
+      setLayers(prev => {
+        const next = prev.filter(l => l.role !== 'product-overlay');
+        pushHistory(next);
+        return next;
+      });
+      return;
+    }
+    const prod = products?.find(p => String(p.id) === String(prodId));
+    if (prod) {
+      if (prod.photo) {
+        setLayers(prev => {
+          const existingIdx = prev.findIndex(l => l.role === 'product-overlay');
+          let next;
+          if (existingIdx > -1) {
+            next = prev.map((l, idx) => idx === existingIdx ? { ...l, src: prod.photo, visible: true } : l);
+          } else {
+            const newLayer = defaultImageLayer(prod.photo, {
+              role: 'product-overlay',
+              x: 75,
+              y: 50,
+              width: 35,
+              shadow: true
+            });
+            next = [...prev, newLayer];
+          }
+          pushHistory(next);
+          return next;
+        });
+        toast.success(`Gambar produk "${prod.name}" berhasil dijadikan overlay!`);
+      } else {
+        toast.warning(`Produk "${prod.name}" tidak memiliki foto.`);
+        setLayers(prev => {
+          const next = prev.filter(l => l.role !== 'product-overlay');
+          pushHistory(next);
+          return next;
+        });
+      }
+    }
+  }, [products, pushHistory]);
+
+  const handleBannerTypeChange = useCallback((type) => {
+    setBannerType(type);
+    if (type !== 'menu') {
+      setLayers(prev => {
+        const next = prev.filter(l => l.role !== 'product-overlay');
+        pushHistory(next);
+        return next;
+      });
+      setBannerProductId('');
+    }
+  }, [pushHistory]);
+
 
 
   const updateLayer = useCallback((id, patch) => {
@@ -429,11 +485,19 @@ export default function App() {
           defaultTextLayer({ role: 'heading', content: banner.heading || 'SPESIAL PENAWARAN', x: 24, y: 25, fontSize: 18, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', shadow: false, width: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 6, bgOpacity: 20, backdropBlur: true, letterSpacing: 4 }),
           defaultTextLayer({ role: 'subheading', content: banner.title || 'Judul Promo', x: 43, y: 45, fontSize: 40, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', shadow: true, width: 70, lineHeight: 1.1 }),
           defaultTextLayer({ role: 'body', content: banner.description || 'Deskripsi singkat...', x: 43, y: 65, fontSize: 24, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'left', shadow: true, width: 70, lineHeight: 1.3 }),
-          defaultTextLayer({ role: 'button', content: banner.buttonText || 'Lihat Detail', x: 19, y: 85, fontSize: 20, fontWeight: '900', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 22, padding: 12, borderRadius: 8 }),
+          defaultTextLayer({ role: 'button', content: banner.buttonText || 'Lihat Detail', x: 19, y: 85, fontSize: 20, fontWeight: '900', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 22, padding: 12, borderRadius: 8, link: banner.link || '' }),
         ];
         if (banner.overlayImageUrl) {
-          initialLayers.push(defaultImageLayer(banner.overlayImageUrl, { x: 80, y: 50, width: 35 }));
+          initialLayers.push(defaultImageLayer(banner.overlayImageUrl, { x: 80, y: 50, width: 35, role: 'product-overlay' }));
         }
+      } else {
+        // Ensure button layer gets the link if missing
+        initialLayers = initialLayers.map(l => {
+          if (l.role === 'button') {
+            return { ...l, link: l.link || banner.link || '' };
+          }
+          return l;
+        });
       }
 
       setLayers(initialLayers);
@@ -453,7 +517,7 @@ export default function App() {
         defaultTextLayer({ role: 'heading', content: 'SPESIAL PENAWARAN', x: 24, y: 25, fontSize: 18, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', shadow: false, width: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 6, bgOpacity: 20, backdropBlur: true, letterSpacing: 4 }),
         defaultTextLayer({ role: 'subheading', content: 'Promo Berkah Idul Adha', x: 43, y: 45, fontSize: 40, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', shadow: true, width: 70, lineHeight: 1.1 }),
         defaultTextLayer({ role: 'body', content: 'Nikmati Keberkahan Idul Adha Promo Diskon 75% Dengan Kode Voucher BASITH', x: 43, y: 65, fontSize: 24, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'left', shadow: true, width: 70, lineHeight: 1.3 }),
-        defaultTextLayer({ role: 'button', content: 'Lihat Detail', x: 19, y: 85, fontSize: 20, fontWeight: '900', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 22, padding: 12, borderRadius: 8 }),
+        defaultTextLayer({ role: 'button', content: 'Lihat Detail', x: 19, y: 85, fontSize: 20, fontWeight: '900', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 22, padding: 12, borderRadius: 8, link: '' }),
       ];
       setLayers(seedLayers);
       setHistory([seedLayers]);
@@ -461,7 +525,7 @@ export default function App() {
       setBgFilter({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
     }
     setSelectedId(null);
-    setActivePanel('elements');
+    setActivePanel('layers');
     setZoom(100);
     setShowGrid(false);
     setIsEditorOpen(true);
@@ -473,6 +537,10 @@ export default function App() {
     const derivedTitle = titleLayer ? titleLayer.content : 'Banner Baru';
 
     if (!derivedTitle.trim()) { toast.error('Judul (layer Subheading) tidak boleh kosong'); return; }
+
+    const buttonLayer = layers.find(l => l.role === 'button');
+    const derivedButtonText = buttonLayer ? (buttonLayer.content || 'Lihat Detail') : 'Lihat Detail';
+    const derivedLink = buttonLayer ? (buttonLayer.link || '') : '';
 
     const loadingToastId = toast.loading('Menyimpan banner...');
     
@@ -495,14 +563,14 @@ export default function App() {
 
       const bannerData = {
         type: bannerType, 
-        heading: '',
+        heading: layers.find(l => l.role === 'heading')?.content || '',
         title: derivedTitle.trim(), 
-        description: '',
-        voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) : null,
+        description: layers.find(l => l.role === 'body')?.content || '',
+        voucherId: null,
         productId: bannerType === 'menu' ? Number(bannerProductId) : null,
         imageUrl: finalBannerImage, 
-        buttonText: bannerButtonText.trim(), 
-        link: bannerLink.trim(),
+        buttonText: derivedButtonText.trim(), 
+        link: derivedLink.trim(),
         isActive: bannerIsActive, 
         bgType: bannerBgType,
         bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
@@ -648,14 +716,18 @@ export default function App() {
               </p>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={e => { e.stopPropagation(); updateLayer(layer.id, { visible: !layer.visible }); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400">
-                {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
-              <button onClick={e => { e.stopPropagation(); removeLayer(layer.id); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-zinc-400 hover:text-red-500">
-                <Trash className="w-4 h-4" />
-              </button>
+              {!['heading', 'subheading', 'body', 'button'].includes(layer.role) && (
+                <>
+                  <button onClick={e => { e.stopPropagation(); updateLayer(layer.id, { visible: !layer.visible }); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400">
+                    {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </button>
+                  <button onClick={e => { e.stopPropagation(); removeLayer(layer.id); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-zinc-400 hover:text-red-500">
+                    <Trash className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -753,6 +825,16 @@ export default function App() {
             <textarea value={t.content} onChange={e => upd({ content: e.target.value })} rows={3}
               className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm p-3 resize-none focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
           </PanelSection>
+
+          {t.role === 'button' && (
+            <PanelSection title="Link Tujuan Tombol" icon={ArrowRight}>
+              <div className="space-y-2">
+                <Label>Link Tujuan</Label>
+                <Input value={t.link || ''} onChange={e => upd({ link: e.target.value })} placeholder="https://... atau /menu-utama atau ID produk" />
+                <p className="text-[10px] text-zinc-500 font-medium">Tentukan tautan/tujuan ketika badge tombol ini diklik oleh pelanggan.</p>
+              </div>
+            </PanelSection>
+          )}
 
           <PanelSection title="Tipografi" icon={Bold}>
             <div className="space-y-4">
@@ -876,34 +958,21 @@ export default function App() {
     <div className="space-y-5 px-4 py-5 pb-12">
       <div>
         <Label>Tipe Banner</Label>
-        <select value={bannerType} onChange={(e) => setBannerType(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
+        <select value={bannerType} onChange={(e) => handleBannerTypeChange(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
           <option value="custom">Kustom Bebas</option>
-          <option value="voucher">Promo Voucher</option>
           <option value="menu">Menu / Produk</option>
         </select>
       </div>
 
-      {bannerType === 'voucher' && (
-        <div>
-          <Label>Voucher Terkait</Label>
-          <select value={bannerVoucherId} onChange={(e) => setBannerVoucherId(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
-            <option value="">-- Pilih Voucher --</option>
-            {vouchers.map(v => <option key={v.id} value={v.id}>{v.code}</option>)}
-          </select>
-        </div>
-      )}
-
       {bannerType === 'menu' && (
         <div>
           <Label>Produk Terkait</Label>
-          <select value={bannerProductId} onChange={(e) => setBannerProductId(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
+          <select value={bannerProductId} onChange={(e) => handleProductSelect(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
             <option value="">-- Pilih Produk --</option>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
       )}
-
-
 
       <div>
         <Label>Gaya Tombol (Badge)</Label>
@@ -926,13 +995,6 @@ export default function App() {
           <option value="glass">Glassmorphism (Kaca)</option>
         </select>
       </div>
-
-      {bannerType === 'custom' && (
-        <div>
-          <Label>Link Tujuan (Opsional)</Label>
-          <Input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://..." />
-        </div>
-      )}
 
       <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl">
         <div>
@@ -991,21 +1053,19 @@ export default function App() {
         {/* --- Main Workspace --- */}
         <div className="flex-1 flex overflow-hidden relative bg-zinc-50 dark:bg-[#09090b]">
 
-          {/* Desktop Left Sidebar (Elements, Layers) */}
+          {/* Desktop Left Sidebar (Layers & Add Overlay) */}
           <div className="hidden md:flex w-[320px] shrink-0 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-hidden z-20">
-            <div className="flex p-2 border-b border-zinc-200 dark:border-zinc-800 gap-2 shrink-0">
-              {['elements', 'layers'].map(tab => (
-                <button key={tab} onClick={() => setActivePanel(tab)}
-                  className={cn("flex-1 h-10 rounded-xl text-xs font-bold capitalize transition-all", activePanel === tab ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100" : "text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/50")}>
-                  {tab === 'elements' ? 'Tambah' : 'Layer'}
-                </button>
-              ))}
+            <div className="px-4 py-3.5 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+              <span className="text-xs font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-500" /> Layer & Objek
+              </span>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {activePanel === 'elements' && renderElementsPanel()}
-              {activePanel === 'layers' && renderLayersPanel()}
-              {/* Fallback if user clicked a right-panel tab on mobile then resized to desktop */}
-              {(activePanel === 'props' || activePanel === 'bg') && renderElementsPanel()} 
+              {renderElementsPanel()}
+              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-4 mb-2">Daftar Layer</p>
+                {renderLayersPanel()}
+              </div>
             </div>
           </div>
 
@@ -1055,11 +1115,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* Desktop Right Sidebar (Props, Bg, Info) */}
+          {/* Desktop Right Sidebar (Props, Info/Background) */}
           <div className="hidden md:flex w-[320px] shrink-0 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex-col overflow-hidden z-20">
              <div className="flex p-2 border-b border-zinc-200 dark:border-zinc-800 gap-2 shrink-0">
-               {['props', 'bg', 'info'].map(tab => {
-                 let label = tab === 'props' ? 'Properti' : tab === 'bg' ? 'Latar' : 'Detail';
+               {['props', 'info'].map(tab => {
+                 let label = tab === 'props' ? 'Properti' : 'Pengaturan';
                  return (
                    <button key={tab} onClick={() => { setActivePanel(tab); if(tab === 'props' && !selectedId && layers.length > 0) setSelectedId(layers[layers.length-1].id); }}
                      className={cn("flex-1 h-10 rounded-xl text-xs font-bold capitalize transition-all", activePanel === tab ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100" : "text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/50")}>
@@ -1078,18 +1138,21 @@ export default function App() {
                     <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) + 1 })} className="w-7 h-7 flex items-center justify-center rounded hover:bg-white dark:hover:bg-zinc-700 shadow-sm"><ChevronUp className="w-4 h-4" /></button>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => duplicateLayer(selectedId)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"><Copy className="w-4 h-4 text-zinc-700 dark:text-zinc-300" /></button>
-                    <button onClick={() => removeLayer(selectedId)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"><Trash className="w-4 h-4 text-red-600 dark:text-red-400" /></button>
+                    {!['heading', 'subheading', 'body', 'button'].includes(selectedLayer.role) && (
+                      <>
+                        <button onClick={() => duplicateLayer(selectedId)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"><Copy className="w-4 h-4 text-zinc-700 dark:text-zinc-300" /></button>
+                        <button onClick={() => removeLayer(selectedId)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"><Trash className="w-4 h-4 text-red-600 dark:text-red-400" /></button>
+                      </>
+                    )}
                   </div>
                 </div>
              )}
 
              <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {activePanel === 'props' && renderPropsPanel()}
-                {activePanel === 'bg' && renderBgPanel()}
                 {activePanel === 'info' && renderInfoPanel()}
                 {/* Fallback */}
-                {(activePanel === 'elements' || activePanel === 'layers') && renderPropsPanel()}
+                {activePanel === 'layers' && renderPropsPanel()}
              </div>
           </div>
 
@@ -1105,15 +1168,19 @@ export default function App() {
             <div className={cn("bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-zinc-200 dark:border-zinc-800 transition-transform duration-300 ease-out pointer-events-auto flex flex-col max-h-[70vh]", isMobilePanelOpen ? "translate-y-0" : "translate-y-full")}>
               {/* Drag Handle & Close */}
               <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
-                <span className="text-sm font-black uppercase tracking-wider">{activePanel === 'elements' ? 'Tambah Elemen' : activePanel === 'layers' ? 'Layer Kanvas' : activePanel === 'props' ? 'Properti Objek' : activePanel === 'bg' ? 'Latar Belakang' : 'Detail Banner'}</span>
+                <span className="text-sm font-black uppercase tracking-wider">{activePanel === 'layers' ? 'Layer & Objek' : activePanel === 'props' ? 'Properti Objek' : 'Pengaturan Banner'}</span>
                 <button onClick={() => setIsMobilePanelOpen(false)} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center"><X className="w-4 h-4" /></button>
               </div>
               
               {/* Quick action bar for Props in mobile */}
               {activePanel === 'props' && selectedLayer && (
                  <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 shrink-0 overflow-x-auto gap-2">
-                    <button onClick={() => duplicateLayer(selectedId)} className="shrink-0 h-8 px-3 rounded bg-zinc-100 dark:bg-zinc-800 text-xs font-bold flex items-center gap-2"><Copy className="w-3.5 h-3.5"/> Duplikat</button>
-                    <button onClick={() => removeLayer(selectedId)} className="shrink-0 h-8 px-3 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2"><Trash className="w-3.5 h-3.5"/> Hapus</button>
+                    {!['heading', 'subheading', 'body', 'button'].includes(selectedLayer.role) && (
+                      <>
+                        <button onClick={() => duplicateLayer(selectedId)} className="shrink-0 h-8 px-3 rounded bg-zinc-100 dark:bg-zinc-800 text-xs font-bold flex items-center gap-2"><Copy className="w-3.5 h-3.5"/> Duplikat</button>
+                        <button onClick={() => removeLayer(selectedId)} className="shrink-0 h-8 px-3 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2"><Trash className="w-3.5 h-3.5"/> Hapus</button>
+                      </>
+                    )}
                     <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded p-0.5 shrink-0">
                       <button onClick={() => updateLayer(selectedId, { zIndex: (selectedLayer.zIndex || 0) - 1 })} className="w-7 h-7 flex items-center justify-center"><ChevronDown className="w-4 h-4" /></button>
                       <span className="w-6 flex items-center justify-center text-[10px] font-mono font-bold">Z</span>
@@ -1124,10 +1191,16 @@ export default function App() {
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto custom-scrollbar pb-8">
-                {activePanel === 'elements' && renderElementsPanel()}
-                {activePanel === 'layers' && renderLayersPanel()}
+                {activePanel === 'layers' && (
+                  <div>
+                    {renderElementsPanel()}
+                    <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-4 mb-2">Daftar Layer</p>
+                      {renderLayersPanel()}
+                    </div>
+                  </div>
+                )}
                 {activePanel === 'props' && renderPropsPanel()}
-                {activePanel === 'bg' && renderBgPanel()}
                 {activePanel === 'info' && renderInfoPanel()}
               </div>
             </div>
@@ -1135,16 +1208,14 @@ export default function App() {
             {/* Bottom Tab Bar */}
             <div className="h-16 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-around shrink-0 pointer-events-auto pb-safe">
                {[
-                 { id: 'elements', icon: Plus, label: 'Tambah' },
                  { id: 'layers', icon: Layers, label: 'Layer' },
-                 { id: 'props', icon: SlidersHorizontal, label: 'Edit' },
-                 { id: 'bg', icon: ImageIcon, label: 'Latar' },
-                 { id: 'info', icon: Layout, label: 'Detail' }
+                 { id: 'props', icon: SlidersHorizontal, label: 'Properti' },
+                 { id: 'info', icon: Layout, label: 'Pengaturan' }
                ].map(tab => (
                  <button key={tab.id} onClick={() => { setActivePanel(tab.id); setIsMobilePanelOpen(true); }}
-                   className={cn("flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors", activePanel === tab.id && isMobilePanelOpen ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200")}>
+                   className={cn("flex flex-col items-center justify-center w-24 h-full gap-1 transition-colors", activePanel === tab.id && isMobilePanelOpen ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200")}>
                    <tab.icon className={cn("w-5 h-5", activePanel === tab.id && isMobilePanelOpen && "scale-110 transition-transform")} />
-                   <span className="text-[9px] font-bold">{tab.label}</span>
+                   <span className="text-[10px] font-bold">{tab.label}</span>
                  </button>
                ))}
             </div>
