@@ -12,9 +12,10 @@ interface PhotoCropModalProps {
   file: File | null;
   onCropped: (croppedDataUrl: string) => void;
   disableCompression?: boolean;
+  aspectRatio?: number; // Target ratio (width / height)
 }
 
-export default function PhotoCropModal({ open, onOpenChange, file, onCropped, disableCompression = false }: PhotoCropModalProps) {
+export default function PhotoCropModal({ open, onOpenChange, file, onCropped, disableCompression = false, aspectRatio = 1 }: PhotoCropModalProps) {
   const [imgSrc, setImgSrc] = useState<string>('');
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -59,10 +60,11 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped, di
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Output size (Resolusi akhir gambar)
-      const TARGET_SIZE = 600;
-      canvas.width = TARGET_SIZE;
-      canvas.height = TARGET_SIZE;
+      // Output size
+      const TARGET_WIDTH = aspectRatio > 1 ? 1260 : 800;
+      const TARGET_HEIGHT = Math.round(TARGET_WIDTH / aspectRatio);
+      canvas.width = TARGET_WIDTH;
+      canvas.height = TARGET_HEIGHT;
 
       const img = imgRef.current;
       const container = containerRef.current; // Mengacu pada kotak transparan di tengah
@@ -81,11 +83,11 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped, di
       const cropH = containerRect.height * scaleY;
 
       ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+      ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
       ctx.drawImage(
         img,
         cropX, cropY, cropW, cropH, // Source
-        0, 0, TARGET_SIZE, TARGET_SIZE // Destination
+        0, 0, TARGET_WIDTH, TARGET_HEIGHT // Destination
       );
 
       // Konversi ke blob untuk diteruskan ke compressImage atau dikirim mentah
@@ -100,7 +102,7 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped, di
       const blob = await res.blob();
       const croppedFile = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
 
-      const finalDataUrl = await compressImage(croppedFile);
+      const finalDataUrl = await compressImage(croppedFile, aspectRatio > 1 ? 0.5 : 0.3);
       onCropped(finalDataUrl);
     } catch (err) {
       console.error(err);
@@ -119,14 +121,6 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped, di
             <Crop className="w-5 h-5 text-primary" />
             Sesuaikan Foto
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-2 text-muted-foreground hover:bg-accent hover:text-foreground rounded-full"
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="w-5 h-5" />
-          </Button>
         </DialogHeader>
 
         <div className="p-0">
@@ -178,7 +172,12 @@ export default function PhotoCropModal({ open, onOpenChange, file, onCropped, di
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div 
                   ref={containerRef}
-                  className="relative w-64 h-64 border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]"
+                  className="relative border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]"
+                  style={{
+                    width: aspectRatio > 1 ? '320px' : `${256 * aspectRatio}px`,
+                    height: aspectRatio > 1 ? `${320 / aspectRatio}px` : '256px',
+                    maxWidth: '90vw'
+                  }}
                 >
                   {/* Grid Rule of Thirds (3x3) */}
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30">

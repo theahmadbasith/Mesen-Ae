@@ -1595,6 +1595,7 @@ export default function BannerEditor() {
             file={cropBgFile}
             onCropped={handleBgCropSuccess}
             disableCompression={false}
+            aspectRatio={21/9}
           />
 
         </div>
