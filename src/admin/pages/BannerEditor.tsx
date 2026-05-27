@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
+import { compressImage } from '@/lib/image-utils';
 import PhotoCropModal from '@/admin/components/PhotoCropModal';
 
 // ============================================================================
@@ -514,14 +515,10 @@ export default function BannerEditor() {
     if (bgFileInputRef.current) bgFileInputRef.current.value = '';
   };
 
-  const handleBgCropSuccess = async (croppedBlob: Blob) => {
+  const handleBgCropSuccess = (croppedDataUrl: string) => {
     setCropBgOpen(false);
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setBannerImage(ev.target?.result as string);
-      toast.success("Gambar background berhasil ditambahkan!");
-    };
-    reader.readAsDataURL(croppedBlob);
+    setBannerImage(croppedDataUrl);
+    toast.success("Gambar background berhasil ditambahkan!");
     setCropBgFile(null);
   };
 
@@ -747,7 +744,10 @@ export default function BannerEditor() {
     try {
       let finalBannerImage = bannerImage;
       if (bannerImage && bannerImage.startsWith('data:image')) {
-        const url = await dbUploadFile('banners', `bg_${Date.now()}`, bannerImage);
+        const res = await fetch(bannerImage);
+        const blob = await res.blob();
+        const compressedDataUrl = await compressImage(blob, 0.5); // max 500kb
+        const url = await dbUploadFile('banners', `bg_${Date.now()}`, compressedDataUrl);
         if (url) finalBannerImage = url;
       }
 
@@ -1594,7 +1594,7 @@ export default function BannerEditor() {
             onOpenChange={setCropBgOpen}
             file={cropBgFile}
             onCropped={handleBgCropSuccess}
-            disableCompression={false}
+            disableCompression={true}
             aspectRatio={21/9}
           />
 
