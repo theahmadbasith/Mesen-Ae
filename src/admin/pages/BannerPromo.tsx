@@ -153,6 +153,43 @@ function SliderRow({ label, value, min, max, step = 1, unit = '', defaultValue, 
   );
 }
 
+function RichTextEditor({ value, onChange, placeholder, minHeight = '36px' }) {
+  const editorRef = useRef(null);
+  useEffect(() => {
+    if (editorRef.current && document.activeElement !== editorRef.current) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+  const applyFormat = (cmd) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false, null);
+    onChange(editorRef.current?.innerHTML || '');
+  };
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-0.5 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+        {[{ cmd: 'bold', label: 'B', cls: 'font-bold' }, { cmd: 'italic', label: 'I', cls: 'italic' }, { cmd: 'underline', label: 'U', cls: 'underline' }].map(({ cmd, label, cls }) => (
+          <button key={cmd} type="button"
+            onMouseDown={e => { e.preventDefault(); applyFormat(cmd); }}
+            className={cn('w-7 h-7 rounded text-sm flex items-center justify-center transition-colors text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700', cls)}
+          >{label}</button>
+        ))}
+        <div className="flex-1" />
+        <span className="text-[9px] text-zinc-400 px-1">Seleksi teks lalu klik B/I/U</span>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={e => onChange(e.currentTarget.innerHTML)}
+        style={{ minHeight }}
+        className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 rte-placeholder transition-all"
+        data-placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
 // ============================================================================
 // 4. MAIN COMPONENT
 // ============================================================================
@@ -192,6 +229,7 @@ export default function App() {
   const [bannerOverlayFlipX, setBannerOverlayFlipX] = useState(false);
   const [bannerOverlayRotate, setBannerOverlayRotate] = useState(0);
   const [bannerOverlayScale, setBannerOverlayScale] = useState(1);
+  const [bannerOverlayBorderRadius, setBannerOverlayBorderRadius] = useState(0);
 
   // Canvas Grid & Magnet Snap
   const [showGrid, setShowGrid] = useState(false);
@@ -246,6 +284,7 @@ export default function App() {
     overlayFlipX: bannerOverlayFlipX,
     overlayRotate: bannerOverlayRotate,
     overlayScale: bannerOverlayScale,
+    overlayBorderRadius: bannerOverlayBorderRadius,
     bgFilter,
     overlayFilter,
     bgGradientOverlay: {
@@ -279,6 +318,7 @@ export default function App() {
     setBannerOverlayFlipX(snap.overlayFlipX);
     setBannerOverlayRotate(snap.overlayRotate);
     setBannerOverlayScale(snap.overlayScale);
+    setBannerOverlayBorderRadius(snap.overlayBorderRadius ?? 0);
     setBgFilter(snap.bgFilter);
     setOverlayFilter(snap.overlayFilter);
     if (snap.bgGradientOverlay) {
@@ -430,6 +470,31 @@ export default function App() {
     window.addEventListener('pointerup', onUp);
   };
 
+  // --- Text Box Width Resize Handler ---
+  const onResizePointerDown = (e, id) => {
+    e.stopPropagation();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const layer = layers.find(l => l.id === id);
+    if (!layer) return;
+    const startX = e.clientX;
+    const startW = layer.w ?? 55;
+    const onMove = (me) => {
+      if (me.cancelable) me.preventDefault();
+      const dx = (me.clientX - startX) / rect.width * 100;
+      const nw = Math.round(Math.max(10, Math.min(92, startW + dx)) * 10) / 10;
+      setLayers(prev => prev.map(l => l.id === id ? { ...l, w: nw } : l));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      pushHistory();
+    };
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+  };
+
   // --- Background/Image Handlers ---
   const handleBgImageSelect = (e) => {
     const file = e.target.files?.[0];
@@ -505,18 +570,19 @@ export default function App() {
       setBannerOverlayFlipX(banner.overlayFlipX || false);
       setBannerOverlayRotate(banner.overlayRotate || 0);
       setBannerOverlayScale(banner.overlayScale ?? 1);
+      setBannerOverlayBorderRadius(banner.overlayBorderRadius ?? 0);
 
       // Coordinates
-      const headingP = banner.headingPos ?? { x: 10, y: 20 };
-      const titleP = banner.titlePos ?? { x: 10, y: 38 };
-      const descP = banner.descPos ?? { x: 10, y: 60 };
+      const headingP = banner.headingPos ?? { x: 10, y: 20, w: 40 };
+      const titleP = banner.titlePos ?? { x: 10, y: 38, w: 60 };
+      const descP = banner.descPos ?? { x: 10, y: 60, w: 60 };
       const buttonP = banner.buttonPos ?? { x: 10, y: 82 };
       const overP = banner.overlayPos ?? { x: 80, y: 50 };
 
       const loadedLayers = [
-        { id: 'heading-box', role: 'heading-box', x: headingP.x, y: headingP.y, zIndex: 10, visible: true },
-        { id: 'title-box', role: 'title-box', x: titleP.x, y: titleP.y, zIndex: 10, visible: true },
-        { id: 'desc-box', role: 'desc-box', x: descP.x, y: descP.y, zIndex: 10, visible: true },
+        { id: 'heading-box', role: 'heading-box', x: headingP.x, y: headingP.y, w: headingP.w ?? 40, zIndex: 10, visible: true },
+        { id: 'title-box', role: 'title-box', x: titleP.x, y: titleP.y, w: titleP.w ?? 60, zIndex: 10, visible: true },
+        { id: 'desc-box', role: 'desc-box', x: descP.x, y: descP.y, w: descP.w ?? 60, zIndex: 10, visible: true },
         { id: 'button-box', role: 'button-box', x: buttonP.x, y: buttonP.y, zIndex: 10, visible: true },
         { id: 'overlay-image', role: 'overlay-image', x: overP.x, y: overP.y, zIndex: 5, visible: true }
       ];
@@ -581,11 +647,12 @@ export default function App() {
       setBannerOverlayFlipX(false);
       setBannerOverlayRotate(0);
       setBannerOverlayScale(1);
+      setBannerOverlayBorderRadius(0);
 
       const defaultLayers = [
-        { id: 'heading-box', role: 'heading-box', x: 10, y: 20, zIndex: 10, visible: true },
-        { id: 'title-box', role: 'title-box', x: 10, y: 38, zIndex: 10, visible: true },
-        { id: 'desc-box', role: 'desc-box', x: 10, y: 60, zIndex: 10, visible: true },
+        { id: 'heading-box', role: 'heading-box', x: 10, y: 20, w: 40, zIndex: 10, visible: true },
+        { id: 'title-box', role: 'title-box', x: 10, y: 38, w: 60, zIndex: 10, visible: true },
+        { id: 'desc-box', role: 'desc-box', x: 10, y: 60, w: 60, zIndex: 10, visible: true },
         { id: 'button-box', role: 'button-box', x: 10, y: 82, zIndex: 10, visible: true },
         { id: 'overlay-image', role: 'overlay-image', x: 80, y: 50, zIndex: 5, visible: true }
       ];
@@ -682,16 +749,17 @@ export default function App() {
         createdAt: editBanner ? editBanner.createdAt : new Date().toISOString(),
 
         // Unified 5 coordinate fields
-        headingPos: { x: Math.round(headL.x), y: Math.round(headL.y) },
-        titlePos: { x: Math.round(titleL.x), y: Math.round(titleL.y) },
-        descPos: { x: Math.round(descL.x), y: Math.round(descL.y) },
+        headingPos: { x: Math.round(headL.x), y: Math.round(headL.y), w: Math.round(headL.w ?? 40) },
+        titlePos: { x: Math.round(titleL.x), y: Math.round(titleL.y), w: Math.round(titleL.w ?? 60) },
+        descPos: { x: Math.round(descL.x), y: Math.round(descL.y), w: Math.round(descL.w ?? 60) },
         buttonPos: { x: Math.round(buttonL.x), y: Math.round(buttonL.y) },
         overlayPos: { x: Math.round(overL.x), y: Math.round(overL.y) },
 
         overlayImageUrl: finalOverlayImage,
         overlayFlipX: bannerOverlayFlipX,
         overlayRotate: bannerOverlayRotate,
-        overlayScale: bannerOverlayScale
+        overlayScale: bannerOverlayScale,
+        overlayBorderRadius: bannerOverlayBorderRadius
       };
 
       if (editBanner) {
@@ -760,7 +828,6 @@ export default function App() {
               bannerHeadingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
               bannerHeadingStyle === 'retro' ? '#fbbf24' :
               'rgba(255,255,255,0.2)',
-
             color: 
               bannerHeadingStyle === 'solid-white' ? '#0f172a' :
               bannerHeadingStyle === 'solid-dark' ? '#ffffff' :
@@ -768,7 +835,6 @@ export default function App() {
               bannerHeadingStyle === 'neon' ? '#a5f3fc' :
               bannerHeadingStyle === 'retro' ? '#09090b' :
               '#ffffff',
-
             border: 
               bannerHeadingStyle === 'solid-white' ? 'none' :
               bannerHeadingStyle === 'solid-dark' ? '1px solid #1e293b' :
@@ -776,35 +842,32 @@ export default function App() {
               bannerHeadingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
               bannerHeadingStyle === 'retro' ? '0.2cqw solid #09090b' :
               '0.1cqw solid rgba(255,255,255,0.1)',
-
             boxShadow: 
               bannerHeadingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
-              bannerHeadingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
-              'none',
-
-            backdropFilter: 
-              (bannerHeadingStyle === 'glass' || !bannerHeadingStyle) ? 'blur(8px)' : undefined
+              bannerHeadingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' : 'none',
+            backdropFilter: (bannerHeadingStyle === 'glass' || !bannerHeadingStyle) ? 'blur(8px)' : undefined
           }}
-          className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded font-bold inline-block uppercase tracking-widest select-none"
-        >
-          {bannerHeading || 'Spesial Penawaran'}
-        </span>
+          className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded inline-block uppercase tracking-widest select-none"
+          dangerouslySetInnerHTML={{ __html: bannerHeading || '<span>Spesial Penawaran</span>' }}
+        />
       );
     }
 
     if (layer.role === 'title-box') {
       elementNode = (
-        <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0 select-none text-white text-left">
-          {bannerTitle || 'Judul Promo'}
-        </h4>
+        <h4
+          className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0 select-none text-white text-left"
+          dangerouslySetInnerHTML={{ __html: bannerTitle || 'Judul Promo' }}
+        />
       );
     }
 
     if (layer.role === 'desc-box') {
       elementNode = (
-        <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0 select-none text-left">
-          {bannerDescription || 'Deskripsi singkat...'}
-        </p>
+        <p
+          className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0 select-none text-left"
+          dangerouslySetInnerHTML={{ __html: bannerDescription || 'Deskripsi singkat...' }}
+        />
       );
     }
 
@@ -864,6 +927,7 @@ export default function App() {
             transform: `scaleX(${bannerOverlayFlipX ? -1 : 1}) rotate(${bannerOverlayRotate ?? 0}deg)`,
             width: `calc(${bannerOverlayScale ?? 1} * 20cqw)`,
             height: 'auto',
+            borderRadius: `${bannerOverlayBorderRadius ?? 0}%`,
             filter: `brightness(${overlayFilter.brightness}%) contrast(${overlayFilter.contrast}%) saturate(${overlayFilter.saturate ?? 100}%) blur(${overlayFilter.blur}px)`
           }}
           className="object-contain drop-shadow-2xl max-w-none select-none"
@@ -872,10 +936,13 @@ export default function App() {
       );
     }
 
+    const isTextLayer = layer.role === 'heading-box' || layer.role === 'title-box' || layer.role === 'desc-box';
+    const layerWidth = isTextLayer ? `${layer.w ?? 55}%` : undefined;
+
     return (
       <div 
         key={layer.id} 
-        style={{ ...baseStyle, width: (layer.role === 'title-box' || layer.role === 'desc-box') ? '70cqw' : undefined }}
+        style={{ ...baseStyle, width: layerWidth }}
         className="relative pointer-events-auto touch-none"
         onPointerDown={e => onLayerPointerDown(e, layer.id)}
       >
@@ -883,118 +950,50 @@ export default function App() {
         {isSelected && layer.role === 'overlay-image' && (
           <div 
             className="absolute top-[-54px] left-1/2 -translate-x-1/2 bg-slate-950/85 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl px-2 py-1 flex items-center gap-1.5 shadow-xl z-50 pointer-events-auto text-white scale-90 sm:scale-100 transition-all origin-bottom select-none animate-in fade-in zoom-in-95 duration-200"
-            onPointerDown={e => e.stopPropagation()} // Stop drag triggering
+            onPointerDown={e => e.stopPropagation()}
           >
-            {/* Scale controls */}
-            <button 
-              onClick={(ev) => {
-                ev.stopPropagation();
-                setBannerOverlayScale(s => {
-                  const nextScale = Math.max(0.1, s - 0.05);
-                  pushHistory({ ...getSnapshot(), overlayScale: nextScale });
-                  return nextScale;
-                });
-              }}
-              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center font-black transition-colors"
-            >
-              -
-            </button>
-            <span className="text-[10px] font-mono font-black px-1 min-w-[34px] text-center text-zinc-200">
-              {Math.round(bannerOverlayScale * 100)}%
-            </span>
-            <button 
-              onClick={(ev) => {
-                ev.stopPropagation();
-                setBannerOverlayScale(s => {
-                  const nextScale = Math.min(3, s + 0.05);
-                  pushHistory({ ...getSnapshot(), overlayScale: nextScale });
-                  return nextScale;
-                });
-              }}
-              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center font-black transition-colors"
-            >
-              +
-            </button>
-            
+            <button onClick={(ev) => { ev.stopPropagation(); setBannerOverlayScale(s => { const n = Math.max(0.1, s - 0.05); pushHistory({ ...getSnapshot(), overlayScale: n }); return n; }); }}
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">-</button>
+            <span className="text-[10px] font-mono px-1 min-w-[34px] text-center text-zinc-200">{Math.round(bannerOverlayScale * 100)}%</span>
+            <button onClick={(ev) => { ev.stopPropagation(); setBannerOverlayScale(s => { const n = Math.min(3, s + 0.05); pushHistory({ ...getSnapshot(), overlayScale: n }); return n; }); }}
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">+</button>
             <div className="w-[1px] h-4 bg-white/10" />
-
-            {/* Rotate Left 15 */}
-            <button 
-              onClick={(ev) => {
-                ev.stopPropagation();
-                setBannerOverlayRotate(r => {
-                  const nextRot = r - 15;
-                  pushHistory({ ...getSnapshot(), overlayRotate: nextRot });
-                  return nextRot;
-                });
-              }}
-              title="Putar Kiri 15°"
-              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
-            >
-              <RotateCcwIcon className="w-3.5 h-3.5" />
-            </button>
-            {/* Rotate Right 15 */}
-            <button 
-              onClick={(ev) => {
-                ev.stopPropagation();
-                setBannerOverlayRotate(r => {
-                  const nextRot = r + 15;
-                  pushHistory({ ...getSnapshot(), overlayRotate: nextRot });
-                  return nextRot;
-                });
-              }}
-              title="Putar Kanan 15°"
-              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
-            >
-              <RotateCwIcon className="w-3.5 h-3.5" />
-            </button>
-
+            <button onClick={(ev) => { ev.stopPropagation(); setBannerOverlayRotate(r => { const n = r - 15; pushHistory({ ...getSnapshot(), overlayRotate: n }); return n; }); }} title="Putar Kiri"
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCcwIcon className="w-3.5 h-3.5" /></button>
+            <button onClick={(ev) => { ev.stopPropagation(); setBannerOverlayRotate(r => { const n = r + 15; pushHistory({ ...getSnapshot(), overlayRotate: n }); return n; }); }} title="Putar Kanan"
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCwIcon className="w-3.5 h-3.5" /></button>
             <div className="w-[1px] h-4 bg-white/10" />
-
-            {/* Flip Horizontal */}
-            <button 
-              onClick={(ev) => {
-                ev.stopPropagation();
-                const nextFlip = !bannerOverlayFlipX;
-                setBannerOverlayFlipX(nextFlip);
-                pushHistory({ ...getSnapshot(), overlayFlipX: nextFlip });
-              }}
-              title="Balik Horisontal"
-              className={cn("w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors", bannerOverlayFlipX && "text-blue-400 bg-white/5")}
-            >
-              <FlipHorizontal className="w-3.5 h-3.5" />
-            </button>
-
+            <button onClick={(ev) => { ev.stopPropagation(); const f = !bannerOverlayFlipX; setBannerOverlayFlipX(f); pushHistory({ ...getSnapshot(), overlayFlipX: f }); }}
+              className={cn("w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors", bannerOverlayFlipX && "text-blue-400 bg-white/5")}>
+              <FlipHorizontal className="w-3.5 h-3.5" /></button>
             <div className="w-[1px] h-4 bg-white/10" />
-
-            {/* Remove overlay */}
-            <button 
-              onClick={(ev) => {
-                ev.stopPropagation();
-                setBannerOverlayImageUrl(null);
-                setSelectedId(null);
-                pushHistory({ ...getSnapshot(), overlayImageUrl: null });
-              }}
-              title="Hapus Stiker Overlay"
-              className="w-7 h-7 text-red-400 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors"
-            >
-              <Trash className="w-3.5 h-3.5" />
-            </button>
+            <button onClick={(ev) => { ev.stopPropagation(); setBannerOverlayImageUrl(null); setSelectedId(null); pushHistory({ ...getSnapshot(), overlayImageUrl: null }); }}
+              className="w-7 h-7 text-red-400 hover:bg-red-500/10 rounded-lg flex items-center justify-center transition-colors">
+              <Trash className="w-3.5 h-3.5" /></button>
           </div>
         )}
 
-        {/* Canva Professional Bounding Box Wrapper */}
+        {/* Bounding Box */}
         {isSelected && (
           <div className="absolute inset-[-6px] border-[1.5px] border-[#2563eb] rounded-md pointer-events-none z-20">
-            {/* Corner visual dot handles */}
-            <div className="absolute -top-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nwse-resize" />
-            <div className="absolute -top-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nesw-resize" />
-            <div className="absolute -bottom-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nesw-resize" />
-            <div className="absolute -bottom-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nwse-resize" />
+            <div className="absolute -top-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
+            <div className="absolute -top-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
+            <div className="absolute -bottom-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
+            <div className="absolute -bottom-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
           </div>
         )}
 
-        {/* Render child elements */}
+        {/* Right-edge resize handle for text layers */}
+        {isSelected && isTextLayer && (
+          <div
+            className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-4 h-8 bg-blue-600 rounded-sm cursor-ew-resize z-30 flex items-center justify-center shadow-lg pointer-events-auto"
+            onPointerDown={e => { e.stopPropagation(); onResizePointerDown(e, layer.id); }}
+            title="Seret untuk ubah lebar"
+          >
+            <div className="w-0.5 h-4 bg-white/70 rounded-full" />
+          </div>
+        )}
+
         {elementNode}
       </div>
     );
@@ -1009,9 +1008,9 @@ export default function App() {
         <div className="space-y-4 pt-1">
           <div>
             <Label>Heading (Label Kotak)</Label>
-            <Input
+            <RichTextEditor
               value={bannerHeading}
-              onChange={e => setBannerHeading(e.target.value)}
+              onChange={v => setBannerHeading(v)}
               placeholder="Contoh: SPESIAL PENAWARAN"
             />
           </div>
@@ -1029,22 +1028,21 @@ export default function App() {
           </div>
 
           <div>
-            <Label>Judul Utama (Title)</Label>
-            <Input
+            <Label>Judul Utama</Label>
+            <RichTextEditor
               value={bannerTitle}
-              onChange={e => setBannerTitle(e.target.value)}
+              onChange={v => setBannerTitle(v)}
               placeholder="Contoh: Promo Berkah Idul Adha"
             />
           </div>
 
           <div>
-            <Label>Deskripsi (Body)</Label>
-            <textarea
+            <Label>Deskripsi</Label>
+            <RichTextEditor
               value={bannerDescription}
-              onChange={e => setBannerDescription(e.target.value)}
-              rows={3}
+              onChange={v => setBannerDescription(v)}
               placeholder="Contoh: Nikmati diskon spesial..."
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm p-3 resize-none focus:ring-2 focus:ring-blue-500 outline-none transition-all text-zinc-900 dark:text-zinc-100"
+              minHeight="72px"
             />
           </div>
 
@@ -1293,6 +1291,10 @@ export default function App() {
                 <SliderRow label="Blur" value={overlayFilter.blur} min={0} max={20} defaultValue={0} onChange={v => setOverlayFilter(f => ({ ...f, blur: v }))} onPointerUp={() => pushHistory()} unit="px" />
               </div>
 
+              <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <SliderRow label="Sudut Bulat" value={bannerOverlayBorderRadius} min={0} max={50} step={1} defaultValue={0} onChange={v => setBannerOverlayBorderRadius(v)} onPointerUp={() => pushHistory()} unit="%" />
+              </div>
+
               <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => {
                 setBannerOverlayImageUrl(null);
                 setBannerProductId('');
@@ -1506,17 +1508,8 @@ export default function App() {
       
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
         
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight">Banner Promo</h1>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Kelola dan desain banner promosi.</p>
-            </div>
-          </div>
+        {/* Header - just the action button, title is in topbar */}
+        <div className="flex justify-end">
           <Button variant="primary" size="md" onClick={() => openEditor()} className="rounded-2xl shrink-0 shadow-blue-500/25">
             <Plus className="w-4 h-4 mr-2" /> Buat Banner Baru
           </Button>
@@ -1556,76 +1549,54 @@ export default function App() {
                     
                     {b.imageUrl && (
                       <div className="absolute inset-0 z-0">
-                        <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" style={{ filter: previewFilter }} />
+                        <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover opacity-55" style={{ filter: previewFilter }} />
+                        {b.bgGradientOverlay?.enabled ? (
+                          <div className="absolute inset-0 z-[1]" style={{
+                            background: `linear-gradient(${b.bgGradientOverlay.angle ?? 90}deg, rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityLeft ?? 70) / 100}), rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityRight ?? 0) / 100}))`
+                          }} />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent z-[1]" />
+                        )}
                       </div>
                     )}
 
-                    {/* Draggable stiker overlay preview */}
+                    {/* Overlay stiker */}
                     {b.overlayImageUrl && (
                       <div style={{ position: 'absolute', left: `${overP.x}%`, top: `${overP.y}%`, transform: 'translate(-50%, -50%)', zIndex: 5 }}>
-                        <img src={b.overlayImageUrl} style={{ transform: `scaleX(${b.overlayFlipX ? -1 : 1}) rotate(${b.overlayRotate ?? 0}deg)`, width: `calc(${b.overlayScale ?? 1} * 20cqw)`, height: 'auto' }} alt="" className="object-contain" />
+                        <img src={b.overlayImageUrl} style={{ transform: `scaleX(${b.overlayFlipX ? -1 : 1}) rotate(${b.overlayRotate ?? 0}deg)`, width: `calc(${b.overlayScale ?? 1} * 20cqw)`, height: 'auto', borderRadius: `${b.overlayBorderRadius ?? 0}%` }} alt="" className="object-contain" />
                       </div>
                     )}
 
                     {/* Heading tag preview */}
-                    {(b.heading || b.type) && (
-                      <div style={{ position: 'absolute', left: `${headP.x}%`, top: `${headP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }}>
+                    {b.heading && (
+                      <div style={{ position: 'absolute', left: `${headP.x}%`, top: `${headP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${headP.w ?? 40}%` }}>
                         <span 
                           style={{
-                            backgroundColor: 
-                              b.headingStyle === 'solid-white' ? '#FFFFFF' :
-                              b.headingStyle === 'solid-dark' ? '#09090b' :
-                              b.headingStyle === 'outline-white' ? 'transparent' :
-                              b.headingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
-                              b.headingStyle === 'retro' ? '#fbbf24' :
-                              'rgba(255,255,255,0.2)', // default glass
-
-                            color: 
-                              b.headingStyle === 'solid-white' ? '#0f172a' :
-                              b.headingStyle === 'solid-dark' ? '#ffffff' :
-                              b.headingStyle === 'outline-white' ? '#ffffff' :
-                              b.headingStyle === 'neon' ? '#a5f3fc' :
-                              b.headingStyle === 'retro' ? '#09090b' :
-                              '#ffffff',
-
-                            border: 
-                              b.headingStyle === 'solid-white' ? 'none' :
-                              b.headingStyle === 'solid-dark' ? '1px solid #1e293b' :
-                              b.headingStyle === 'outline-white' ? '0.2cqw solid #ffffff' :
-                              b.headingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
-                              b.headingStyle === 'retro' ? '0.2cqw solid #09090b' :
-                              '0.1cqw solid rgba(255,255,255,0.1)',
-
-                            boxShadow: 
-                              b.headingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
-                              b.headingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
-                              'none',
-
-                            backdropFilter: 
-                              (b.headingStyle === 'glass' || !b.headingStyle) ? 'blur(8px)' : undefined
+                            backgroundColor: b.headingStyle === 'solid-white' ? '#FFFFFF' : b.headingStyle === 'solid-dark' ? '#09090b' : b.headingStyle === 'outline-white' ? 'transparent' : b.headingStyle === 'neon' ? 'rgba(34,211,238,0.15)' : b.headingStyle === 'retro' ? '#fbbf24' : 'rgba(255,255,255,0.2)',
+                            color: b.headingStyle === 'solid-white' ? '#0f172a' : b.headingStyle === 'solid-dark' ? '#ffffff' : b.headingStyle === 'neon' ? '#a5f3fc' : b.headingStyle === 'retro' ? '#09090b' : '#ffffff',
+                            border: b.headingStyle === 'outline-white' ? '0.2cqw solid #ffffff' : b.headingStyle === 'neon' ? '0.15cqw solid #22d3ee' : b.headingStyle === 'retro' ? '0.2cqw solid #09090b' : '0.1cqw solid rgba(255,255,255,0.1)',
+                            boxShadow: b.headingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' : b.headingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' : 'none',
+                            backdropFilter: (b.headingStyle === 'glass' || !b.headingStyle) ? 'blur(8px)' : undefined
                           }}
-                          className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest text-white select-none"
-                        >
-                          {b.heading || (b.type === 'voucher' ? 'Promo Voucher' : b.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran')}
-                        </span>
+                          className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded inline-block uppercase tracking-widest select-none"
+                          dangerouslySetInnerHTML={{ __html: b.heading }}
+                        />
                       </div>
                     )}
 
                     {/* Title preview */}
                     {b.title && (
-                      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw]">
-                        <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 text-white m-0 select-none text-left drop-shadow">
-                          {b.title}
-                        </h4>
+                      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${titleP.w ?? 60}%` }}>
+                        <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 text-white m-0 select-none text-left drop-shadow"
+                          dangerouslySetInnerHTML={{ __html: b.title }} />
                       </div>
                     )}
 
                     {/* Description preview */}
                     {b.description && (
-                      <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw]">
-                        <p className="text-[2.8cqw] text-slate-100 line-clamp-2 leading-[1.3] font-medium m-0 select-none text-left drop-shadow">
-                          {b.description}
-                        </p>
+                      <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${descP.w ?? 60}%` }}>
+                        <p className="text-[2.8cqw] text-slate-100 line-clamp-2 leading-[1.3] font-medium m-0 select-none text-left drop-shadow"
+                          dangerouslySetInnerHTML={{ __html: b.description }} />
                       </div>
                     )}
 
@@ -1685,13 +1656,9 @@ export default function App() {
                   </div>
 
                   {/* Info & Actions */}
-                  <div className="p-6 flex flex-col flex-1 bg-white dark:bg-zinc-950">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="primary" className="text-[10px] uppercase px-2">{b.type}</Badge>
-                      <span className="text-xs font-bold text-zinc-400">Layout Premium 5 Posisi</span>
-                    </div>
-                    <h4 className="text-xl font-black mb-2 line-clamp-1">{b.title || '(Tanpa Judul)'}</h4>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-6 flex-1">{b.description || 'Tidak ada deskripsi'}</p>
+                  <div className="p-5 flex flex-col flex-1 bg-white dark:bg-zinc-950">
+                    <h4 className="text-base font-black mb-1 line-clamp-1 text-zinc-900 dark:text-zinc-50">{b.title || '(Tanpa Judul)'}</h4>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-4 flex-1">{b.description ? b.description.replace(/<[^>]*>/g, '') : 'Tidak ada deskripsi'}</p>
                     
                     <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
                       <div className="flex items-center gap-3">
@@ -1742,6 +1709,10 @@ export default function App() {
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .rte-placeholder:empty:before { content: attr(data-placeholder); color: #a1a1aa; pointer-events: none; }
+        .rte-placeholder b, .rte-placeholder strong { font-weight: 700; }
+        .rte-placeholder i, .rte-placeholder em { font-style: italic; }
+        .rte-placeholder u { text-decoration: underline; }
       `}} />
     </div>
   );
