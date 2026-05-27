@@ -174,8 +174,6 @@ function RichTextEditor({ value, onChange, placeholder, minHeight = '36px' }) {
             className={cn('w-7 h-7 rounded text-sm flex items-center justify-center transition-colors text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700', cls)}
           >{label}</button>
         ))}
-        <div className="flex-1" />
-        <span className="text-[9px] text-zinc-400 px-1">Seleksi teks lalu klik B/I/U</span>
       </div>
       <div
         ref={editorRef}
@@ -198,6 +196,8 @@ export default function App() {
   // --- Data Stores ---
   const banners = useDbQuery('banners');
   const products = useDbQuery('products');
+  const storeSettingsList = useDbQuery('storeSettings') ?? [];
+  const storeSettings = storeSettingsList[0] || null;
 
   // --- Screens ---
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -1248,7 +1248,7 @@ export default function App() {
                   productId: prodId,
                   overlayImageUrl: photo
                 });
-              }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
+              }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
                 <option value="">-- Pilih Produk --</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
@@ -1361,7 +1361,7 @@ export default function App() {
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-500 hidden sm:block" />
-            <span className="text-sm font-black tracking-tight hidden sm:block">Creative Studio Pro</span>
+            <span className="text-sm font-black tracking-tight hidden sm:block">{storeSettings?.storeName ? `${storeSettings.storeName} Banner` : 'Banner Studio'}</span>
             <span className="text-sm font-black tracking-tight sm:hidden">{bannerTitle || 'Banner Baru'}</span>
           </div>
 
@@ -1462,11 +1462,6 @@ export default function App() {
 
               {/* 5 Draggable Canvas Elements */}
               {layers.map(renderCanvasLayer)}
-            </div>
-
-            {/* Floating Action Menu inside canvas (Desktop) */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-zinc-200/50 dark:border-zinc-800/50 z-30">
-               <span className="text-xs font-bold text-zinc-500 px-4 py-1">5 Objek Kanvas Canva Premium</span>
             </div>
           </div>
 
