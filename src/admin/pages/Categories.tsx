@@ -184,43 +184,43 @@ export default function Categories() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Emoji / Ikon</Label>
-                  <div className="flex flex-col gap-2">
-                    <Input
-                      value={catIcon}
-                      onChange={(e) => setCatIcon(e.target.value)}
-                      placeholder="📦"
-                      className="h-10 text-center text-lg rounded-xl font-bold"
-                      maxLength={2}
-                    />
-                    <div className="flex flex-wrap gap-1 max-h-[70px] overflow-y-auto no-scrollbar border border-border/50 p-1.5 rounded-lg bg-muted/20">
-                      {['📦', '🍔', '🍕', '🍜', '🥤', '☕', '🧁', '🍦', '🏷️', '🚬', '🧼', '🧹', '📱', '🛒', '🛍️', '🍺'].map(emoji => (
-                        <button
-                          type="button"
-                          key={emoji}
-                          onClick={() => setCatIcon(emoji)}
-                          className={cn(
-                            "w-6 h-6 flex items-center justify-center text-xs rounded-md transition-all hover:bg-muted active:scale-90",
-                            catIcon === emoji ? "bg-primary/20 border border-primary/45 font-bold" : "bg-muted/40 border border-transparent"
-                          )}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ketik Ikon (Emoji)</Label>
+                  <Input
+                    value={catIcon}
+                    onChange={(e) => setCatIcon(e.target.value)}
+                    placeholder="📦"
+                    className="h-10 text-center text-lg rounded-xl font-bold"
+                    maxLength={2}
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Warna Tema</Label>
-                  <div className="flex flex-col gap-2">
-                    <Input
-                      type="color"
-                      value={catColor}
-                      onChange={(e) => setCatColor(e.target.value)}
-                      className="h-10 w-full p-1 cursor-pointer rounded-xl border-border/50"
-                    />
-                    <p className="text-[10px] text-muted-foreground leading-normal mt-0.5">Warna ini digunakan untuk latar belakang ikon.</p>
-                  </div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Warna Tema Kategori</Label>
+                  <Input
+                    type="color"
+                    value={catColor}
+                    onChange={(e) => setCatColor(e.target.value)}
+                    className="h-10 w-full p-1 cursor-pointer rounded-xl border-border/50"
+                  />
+                </div>
+              </div>
+
+              {/* Emoji Picker Full Width */}
+              <div className="space-y-2">
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Atau Pilih dari Saran</Label>
+                <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto custom-scrollbar border border-border/50 p-2.5 rounded-xl bg-muted/10 shadow-inner">
+                  {['📦', '🍔', '🍕', '🍜', '🥤', '☕', '🧁', '🍦', '🏷️', '🚬', '🧼', '🧹', '📱', '🛒', '🛍️', '🍺', '🍚', '🍗', '🥐', '🍞', '🍟', '🥩', '🥘', '🍲', '🍣', '🍱', '🍧', '🍰', '🍹', '🍵', '🍶', '🍎', '🍓', '🥑', '🌶️', '🥩', '🥓', '🍳', '🥞', '🥗', '🍿', '🍘', '🍙', '🍛', '🦞', '🦐', '🦑', '🍢', '🍡', '🍭', '🍬', '🍫', '🍩', '🍪', '🌰', '🥜', '🧋', '🧉', '🍾', '🍷', '🥂', '🍻', '🥃', '🧊', '🥄', '🍴', '🍽️', '🥣', '🥡', '🥢', '🧂'].map(emoji => (
+                    <button
+                      type="button"
+                      key={emoji}
+                      onClick={() => setCatIcon(emoji)}
+                      className={cn(
+                        "w-9 h-9 flex items-center justify-center text-xl rounded-lg transition-all hover:bg-muted active:scale-95",
+                        catIcon === emoji ? "bg-primary/20 border-2 border-primary shadow-sm" : "bg-card border border-border/50 hover:border-primary/40 shadow-sm"
+                      )}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 border border-border/50 bg-muted/20 rounded-xl mt-2">
@@ -251,6 +251,12 @@ export default function Categories() {
           </form>
         </DialogContent>
       </Dialog>
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.3); border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156, 163, 175, 0.5); }
+      `}} />
     </div>
   );
 }
