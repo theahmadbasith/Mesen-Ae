@@ -55,7 +55,7 @@ const Input = ({ className, ...props }) => (
 );
 
 const Label = ({ className, children, ...props }) => (
-  <label className={cn("text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1.5", className)} {...props}>{children}</label>
+  <label className={cn("text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1.5", className)} {...props}>{children}</label>
 );
 
 const Switch = ({ checked, onCheckedChange }) => (
@@ -76,7 +76,7 @@ const Badge = ({ children, variant = 'default', className }) => {
     primary: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
     success: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
   };
-  return <span className={cn("inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ring-zinc-500/20", variants[variant], className)}>{children}</span>;
+  return <span className={cn("inline-flex items-center rounded-md px-2 py-1 text-xs font-normal ring-1 ring-inset ring-zinc-500/20", variants[variant], className)}>{children}</span>;
 }
 
 const Card = ({ children, className }) => (
@@ -96,44 +96,59 @@ function PanelSection({ title, icon: Icon, children, defaultOpen = true }) {
   );
 }
 
-function ColorGrid({ value, onChange }) {
+function ColorPicker({ value, onChange }) {
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-8 gap-1.5">
+    <div className="space-y-2">
+      {/* Quick-access swatches – scrollable single row */}
+      <div className="flex gap-1 overflow-x-auto pb-1 hide-scrollbar">
         {COLOR_PALETTE.map(c => (
           <button key={c} onClick={() => onChange(c)}
-            className={cn("w-full aspect-square rounded-md border-2 transition-transform hover:scale-110", value.toUpperCase() === c.toUpperCase() ? 'border-blue-500 scale-110 shadow-md' : 'border-zinc-200 dark:border-zinc-700 shadow-sm')}
-            style={{ backgroundColor: c }} />
+            style={{ backgroundColor: c }}
+            className={cn(
+              "shrink-0 w-6 h-6 rounded-full border-2 transition-all hover:scale-110",
+              value?.toUpperCase() === c.toUpperCase()
+                ? 'border-blue-500 scale-110 ring-2 ring-blue-400/40'
+                : 'border-white/30 dark:border-zinc-600'
+            )}
+          />
         ))}
       </div>
-      <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800/50 p-2 rounded-xl">
-        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="w-10 h-10 p-0.5 cursor-pointer rounded-lg bg-transparent border border-zinc-300 dark:border-zinc-600 shrink-0" />
-        <Input value={value} onChange={e => onChange(e.target.value)} className="h-10 text-xs font-mono uppercase bg-white dark:bg-zinc-900" />
+      {/* Hex input + native color picker */}
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value || '#000000'}
+          onChange={e => onChange(e.target.value)}
+          className="w-9 h-9 p-0.5 rounded-lg border border-zinc-300 dark:border-zinc-600 cursor-pointer bg-transparent shrink-0"
+        />
+        <Input
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          className="h-9 text-xs font-mono uppercase"
+          placeholder="#000000"
+        />
       </div>
     </div>
   );
 }
 
 function SliderRow({ label, value, min, max, step = 1, unit = '', defaultValue, onChange, onPointerUp }) {
+  const handleDoubleClick = () => {
+    if (defaultValue !== undefined) {
+      onChange(defaultValue);
+      toast.info(`Reset ke ${defaultValue}${unit}`);
+      setTimeout(() => onPointerUp?.(), 50);
+    }
+  };
   return (
-    <div className="space-y-2">
-      <div 
-        className="flex justify-between items-center cursor-pointer select-none group/slider-row"
-        onDoubleClick={() => {
-          if (defaultValue !== undefined) {
-            onChange(defaultValue);
-            toast.info(`Reset "${label}" ke nilai awal: ${defaultValue}${unit}`);
-            setTimeout(() => onPointerUp?.(), 50);
-          }
-        }}
-        title="Double-click untuk reset ke nilai default"
-      >
-        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors">
-          {label} <span className="hidden group-hover/slider-row:inline text-[9px] font-medium text-blue-500/80 normal-case ml-1">(Double-click reset)</span>
-        </span>
-        <span className="text-[11px] font-mono font-black text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">{value}{unit}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-center select-none">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{label}</span>
+        <span className="text-[11px] font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">{value}{unit}</span>
       </div>
-      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} onPointerUp={onPointerUp} />
+      <div onDoubleClick={handleDoubleClick} title="Double-click untuk reset">
+        <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} onPointerUp={onPointerUp} />
+      </div>
     </div>
   );
 }
@@ -1003,13 +1018,13 @@ export default function App() {
 
           <div>
             <Label>Gaya Kotak Heading</Label>
-            <select value={bannerHeadingStyle} onChange={(e) => setBannerHeadingStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
-              <option value="glass">Glassmorphism (Kaca Transparan)</option>
-              <option value="solid-white">Solid Putih (Teks Gelap)</option>
-              <option value="solid-dark">Solid Gelap (Teks Terang)</option>
+            <select value={bannerHeadingStyle} onChange={(e) => setBannerHeadingStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
+              <option value="glass">Glassmorphism</option>
+              <option value="solid-white">Solid Putih</option>
+              <option value="solid-dark">Solid Gelap</option>
               <option value="outline-white">Garis Tepi Putih</option>
-              <option value="neon">Neon Cyan (Menyala)</option>
-              <option value="retro">Retro Brutalist (Kuning & Border Hitam Tebal)</option>
+              <option value="neon">Neon Cyan</option>
+              <option value="retro">Retro Brutalist</option>
             </select>
           </div>
 
@@ -1043,14 +1058,14 @@ export default function App() {
           </div>
 
           <div>
-            <Label>Gaya Tombol (Badge)</Label>
-            <select value={bannerBadgeStyle} onChange={(e) => setBannerBadgeStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
-              <option value="solid">Solid Putih (Teks Gelap)</option>
-              <option value="outline">Outline (Garis Tepi Putih)</option>
-              <option value="glass">Glassmorphism (Kaca Transparan)</option>
-              <option value="soft-dark">Soft Dark (Gelap Transparan)</option>
-              <option value="neon">Neon Cyan (Menyala)</option>
-              <option value="retro">Retro Brutalist (Kuning & Border Hitam Tebal)</option>
+            <Label>Gaya Tombol</Label>
+            <select value={bannerBadgeStyle} onChange={(e) => setBannerBadgeStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
+              <option value="solid">Solid Putih</option>
+              <option value="outline">Outline Putih</option>
+              <option value="glass">Glassmorphism</option>
+              <option value="soft-dark">Soft Dark</option>
+              <option value="neon">Neon Cyan</option>
+              <option value="retro">Retro Brutalist</option>
             </select>
           </div>
 
@@ -1086,8 +1101,8 @@ export default function App() {
 
           {bannerBgType === 'solid' && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Warna Solid</p>
-              <ColorGrid value={bannerBgColor} onChange={c => {
+              <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Warna Solid</p>
+              <ColorPicker value={bannerBgColor} onChange={c => {
                 setBannerBgColor(c);
                 pushHistory({ ...getSnapshot(), bgColor: c });
               }} />
@@ -1096,18 +1111,18 @@ export default function App() {
 
           {bannerBgType === 'gradient' && (
             <div className="space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Pengaturan Gradasi</p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Pengaturan Gradasi</p>
               <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
                 <div>
-                  <Label>Warna Kiri (Mulai)</Label>
-                  <ColorGrid value={bannerGradientLeft} onChange={c => {
+                  <Label>Warna Kiri</Label>
+                  <ColorPicker value={bannerGradientLeft} onChange={c => {
                     setBannerGradientLeft(c);
                     pushHistory({ ...getSnapshot(), gradientLeft: c });
                   }} />
                 </div>
                 <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                  <Label>Warna Kanan (Akhir)</Label>
-                  <ColorGrid value={bannerGradientRight} onChange={c => {
+                  <Label>Warna Kanan</Label>
+                  <ColorPicker value={bannerGradientRight} onChange={c => {
                     setBannerGradientRight(c);
                     pushHistory({ ...getSnapshot(), gradientRight: c });
                   }} />
@@ -1143,7 +1158,7 @@ export default function App() {
               )}
 
               <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Latar Belakang</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Latar Belakang</p>
                 <SliderRow label="Kecerahan" value={bgFilter.brightness} min={0} max={200} defaultValue={100} onChange={v => setBgFilter(f => ({ ...f, brightness: v }))} onPointerUp={() => pushHistory()} unit="%" />
                 <SliderRow label="Kontras" value={bgFilter.contrast} min={0} max={200} defaultValue={100} onChange={v => setBgFilter(f => ({ ...f, contrast: v }))} onPointerUp={() => pushHistory()} unit="%" />
                 <SliderRow label="Saturasi" value={bgFilter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={v => setBgFilter(f => ({ ...f, saturate: v }))} onPointerUp={() => pushHistory()} unit="%" />
@@ -1173,7 +1188,7 @@ export default function App() {
                     <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
                       <div>
                         <Label>Warna Overlay</Label>
-                        <ColorGrid value={bgGradientOverlayColor} onChange={color => {
+                        <ColorPicker value={bgGradientOverlayColor} onChange={color => {
                           setBgGradientOverlayColor(color);
                           pushHistory({
                             ...getSnapshot(),
@@ -1215,9 +1230,9 @@ export default function App() {
               const val = e.target.value;
               handleBannerTypeChange(val);
               pushHistory({ ...getSnapshot(), type: val, productId: '', overlayImageUrl: null });
-            }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
+            }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
               <option value="custom">Kustom Bebas</option>
-              <option value="menu">Menu / Produk saja</option>
+              <option value="menu">Menu / Produk</option>
             </select>
           </div>
 
@@ -1253,7 +1268,7 @@ export default function App() {
 
           {bannerOverlayImageUrl && (
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
-              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transformasi Stiker</p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transformasi Stiker</p>
               
               <SliderRow label="Skala (Lebar)" value={Math.round(bannerOverlayScale * 100)} min={10} max={300} defaultValue={100} onChange={v => setBannerOverlayScale(v / 100)} onPointerUp={() => pushHistory()} unit="%" />
               <SliderRow label="Rotasi" value={bannerOverlayRotate} min={-180} max={180} defaultValue={0} onChange={setBannerOverlayRotate} onPointerUp={() => pushHistory()} unit="°" />
@@ -1271,7 +1286,7 @@ export default function App() {
 
               {/* Slider Filters for Overlay Image */}
               <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
                 <SliderRow label="Kecerahan" value={overlayFilter.brightness} min={0} max={200} defaultValue={100} onChange={v => setOverlayFilter(f => ({ ...f, brightness: v }))} onPointerUp={() => pushHistory()} unit="%" />
                 <SliderRow label="Kontras" value={overlayFilter.contrast} min={0} max={200} defaultValue={100} onChange={v => setOverlayFilter(f => ({ ...f, contrast: v }))} onPointerUp={() => pushHistory()} unit="%" />
                 <SliderRow label="Saturasi" value={overlayFilter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={v => setOverlayFilter(f => ({ ...f, saturate: v }))} onPointerUp={() => pushHistory()} unit="%" />
@@ -1492,21 +1507,19 @@ export default function App() {
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
         
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 bg-white dark:bg-zinc-900 p-6 rounded-3xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <h2 className="text-3xl font-black tracking-tight">Manajer Banner</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <p className="text-zinc-500 dark:text-zinc-400">Buat desain banner interaktif langsung di peramban.</p>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight">Banner Promo</h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Kelola dan desain banner promosi.</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button variant="primary" size="lg" onClick={() => openEditor()} className="rounded-2xl flex-1 sm:flex-none shadow-blue-500/25">
-              <Plus className="w-5 h-5 mr-2" /> Buat Banner Baru
-            </Button>
-          </div>
+          <Button variant="primary" size="md" onClick={() => openEditor()} className="rounded-2xl shrink-0 shadow-blue-500/25">
+            <Plus className="w-4 h-4 mr-2" /> Buat Banner Baru
+          </Button>
         </div>
 
         {/* Content List */}
@@ -1727,6 +1740,8 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(150,150,150,0.3); border-radius: 10px; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
     </div>
   );
