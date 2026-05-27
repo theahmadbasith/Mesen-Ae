@@ -163,7 +163,7 @@ export default function LoginRightColumn({
         {/* Footer Note */}
         <div className="text-center mt-8 space-y-1">
           <p className="text-xs font-semibold text-muted-foreground">
-            MesenAe Workspace v2.0
+            MesenAe Workspace v1.0
           </p>
           <p className="text-[10px] text-muted-foreground/70">
             Akses khusus staf dan pengelola restoran terotorisasi.

@@ -1,7 +1,8 @@
-# 🧾 MesenAe (Premium POS & Kasir PWA)
+# 🧾 MesenAe - Dashboard (Premium POS & Admin PWA)
 
 <p align="center">
-  <strong>Aplikasi Point of Sale (POS) & Kasir Modern Kelas Atas, Offline-First, Berkinerja Tinggi, didukung oleh Firebase (Firestore & Storage) & Midtrans.</strong>
+  <strong>Aplikasi Point of Sale (POS) & Kasir Modern Kelas Atas, Offline-First, Berkinerja Tinggi, didukung oleh Firebase (Firestore & Storage) & Midtrans.</strong><br>
+  <em>(Repositori ini khusus untuk portal Admin, Kasir, dan Dapur)</em>
 </p>
 
 <p align="center">
