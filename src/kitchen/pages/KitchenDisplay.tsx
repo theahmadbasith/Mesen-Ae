@@ -12,10 +12,7 @@ import KitchenReceiptModal from '../components/KitchenReceiptModal';
 import PrintActionModal from '@/components/PrintActionModal';
 
 // ── KOMPONEN ITEM PESANAN ──
-function KitchenItemsList({ transactionId, compact = false }: { transactionId: number, compact?: boolean }) {
-  const allItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []);
-  const items = allItems.filter((i) => i.transactionId === transactionId);
-  
+function KitchenItemsList({ items, compact = false }: { items: TransactionItemRecord[], compact?: boolean }) {
   return (
     <div className={cn("mt-2", compact ? "space-y-1.5" : "space-y-0")}>
       {items.map((item, index) => (
@@ -59,10 +56,7 @@ function KitchenItemsList({ transactionId, compact = false }: { transactionId: n
   );
 }
 
-function KitchenItemSummary({ transactionId, isExpanded }: { transactionId: number, isExpanded: boolean }) {
-  const allItems = (useDbQuery<TransactionItemRecord>('transactionItems') || []);
-  const items = allItems.filter((i) => i.transactionId === transactionId);
-  
+function KitchenItemSummary({ items, isExpanded }: { items: TransactionItemRecord[], isExpanded: boolean }) {
   const summary = items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
   
   return (
@@ -78,6 +72,113 @@ function KitchenItemSummary({ transactionId, isExpanded }: { transactionId: numb
 }
 
 const KITCHEN_STEPS = ['diproses', 'dimasak', 'disiapkan', 'siap', 'diantarkan'] as const;
+
+// Komponen Kartu Tiket Dapur
+const KanbanTicket = React.memo(({ bill, colorConfig, currentTime, onPrintAction, onNextStep, allTxItems }: { bill: Transaction, colorConfig: any, currentTime: Date, onPrintAction: (bill: Transaction) => void, onNextStep: (bill: Transaction) => void, allTxItems: TransactionItemRecord[] }) => {
+  const orderDate = new Date(bill.date);
+  const diffMins = Math.floor((currentTime.getTime() - orderDate.getTime()) / 60000);
+  const isLate = diffMins > 20;
+  const items = allTxItems.filter((i) => i.transactionId === bill.id);
+
+  return (
+    <Card className="border-border shadow-lg flex flex-col bg-card/90 backdrop-blur-md rounded-2xl overflow-hidden group shrink-0 hover:shadow-2xl transition-all duration-300">
+      
+      {/* Header Tiket */}
+      <div className={cn("px-4 py-3 flex flex-col gap-2 relative border-b border-border/50", colorConfig.headerBg)}>
+        <div className="flex justify-between items-start">
+          <Badge variant="outline" className="bg-background/80 backdrop-blur text-foreground font-mono text-xs font-bold border-border/50 px-2 py-1">
+            {bill.receiptNumber}
+          </Badge>
+          <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/50 rounded-md text-muted-foreground hover:text-foreground shadow-sm bg-background/20 backdrop-blur" onClick={() => onPrintAction(bill)} title="Pilihan Cetak">
+            <Printer className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <div className="flex justify-between items-end">
+          <div>
+            {bill.tableNumber ? (
+              <div className="flex flex-col leading-none">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Nomor Meja</span>
+                <span className="text-2xl font-black text-foreground">Meja {bill.tableNumber}</span>
+              </div>
+            ) : (
+              <div className="flex flex-col leading-none">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tipe Pesanan</span>
+                <span className="text-lg font-black text-foreground">Bawa Pulang</span>
+              </div>
+            )}
+          </div>
+          
+          <div className={cn(
+            "flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md border shadow-sm",
+            isLate ? "bg-destructive/20 text-destructive border-destructive/30 animate-pulse" : "bg-background/80 border-border text-foreground"
+          )}>
+            <Clock className="w-3.5 h-3.5" />
+            {diffMins} mnt
+          </div>
+        </div>
+      </div>
+
+      {/* Isi Tiket */}
+      <CardContent className="p-4 flex-1 flex flex-col bg-card">
+        {bill.customerName && (
+          <div className="flex items-center gap-2 mb-3 bg-muted/50 px-3 py-2 rounded-lg border border-border/60">
+            <User className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-bold text-foreground truncate">{bill.customerName}</span>
+          </div>
+        )}
+        <div className="flex-1">
+          <KitchenItemsList items={items} />
+        </div>
+      </CardContent>
+
+      {/* Tombol Aksi */}
+      <div className="p-3 pt-0 bg-card">
+        <Button 
+          className={cn("w-full h-11 text-sm font-extrabold tracking-wide rounded-xl shadow-md border-none active:scale-95 transition-all", colorConfig.btnClass)}
+          onClick={() => onNextStep(bill)}
+        >
+          {colorConfig.icon}
+          <span className="ml-2">{colorConfig.actionText}</span>
+        </Button>
+      </div>
+    </Card>
+  );
+});
+
+// Komponen Kolom Kanban
+const KanbanColumn = React.memo(({ title, icon, count, bills, colorConfig, currentTime, onPrintAction, onNextStep, allTxItems }: any) => (
+  <div className="flex flex-col bg-muted/30 rounded-3xl border border-border/50 overflow-hidden h-full shadow-sm">
+    {/* Header Kolom */}
+    <div className="p-4 border-b border-border/50 flex justify-between items-center bg-card/80 backdrop-blur-sm">
+      <div className="flex items-center gap-3">
+        <div className={cn("p-2 rounded-xl border shadow-sm", colorConfig.iconBg)}>
+          {icon}
+        </div>
+        <h2 className="text-base font-black text-foreground uppercase tracking-tight">{title}</h2>
+      </div>
+      <div className="bg-background border border-border shadow-sm text-foreground text-sm font-black px-2.5 py-1 rounded-lg">
+        {count}
+      </div>
+    </div>
+    
+    {/* Scrollable Container untuk Tiket */}
+    <div className="p-3 flex-1 overflow-y-auto space-y-4 custom-scrollbar">
+      {bills.length === 0 ? (
+        <div className="h-full flex flex-col items-center justify-center text-center p-4 opacity-40">
+          <div className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-full flex items-center justify-center mb-3">
+            <UtensilsCrossed className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Kosong</p>
+        </div>
+      ) : (
+        bills.map((bill: any) => (
+          <KanbanTicket key={bill.id} bill={bill} colorConfig={colorConfig} currentTime={currentTime} onPrintAction={onPrintAction} onNextStep={onNextStep} allTxItems={allTxItems} />
+        ))
+      )}
+    </div>
+  </div>
+));
 
 export default function KitchenDisplay() {
   useThemeColor();
@@ -126,111 +227,7 @@ export default function KitchenDisplay() {
     }
   };
 
-  // Komponen Kartu Tiket Dapur
-  const KanbanTicket = ({ bill, colorConfig }: { bill: Transaction, colorConfig: any }) => {
-    const orderDate = new Date(bill.date);
-    const diffMins = Math.floor((currentTime.getTime() - orderDate.getTime()) / 60000);
-    const isLate = diffMins > 20;
 
-    return (
-      <Card className="border-border shadow-lg flex flex-col bg-card/90 backdrop-blur-md rounded-2xl overflow-hidden group shrink-0 hover:shadow-2xl transition-all duration-300">
-        
-        {/* Header Tiket */}
-        <div className={cn("px-4 py-3 flex flex-col gap-2 relative border-b border-border/50", colorConfig.headerBg)}>
-          <div className="flex justify-between items-start">
-            <Badge variant="outline" className="bg-background/80 backdrop-blur text-foreground font-mono text-xs font-bold border-border/50 px-2 py-1">
-              {bill.receiptNumber}
-            </Badge>
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/50 rounded-md text-muted-foreground hover:text-foreground shadow-sm bg-background/20 backdrop-blur" onClick={() => setPrintActionTx(bill)} title="Pilihan Cetak">
-              <Printer className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="flex justify-between items-end">
-            <div>
-              {bill.tableNumber ? (
-                <div className="flex flex-col leading-none">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Nomor Meja</span>
-                  <span className="text-2xl font-black text-foreground">Meja {bill.tableNumber}</span>
-                </div>
-              ) : (
-                <div className="flex flex-col leading-none">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tipe Pesanan</span>
-                  <span className="text-lg font-black text-foreground">Bawa Pulang</span>
-                </div>
-              )}
-            </div>
-            
-            <div className={cn(
-              "flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md border shadow-sm",
-              isLate ? "bg-destructive/20 text-destructive border-destructive/30 animate-pulse" : "bg-background/80 border-border text-foreground"
-            )}>
-              <Clock className="w-3.5 h-3.5" />
-              {diffMins} mnt
-            </div>
-          </div>
-        </div>
-
-        {/* Isi Tiket */}
-        <CardContent className="p-4 flex-1 flex flex-col bg-card">
-          {bill.customerName && (
-            <div className="flex items-center gap-2 mb-3 bg-muted/50 px-3 py-2 rounded-lg border border-border/60">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-bold text-foreground truncate">{bill.customerName}</span>
-            </div>
-          )}
-          <div className="flex-1">
-            <KitchenItemsList transactionId={bill.id!} />
-          </div>
-        </CardContent>
-
-        {/* Tombol Aksi */}
-        <div className="p-3 pt-0 bg-card">
-          <Button 
-            className={cn("w-full h-11 text-sm font-extrabold tracking-wide rounded-xl shadow-md border-none active:scale-95 transition-all", colorConfig.btnClass)}
-            onClick={() => handleNextStep(bill)}
-          >
-            {colorConfig.icon}
-            <span className="ml-2">{colorConfig.actionText}</span>
-          </Button>
-        </div>
-      </Card>
-    );
-  };
-
-  // Komponen Kolom Kanban
-  const KanbanColumn = ({ title, icon, count, bills, colorConfig }: any) => (
-    <div className="flex flex-col bg-muted/30 rounded-3xl border border-border/50 overflow-hidden h-full shadow-sm">
-      {/* Header Kolom */}
-      <div className="p-4 border-b border-border/50 flex justify-between items-center bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className={cn("p-2 rounded-xl border shadow-sm", colorConfig.iconBg)}>
-            {icon}
-          </div>
-          <h2 className="text-base font-black text-foreground uppercase tracking-tight">{title}</h2>
-        </div>
-        <div className="bg-background border border-border shadow-sm text-foreground text-sm font-black px-2.5 py-1 rounded-lg">
-          {count}
-        </div>
-      </div>
-      
-      {/* Scrollable Container untuk Tiket */}
-      <div className="p-3 flex-1 overflow-y-auto space-y-4 custom-scrollbar">
-        {bills.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-4 opacity-40">
-            <div className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-full flex items-center justify-center mb-3">
-              <UtensilsCrossed className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Kosong</p>
-          </div>
-        ) : (
-          bills.map((bill: any) => (
-            <KanbanTicket key={bill.id} bill={bill} colorConfig={colorConfig} />
-          ))
-        )}
-      </div>
-    </div>
-  );
 
   // Group riwayat berdasarkan tanggal
   const dateFormatter = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -286,6 +283,10 @@ export default function KitchenDisplay() {
             actionText: "Mulai Masak",
             icon: <Flame className="w-4 h-4" />
           }}
+          currentTime={currentTime}
+          onPrintAction={setPrintActionTx}
+          onNextStep={handleNextStep}
+          allTxItems={allTxItems}
         />
 
         {/* Kolom 2: Sedang Dimasak */}
@@ -301,6 +302,10 @@ export default function KitchenDisplay() {
             actionText: "Selesai Dimasak",
             icon: <Timer className="w-4 h-4" />
           }}
+          currentTime={currentTime}
+          onPrintAction={setPrintActionTx}
+          onNextStep={handleNextStep}
+          allTxItems={allTxItems}
         />
 
         {/* Kolom 3: Tahap Penyajian */}
@@ -316,6 +321,10 @@ export default function KitchenDisplay() {
             actionText: "Siap Diantar",
             icon: <CheckCircle2 className="w-4 h-4" />
           }}
+          currentTime={currentTime}
+          onPrintAction={setPrintActionTx}
+          onNextStep={handleNextStep}
+          allTxItems={allTxItems}
         />
 
         {/* Kolom 4: Siap Diantar */}
@@ -331,6 +340,10 @@ export default function KitchenDisplay() {
             actionText: "Tandai Diantarkan",
             icon: <ArrowRight className="w-4 h-4" />
           }}
+          currentTime={currentTime}
+          onPrintAction={setPrintActionTx}
+          onNextStep={handleNextStep}
+          allTxItems={allTxItems}
         />
         
       </div>
@@ -394,7 +407,7 @@ export default function KitchenDisplay() {
                                   )}
                                 </td>
                                 <td className="px-5 py-4 align-middle whitespace-nowrap">
-                                  <KitchenItemSummary transactionId={bill.id!} isExpanded={isExpanded} />
+                                  <KitchenItemSummary items={allTxItems.filter(i => i.transactionId === bill.id)} isExpanded={isExpanded} />
                                 </td>
                                 <td className="px-5 py-4 align-middle text-center whitespace-nowrap">
                                   <Badge className={cn(
@@ -427,7 +440,7 @@ export default function KitchenDisplay() {
                                         <UtensilsCrossed className="w-3.5 h-3.5" />
                                         Rincian Pesanan
                                       </p>
-                                      <KitchenItemsList transactionId={bill.id!} compact={false} />
+                                      <KitchenItemsList items={allTxItems.filter(i => i.transactionId === bill.id)} compact={false} />
                                     </div>
                                   </td>
                                 </tr>
