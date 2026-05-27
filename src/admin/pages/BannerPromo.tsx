@@ -3,7 +3,7 @@ import {
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles,
   RotateCcw, RotateCw, FlipHorizontal, X, Bold,
   Type, Palette, Layers, Layout,
-  ChevronDown, ChevronUp, Check, Grid, Sliders, SlidersHorizontal,
+  ChevronDown, ChevronUp, Check, Grid, SlidersHorizontal,
   ChevronLeft, Trash
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -165,11 +165,16 @@ export default function App() {
   const [bannerOverlayRotate, setBannerOverlayRotate] = useState(0);
   const [bannerOverlayScale, setBannerOverlayScale] = useState(1);
 
+  // Canvas Grid & Magnet Snap
+  const [showGrid, setShowGrid] = useState(true);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [activeSnapX, setActiveSnapX] = useState(null);
+  const [activeSnapY, setActiveSnapY] = useState(null);
+
   // Canvas coordinates
   const [layers, setLayers] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(100);
-  const [showGrid, setShowGrid] = useState(false);
   const [bgFilter, setBgFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
 
   // Mobile drawer
@@ -207,7 +212,7 @@ export default function App() {
     }
   }, []);
 
-  // --- Pointer Down Dragging Handler ---
+  // --- Delta-Based Pointer Down Dragging Handler with Snapping ---
   const onLayerPointerDown = (e, id) => {
     e.stopPropagation();
     const layer = layers.find(l => l.id === id);
@@ -219,22 +224,49 @@ export default function App() {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
 
+    // Record initial coordinates and positions to calculate delta shift
     dragState.current = { id, startX: e.clientX, startY: e.clientY, origX: layer.x, origY: layer.y };
 
     const onMove = (me) => {
       if (!dragState.current) return;
       if (me.cancelable) me.preventDefault();
 
+      // Relative delta shifts based on canvas dimension
       const dx = (me.clientX - dragState.current.startX) / rect.width * 100;
       const dy = (me.clientY - dragState.current.startY) / rect.height * 100;
-      let nx = Math.round((dragState.current.origX + dx) * 10) / 10;
-      let ny = Math.round((dragState.current.origY + dy) * 10) / 10;
+      
+      let nx = dragState.current.origX + dx;
+      let ny = dragState.current.origY + dy;
 
-      // Snap boundary constraints and grids
-      if (Math.abs(nx - 50) < 1.5) nx = 50;
-      if (Math.abs(ny - 50) < 1.5) ny = 50;
+      let snappedX = null;
+      let snappedY = null;
+
+      // Magnetic Snapping thresholds
+      if (snapEnabled) {
+        const snapPoints = [8, 50, 92];
+        const threshold = 1.6; // tolerant snap offset percentage
+
+        for (const pt of snapPoints) {
+          if (Math.abs(nx - pt) < threshold) {
+            nx = pt;
+            snappedX = pt;
+          }
+          if (Math.abs(ny - pt) < threshold) {
+            ny = pt;
+            snappedY = pt;
+          }
+        }
+      }
+
+      // Border constraints
       if (nx < 0) nx = 0; if (nx > 100) nx = 100;
       if (ny < 0) ny = 0; if (ny > 100) ny = 100;
+
+      nx = Math.round(nx * 10) / 10;
+      ny = Math.round(ny * 10) / 10;
+
+      setActiveSnapX(snappedX);
+      setActiveSnapY(snappedY);
 
       setLayers(prev => prev.map(l => l.id === id ? { ...l, x: nx, y: ny } : l));
     };
@@ -243,6 +275,8 @@ export default function App() {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       dragState.current = null;
+      setActiveSnapX(null);
+      setActiveSnapY(null);
     };
 
     window.addEventListener('pointermove', onMove, { passive: false });
@@ -365,7 +399,6 @@ export default function App() {
 
     setSelectedId(null);
     setZoom(100);
-    setShowGrid(false);
     setIsEditorOpen(true);
     setIsMobilePanelOpen(false);
   };
@@ -475,186 +508,224 @@ export default function App() {
       position: 'absolute' as any,
       left: `${layer.x}%`,
       top: `${layer.y}%`,
-      transform: 'translate(0%, -50%)',
+      transform: layer.role === 'overlay-image' ? 'translate(-50%, -50%)' : 'translate(0%, -50%)',
       zIndex: layer.zIndex,
       cursor: 'grab',
       userSelect: 'none' as any,
       touchAction: 'none',
     };
 
+    // Sub-elements rendering definitions
+    let elementNode = null;
+
     if (layer.role === 'heading-box') {
-      return (
-        <div key={layer.id} style={baseStyle}
-          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg p-1')}
-          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <span 
-            style={{
-              backgroundColor: 
-                bannerHeadingStyle === 'solid-white' ? '#FFFFFF' :
-                bannerHeadingStyle === 'solid-dark' ? '#09090b' :
-                bannerHeadingStyle === 'outline-white' ? 'transparent' :
-                bannerHeadingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
-                bannerHeadingStyle === 'retro' ? '#fbbf24' :
-                'rgba(255,255,255,0.2)', // default/glass
+      elementNode = (
+        <span 
+          style={{
+            backgroundColor: 
+              bannerHeadingStyle === 'solid-white' ? '#FFFFFF' :
+              bannerHeadingStyle === 'solid-dark' ? '#09090b' :
+              bannerHeadingStyle === 'outline-white' ? 'transparent' :
+              bannerHeadingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
+              bannerHeadingStyle === 'retro' ? '#fbbf24' :
+              'rgba(255,255,255,0.2)',
 
-              color: 
-                bannerHeadingStyle === 'solid-white' ? '#0f172a' :
-                bannerHeadingStyle === 'solid-dark' ? '#ffffff' :
-                bannerHeadingStyle === 'outline-white' ? '#ffffff' :
-                bannerHeadingStyle === 'neon' ? '#a5f3fc' :
-                bannerHeadingStyle === 'retro' ? '#09090b' :
-                '#ffffff',
+            color: 
+              bannerHeadingStyle === 'solid-white' ? '#0f172a' :
+              bannerHeadingStyle === 'solid-dark' ? '#ffffff' :
+              bannerHeadingStyle === 'outline-white' ? '#ffffff' :
+              bannerHeadingStyle === 'neon' ? '#a5f3fc' :
+              bannerHeadingStyle === 'retro' ? '#09090b' :
+              '#ffffff',
 
-              border: 
-                bannerHeadingStyle === 'solid-white' ? 'none' :
-                bannerHeadingStyle === 'solid-dark' ? '1px solid #1e293b' :
-                bannerHeadingStyle === 'outline-white' ? '0.2cqw solid #ffffff' :
-                bannerHeadingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
-                bannerHeadingStyle === 'retro' ? '0.2cqw solid #09090b' :
-                '0.1cqw solid rgba(255,255,255,0.1)',
+            border: 
+              bannerHeadingStyle === 'solid-white' ? 'none' :
+              bannerHeadingStyle === 'solid-dark' ? '1px solid #1e293b' :
+              bannerHeadingStyle === 'outline-white' ? '0.2cqw solid #ffffff' :
+              bannerHeadingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
+              bannerHeadingStyle === 'retro' ? '0.2cqw solid #09090b' :
+              '0.1cqw solid rgba(255,255,255,0.1)',
 
-              boxShadow: 
-                bannerHeadingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
-                bannerHeadingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
-                'none',
+            boxShadow: 
+              bannerHeadingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
+              bannerHeadingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
+              'none',
 
-              backdropFilter: 
-                (bannerHeadingStyle === 'glass' || !bannerHeadingStyle) ? 'blur(8px)' : undefined
-            }}
-            className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded font-bold inline-block uppercase tracking-widest select-none"
-          >
-            {bannerHeading || 'Spesial Penawaran'}
-          </span>
-        </div>
+            backdropFilter: 
+              (bannerHeadingStyle === 'glass' || !bannerHeadingStyle) ? 'blur(8px)' : undefined
+          }}
+          className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded font-bold inline-block uppercase tracking-widest select-none"
+        >
+          {bannerHeading || 'Spesial Penawaran'}
+        </span>
       );
     }
 
     if (layer.role === 'title-box') {
-      return (
-        <div key={layer.id} style={{ ...baseStyle, width: '70cqw' }}
-          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg p-1')}
-          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0 select-none text-white text-left">
-            {bannerTitle || 'Judul Promo'}
-          </h4>
-        </div>
+      elementNode = (
+        <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0 select-none text-white text-left">
+          {bannerTitle || 'Judul Promo'}
+        </h4>
       );
     }
 
     if (layer.role === 'desc-box') {
-      return (
-        <div key={layer.id} style={{ ...baseStyle, width: '70cqw' }}
-          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg p-1')}
-          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0 select-none text-left">
-            {bannerDescription || 'Deskripsi singkat...'}
-          </p>
-        </div>
+      elementNode = (
+        <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0 select-none text-left">
+          {bannerDescription || 'Deskripsi singkat...'}
+        </p>
       );
     }
 
     if (layer.role === 'button-box') {
-      return (
-        <div key={layer.id} style={baseStyle}
-          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg p-1')}
-          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <span
-            style={{
-              backgroundColor: 
-                bannerBadgeStyle === 'solid' ? '#FFFFFF' :
-                bannerBadgeStyle === 'outline' ? 'transparent' :
-                bannerBadgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' :
-                bannerBadgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' :
-                bannerBadgeStyle === 'neon' ? '#06b6d4' :
-                bannerBadgeStyle === 'retro' ? '#eab308' :
-                '#FFFFFF', // default solid
+      elementNode = (
+        <span
+          style={{
+            backgroundColor: 
+              bannerBadgeStyle === 'solid' ? '#FFFFFF' :
+              bannerBadgeStyle === 'outline' ? 'transparent' :
+              bannerBadgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' :
+              bannerBadgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' :
+              bannerBadgeStyle === 'neon' ? '#06b6d4' :
+              bannerBadgeStyle === 'retro' ? '#eab308' :
+              '#FFFFFF',
 
-              color: 
-                bannerBadgeStyle === 'solid' ? '#0F172A' :
-                bannerBadgeStyle === 'outline' ? '#FFFFFF' :
-                bannerBadgeStyle === 'glass' ? '#FFFFFF' :
-                bannerBadgeStyle === 'soft-dark' ? '#FFFFFF' :
-                bannerBadgeStyle === 'neon' ? '#ffffff' :
-                bannerBadgeStyle === 'retro' ? '#09090b' :
-                '#0F172A',
+            color: 
+              bannerBadgeStyle === 'solid' ? '#0F172A' :
+              bannerBadgeStyle === 'outline' ? '#FFFFFF' :
+              bannerBadgeStyle === 'glass' ? '#FFFFFF' :
+              bannerBadgeStyle === 'soft-dark' ? '#FFFFFF' :
+              bannerBadgeStyle === 'neon' ? '#ffffff' :
+              bannerBadgeStyle === 'retro' ? '#09090b' :
+              '#0F172A',
 
-              border: 
-                bannerBadgeStyle === 'solid' ? 'none' :
-                bannerBadgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' :
-                bannerBadgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' :
-                bannerBadgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' :
-                bannerBadgeStyle === 'neon' ? 'none' :
-                bannerBadgeStyle === 'retro' ? '0.25cqw solid #09090b' :
-                'none',
+            border: 
+              bannerBadgeStyle === 'solid' ? 'none' :
+              bannerBadgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' :
+              bannerBadgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+              bannerBadgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+              bannerBadgeStyle === 'neon' ? 'none' :
+              bannerBadgeStyle === 'retro' ? '0.25cqw solid #09090b' :
+              'none',
 
-              boxShadow: 
-                bannerBadgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' :
-                bannerBadgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' :
-                'none',
+            boxShadow: 
+              bannerBadgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' :
+              bannerBadgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' :
+              'none',
 
-              backdropFilter: 
-                (bannerBadgeStyle === 'glass' || bannerBadgeStyle === 'soft-dark') ? 'blur(8px)' : undefined
-            }}
-            className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm select-none inline-block"
-          >
-            {bannerButtonText || 'Lihat Detail'}
-          </span>
-        </div>
+            backdropFilter: 
+              (bannerBadgeStyle === 'glass' || bannerBadgeStyle === 'soft-dark') ? 'blur(8px)' : undefined
+          }}
+          className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm select-none inline-block"
+        >
+          {bannerButtonText || 'Lihat Detail'}
+        </span>
       );
     }
 
     if (layer.role === 'overlay-image') {
       if (!bannerOverlayImageUrl) return null;
-      return (
-        <div key={layer.id} style={{ ...baseStyle, transform: 'translate(-50%, -50%)', zIndex: 5 }}
-          className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg p-1')}
-          onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <img
-            src={bannerOverlayImageUrl}
-            draggable={false}
-            style={{
-              transform: `scaleX(${bannerOverlayFlipX ? -1 : 1}) rotate(${bannerOverlayRotate ?? 0}deg)`,
-              width: `calc(${bannerOverlayScale ?? 1} * 20cqw)`,
-              height: 'auto',
-            }}
-            className="object-contain drop-shadow-2xl max-w-none select-none"
-            alt="Overlay Banner"
-          />
-        </div>
+      elementNode = (
+        <img
+          src={bannerOverlayImageUrl}
+          draggable={false}
+          style={{
+            transform: `scaleX(${bannerOverlayFlipX ? -1 : 1}) rotate(${bannerOverlayRotate ?? 0}deg)`,
+            width: `calc(${bannerOverlayScale ?? 1} * 20cqw)`,
+            height: 'auto',
+          }}
+          className="object-contain drop-shadow-2xl max-w-none select-none"
+          alt="Overlay Banner"
+        />
       );
     }
 
-    return null;
-  };
-
-  const renderLayersPanel = () => {
-    const list = [
-      { id: 'heading-box', name: 'Heading (Tag Kotak)' },
-      { id: 'title-box', name: 'Judul Utama (Title)' },
-      { id: 'desc-box', name: 'Deskripsi (Body)' },
-      { id: 'button-box', name: 'Badge Tombol' },
-    ];
-    if (bannerOverlayImageUrl) {
-      list.push({ id: 'overlay-image', name: 'Gambar Overlay' });
-    }
-
     return (
-      <div className="space-y-2 px-3 py-4">
-        {list.map(item => (
-          <div key={item.id}
-            onClick={() => { setSelectedId(item.id); if(window.innerWidth < 768) setIsMobilePanelOpen(true); }}
-            className={cn('flex items-center gap-3 px-3 py-3 rounded-2xl cursor-pointer transition-all border',
-              selectedId === item.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700')}>
-            <div className="w-8 h-8 shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-              {item.id === 'overlay-image' ? <ImageIcon className="w-4 h-4" /> : <Type className="w-4 h-4" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                {item.name}
-              </p>
-            </div>
+      <div 
+        key={layer.id} 
+        style={{ ...baseStyle, width: (layer.role === 'title-box' || layer.role === 'desc-box') ? '70cqw' : undefined }}
+        className="relative pointer-events-auto touch-none"
+        onPointerDown={e => onLayerPointerDown(e, layer.id)}
+      >
+        {/* Floating Action Toolbar on Selected Overlay */}
+        {isSelected && layer.role === 'overlay-image' && (
+          <div 
+            className="absolute top-[-54px] left-1/2 -translate-x-1/2 bg-slate-950/85 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl px-2 py-1 flex items-center gap-1.5 shadow-xl z-50 pointer-events-auto text-white scale-90 sm:scale-100 transition-all origin-bottom select-none animate-in fade-in zoom-in-95 duration-200"
+            onPointerDown={e => e.stopPropagation()} // Stop drag triggering
+          >
+            {/* Scale controls */}
+            <button 
+              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayScale(s => Math.max(0.1, s - 0.05)); }}
+              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center font-black transition-colors"
+            >
+              -
+            </button>
+            <span className="text-[10px] font-mono font-black px-1 min-w-[34px] text-center text-zinc-200">
+              {Math.round(bannerOverlayScale * 100)}%
+            </span>
+            <button 
+              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayScale(s => Math.min(3, s + 0.05)); }}
+              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center font-black transition-colors"
+            >
+              +
+            </button>
+            
+            <div className="w-[1px] h-4 bg-white/10" />
+
+            {/* Rotate Left 15 */}
+            <button 
+              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayRotate(r => r - 15); }}
+              title="Putar Kiri 15°"
+              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
+            >
+              <RotateCcwIcon className="w-3.5 h-3.5" />
+            </button>
+            {/* Rotate Right 15 */}
+            <button 
+              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayRotate(r => r + 15); }}
+              title="Putar Kanan 15°"
+              className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
+            >
+              <RotateCwIcon className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="w-[1px] h-4 bg-white/10" />
+
+            {/* Flip Horizontal */}
+            <button 
+              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayFlipX(!bannerOverlayFlipX); }}
+              title="Balik Horisontal"
+              className={cn("w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors", bannerOverlayFlipX && "text-blue-400 bg-white/5")}
+            >
+              <FlipHorizontal className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="w-[1px] h-4 bg-white/10" />
+
+            {/* Remove overlay */}
+            <button 
+              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayImageUrl(null); setSelectedId(null); }}
+              title="Hapus Stiker Overlay"
+              className="w-7 h-7 text-red-400 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors"
+            >
+              <Trash className="w-3.5 h-3.5" />
+            </button>
           </div>
-        ))}
+        )}
+
+        {/* Canva Professional Bounding Box Wrapper */}
+        {isSelected && (
+          <div className="absolute inset-[-6px] border-[1.5px] border-[#2563eb] rounded-md pointer-events-none z-20">
+            {/* Corner visual dot handles */}
+            <div className="absolute -top-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nwse-resize" />
+            <div className="absolute -top-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nesw-resize" />
+            <div className="absolute -bottom-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nesw-resize" />
+            <div className="absolute -bottom-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full cursor-nwse-resize" />
+          </div>
+        )}
+
+        {/* Render child elements */}
+        {elementNode}
       </div>
     );
   };
@@ -895,20 +966,42 @@ export default function App() {
             </Button>
             <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
             
-            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 rounded-full px-3 h-10">
-              <button onClick={() => setZoom(z => Math.max(30, z - 10))} className="p-1 hover:text-blue-500 transition-colors"><ZoomOutIcon className="w-4 h-4" /></button>
-              <span className="text-xs font-mono font-bold w-12 text-center">{zoom}%</span>
-              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 hover:text-blue-500 transition-colors"><ZoomInIcon className="w-4 h-4" /></button>
+            {/* Grid & Magnet Snapping Quick Toggles */}
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 rounded-full p-1 h-10 shrink-0">
+              <button 
+                onClick={() => setShowGrid(!showGrid)} 
+                title="Toggle Garis Grid"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", showGrid ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setSnapEnabled(!snapEnabled)} 
+                title="Toggle Magnet Snapping"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", snapEnabled ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
+              >
+                <Sparkles className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
-            <Wand2Icon className="w-4 h-4 text-blue-500 hidden sm:block" />
-            <span className="text-sm font-black tracking-tight hidden sm:block">Creative Studio</span>
+            <Sparkles className="w-4 h-4 text-blue-500 hidden sm:block" />
+            <span className="text-sm font-black tracking-tight hidden sm:block">Creative Studio Pro</span>
             <span className="text-sm font-black tracking-tight sm:hidden">{bannerTitle || 'Banner Baru'}</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
+            <div className="hidden sm:flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 rounded-full px-3 h-10">
+              <button onClick={() => setZoom(z => Math.max(30, z - 10))} className="p-1 hover:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              </button>
+              <span className="text-xs font-mono font-bold w-12 text-center">{zoom}%</span>
+              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 hover:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              </button>
+            </div>
+            
             <Button variant="primary" size="sm" onClick={handleSaveBanner} className="rounded-full px-5 h-9 sm:h-10 text-xs sm:text-sm shadow-blue-500/20">
               <Check className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{editBanner ? 'Simpan' : 'Terbitkan'}</span>
             </Button>
@@ -922,7 +1015,7 @@ export default function App() {
           <div className="hidden md:flex w-[360px] shrink-0 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-hidden z-20">
             <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
               <span className="text-sm font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                <Wand2Icon className="w-5 h-5 text-blue-500" /> Editor Banner
+                <Sparkles className="w-5 h-5 text-blue-500" /> Editor Banner
               </span>
             </div>
             
@@ -931,14 +1024,15 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center Canvas Area (Right Sidebar completely deleted) */}
-          <div className="flex-1 relative overflow-auto flex items-center justify-center p-4 sm:p-12 pb-24 md:pb-12"
+          {/* Center Canvas Area (Grid overlay adaptif Light/Dark mode) */}
+          <div 
+            className="flex-1 relative overflow-auto flex items-center justify-center p-4 sm:p-12 pb-24 md:pb-12 bg-zinc-50 dark:bg-[#09090b] text-zinc-300/30 dark:text-zinc-800/15"
             style={{ 
-              backgroundImage: showGrid ? 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)' : undefined, 
+              backgroundImage: showGrid ? 'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)' : undefined, 
               backgroundSize: showGrid ? '32px 32px' : undefined,
-              color: 'rgba(150,150,150,0.1)'
             }}
-            onPointerDown={() => setSelectedId(null)}>
+            onPointerDown={() => setSelectedId(null)}
+          >
             
             {/* Canvas Container */}
             <div ref={canvasRef} className="relative shadow-2xl overflow-hidden"
@@ -964,6 +1058,28 @@ export default function App() {
                 </div>
               )}
 
+              {/* CANVAS SNAP GLOWING VISUAL GUIDES */}
+              {activeSnapX !== null && (
+                <div 
+                  className="absolute top-0 bottom-0 w-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]"
+                  style={{ 
+                    left: `${activeSnapX}%`, 
+                    color: activeSnapX === 50 ? '#22d3ee' : '#f43f5e',
+                    backgroundColor: 'currentColor'
+                  }} 
+                />
+              )}
+              {activeSnapY !== null && (
+                <div 
+                  className="absolute left-0 right-0 h-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]"
+                  style={{ 
+                    top: `${activeSnapY}%`, 
+                    color: activeSnapY === 50 ? '#22d3ee' : '#f43f5e',
+                    backgroundColor: 'currentColor'
+                  }} 
+                />
+              )}
+
               {/* 5 Draggable Canvas Elements */}
               {layers.map(renderCanvasLayer)}
             </div>
@@ -971,10 +1087,10 @@ export default function App() {
             {/* Floating Action Menu inside canvas (Desktop) */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-zinc-200/50 dark:border-zinc-800/50 z-30">
                <button onClick={() => setShowGrid(!showGrid)} className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all", showGrid ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")}>
-                 <Grid className="w-4 h-4" />
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
                </button>
                <div className="w-[1px] h-6 bg-zinc-200 dark:bg-zinc-700" />
-               <span className="text-xs font-bold text-zinc-500 px-2">5 Objek Pakem</span>
+               <span className="text-xs font-bold text-zinc-500 px-2">5 Objek Canva Premium</span>
             </div>
           </div>
 
@@ -1257,12 +1373,12 @@ export default function App() {
   );
 }
 
-// Simple Zoom Icons in case they are missing
-const ZoomInIcon = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+// Simple Zoom/Rotate Icons
+const RotateCcwIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
 );
-const ZoomOutIcon = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+const RotateCwIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
 );
 const Wand2Icon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
