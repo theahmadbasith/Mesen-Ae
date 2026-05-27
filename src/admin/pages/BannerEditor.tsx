@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
 import {
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles,
   RotateCcw, RotateCw, FlipHorizontal, X, Bold,
@@ -193,10 +194,8 @@ function RichTextEditor({ value, onChange, placeholder, minHeight = '36px' }) {
 // 4. MAIN COMPONENT
 // ============================================================================
 
-export default function BannerEditor() {
-  const { id } = useParams();
-  const navigate = useNavigate();
 
+export default function BannerEditor() {
   // --- Data Stores ---
   const banners = useDbQuery('banners');
   const products = useDbQuery('products');
@@ -204,7 +203,9 @@ export default function BannerEditor() {
   const storeSettings = storeSettingsList[0] || null;
 
   // --- Screens ---
-  
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const hasInitialized = useRef(false);
   const [editBanner, setEditBanner] = useState(null);
   const [deleteBannerId, setDeleteBannerId] = useState(null);
 
@@ -264,9 +265,6 @@ export default function BannerEditor() {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
 
   const canvasRef = useRef(null);
-
-  // Will mount effect AFTER openEditor is defined below - see line ~740
-
   const bgFileInputRef = useRef(null);
   const overlayFileInputRef = useRef(null);
   const dragState = useRef(null);
@@ -525,7 +523,7 @@ export default function BannerEditor() {
   };
 
   // --- Editor Open/Close ---
-  const openEditor = useCallback((banner = null) => {
+  function openEditor(banner = null) {
     if (banner) {
       setEditBanner(banner);
       setBannerType(banner.type || 'custom');
@@ -696,20 +694,7 @@ export default function BannerEditor() {
 
     setSelectedId(null);
     setZoom(100);
-  }, []);
-
-  // Load banner from URL param - placed AFTER openEditor is defined
-  useEffect(() => {
-    if (!banners) return;
-    if (id === 'new') {
-      openEditor(null);
-    } else {
-      const b = banners.find((b: any) => String(b.id) === id);
-      if (b) openEditor(b);
-      else navigate('/admin/banner');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [banners, id, openEditor]);
+  }
 
   // --- Save / Publisher ---
   const handleSaveBanner = async () => {
@@ -731,6 +716,25 @@ export default function BannerEditor() {
       }
 
       // Read positions directly from canvas state
+      const headL = layers.find(l => l.role === 'heading-box') || { x: 10, y: 20 };
+
+  // Load banner from URL params - fires after openEditor is declared (hoisted)
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    if (!banners) return;
+    hasInitialized.current = true;
+    if (id === 'new') {
+      openEditor(null);
+    } else {
+      const b = (banners as any[]).find((b: any) => String(b.id) === id);
+      if (b) {
+        openEditor(b);
+      } else {
+        navigate('/admin/banner');
+      }
+    }
+  }, [banners, id]);
+
       const headL = layers.find(l => l.role === 'heading-box') || { x: 10, y: 20 };
       const titleL = layers.find(l => l.role === 'title-box') || { x: 10, y: 38 };
       const descL = layers.find(l => l.role === 'desc-box') || { x: 10, y: 60 };
@@ -787,7 +791,7 @@ export default function BannerEditor() {
         await dbInsert('banners', bannerData);
         toast.success('Banner baru berhasil diterbitkan!', { id: loadingToastId });
       }
-      navigate('/admin/banner');
+      setIsEditorOpen(false);
     } catch (err) {
       console.error(err);
       toast.error('Gagal menyimpan banner', { id: loadingToastId });
@@ -1332,7 +1336,8 @@ export default function BannerEditor() {
   // ============================================================================
   // RENDER EDITOR VIEW
   // ============================================================================
-  return (
+
+    return (
       <div className="fixed inset-0 z-50 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col overflow-hidden transition-colors duration-300">
         
         {/* --- Topbar: 3-column grid, no absolute positioning --- */}
@@ -1558,15 +1563,14 @@ export default function BannerEditor() {
         </div>
       </div>
     );
-  }
+}
 
-// Simple Zoom/Rotate Icons
-const RotateCcwIcon = (props: any) => (
+const RotateCcwIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
 );
-const RotateCwIcon = (props: any) => (
+const RotateCwIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
 );
-const Wand2Icon = (props: any) => (
+const Wand2Icon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
 );
