@@ -82,13 +82,6 @@ function Section({ title, description, action, children }: {
         {action}
       </div>
       {children}
-      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
-        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
-          {lightboxSrc && (
-            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -101,13 +94,6 @@ function SettingCard({ children, className }: { children: React.ReactNode; class
       className
     )}>
       {children}
-      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
-        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
-          {lightboxSrc && (
-            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -127,13 +113,6 @@ function SettingRow({ label, description, children, last }: {
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
       {children && <div className="flex-shrink-0">{children}</div>}
-      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
-        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
-          {lightboxSrc && (
-            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
