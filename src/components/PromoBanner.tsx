@@ -20,6 +20,18 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
   const bgFilter = banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
   const bgFilterStyle = `brightness(${bgFilter.brightness}%) contrast(${bgFilter.contrast}%) saturate(${bgFilter.saturate}%) blur(${bgFilter.blur}px)`;
 
+  const overlayFilter = banner.canvasOverlayFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+  const overlayFilterStyle = `brightness(${overlayFilter.brightness}%) contrast(${overlayFilter.contrast}%) saturate(${overlayFilter.saturate ?? 100}%) blur(${overlayFilter.blur}px)`;
+
+  const hexToRgb = (hex) => {
+    if (!hex) return '0, 0, 0';
+    const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
+    const r = parseInt(cleanHex.slice(0, 2), 16) || 0;
+    const g = parseInt(cleanHex.slice(2, 4), 16) || 0;
+    const b = parseInt(cleanHex.slice(4, 6), 16) || 0;
+    return `${r}, ${g}, ${b}`;
+  };
+
   return (
     <div 
       className={cn("w-full aspect-[21/9] rounded-2xl text-white relative overflow-hidden shadow-md select-none bg-slate-900", className)}
@@ -32,7 +44,16 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
       {(!banner.bgType || banner.bgType === 'image') && banner.imageUrl && !banner.imageUrl.startsWith('preset:') ? (
         <div className="absolute inset-0 z-0">
           <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover opacity-55" style={{ filter: bgFilterStyle }} />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+          {banner.bgGradientOverlay?.enabled ? (
+            <div 
+              className="absolute inset-0" 
+              style={{ 
+                background: `linear-gradient(${banner.bgGradientOverlay.angle}deg, rgba(${hexToRgb(banner.bgGradientOverlay.color)}, ${banner.bgGradientOverlay.opacityLeft / 100}), rgba(${hexToRgb(banner.bgGradientOverlay.color)}, ${banner.bgGradientOverlay.opacityRight / 100}))` 
+              }} 
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+          )}
         </div>
       ) : banner.bgType === 'solid' ? (
         <div className="absolute inset-0 z-0" style={{ backgroundColor: banner.bgColor || '#1E293B' }}>
@@ -77,6 +98,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
                transform: `scaleX(${banner.overlayFlipX ? -1 : 1}) rotate(${banner.overlayRotate ?? 0}deg)`,
                width: `calc(${banner.overlayScale ?? 1} * 20cqw)`,
                height: 'auto',
+               filter: overlayFilterStyle
              }}
              className="object-contain drop-shadow-2xl max-w-none" 
              alt="Overlay Banner"

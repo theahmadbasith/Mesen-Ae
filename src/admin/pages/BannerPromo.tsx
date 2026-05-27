@@ -3,10 +3,11 @@ import {
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles,
   RotateCcw, RotateCw, FlipHorizontal, X, Bold,
   Type, Palette, Layers, Layout,
-  ChevronDown, ChevronUp, Check, Grid, SlidersHorizontal,
-  ChevronLeft, Trash
+  ChevronDown, ChevronUp, Check, SlidersHorizontal,
+  ChevronLeft, Trash, Undo2, Redo2
 } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
 
 // ============================================================================
@@ -64,8 +65,8 @@ const Switch = ({ checked, onCheckedChange }) => (
   </button>
 );
 
-const Slider = ({ value, min, max, step = 1, onValueChange, className }) => (
-  <input type="range" min={min} max={max} step={step} value={value[0]} onChange={(e) => onValueChange([parseFloat(e.target.value)])}
+const Slider = ({ value, min, max, step = 1, onValueChange, onPointerUp, className }) => (
+  <input type="range" min={min} max={max} step={step} value={value[0]} onChange={(e) => onValueChange([parseFloat(e.target.value)])} onPointerUp={onPointerUp}
     className={cn("w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600", className)} />
 );
 
@@ -113,14 +114,26 @@ function ColorGrid({ value, onChange }) {
   );
 }
 
-function SliderRow({ label, value, min, max, step = 1, unit = '', onChange }) {
+function SliderRow({ label, value, min, max, step = 1, unit = '', defaultValue, onChange, onPointerUp }) {
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{label}</span>
+      <div 
+        className="flex justify-between items-center cursor-pointer select-none group/slider-row"
+        onDoubleClick={() => {
+          if (defaultValue !== undefined) {
+            onChange(defaultValue);
+            toast.info(`Reset "${label}" ke nilai awal: ${defaultValue}${unit}`);
+            setTimeout(() => onPointerUp?.(), 50);
+          }
+        }}
+        title="Double-click untuk reset ke nilai default"
+      >
+        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors">
+          {label} <span className="hidden group-hover/slider-row:inline text-[9px] font-medium text-blue-500/80 normal-case ml-1">(Double-click reset)</span>
+        </span>
         <span className="text-[11px] font-mono font-black text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">{value}{unit}</span>
       </div>
-      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} />
+      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} onPointerUp={onPointerUp} />
     </div>
   );
 }
@@ -166,7 +179,7 @@ export default function App() {
   const [bannerOverlayScale, setBannerOverlayScale] = useState(1);
 
   // Canvas Grid & Magnet Snap
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [activeSnapX, setActiveSnapX] = useState(null);
   const [activeSnapY, setActiveSnapY] = useState(null);
@@ -176,6 +189,19 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(100);
   const [bgFilter, setBgFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
+  const [overlayFilter, setOverlayFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
+
+  // Background Gradient Overlay (Adjustable dark overlay)
+  const [bgGradientOverlayEnabled, setBgGradientOverlayEnabled] = useState(false);
+  const [bgGradientOverlayColor, setBgGradientOverlayColor] = useState('#000000');
+  const [bgGradientOverlayOpacityLeft, setBgGradientOverlayOpacityLeft] = useState(70);
+  const [bgGradientOverlayOpacityRight, setBgGradientOverlayOpacityRight] = useState(0);
+  const [bgGradientOverlayAngle, setBgGradientOverlayAngle] = useState(90);
+
+  // Undo / Redo History states
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
 
   // Mobile drawer
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
@@ -185,7 +211,113 @@ export default function App() {
   const overlayFileInputRef = useRef(null);
   const dragState = useRef(null);
 
+  const getSnapshot = () => ({
+    heading: bannerHeading,
+    headingStyle: bannerHeadingStyle,
+    title: bannerTitle,
+    description: bannerDescription,
+    buttonText: bannerButtonText,
+    badgeStyle: bannerBadgeStyle,
+    link: bannerLink,
+    type: bannerType,
+    productId: bannerProductId,
+    bgType: bannerBgType,
+    bgColor: bannerBgColor,
+    gradientLeft: bannerGradientLeft,
+    gradientRight: bannerGradientRight,
+    gradientAngle: bannerGradientAngle,
+    image: bannerImage,
+    overlayImageUrl: bannerOverlayImageUrl,
+    overlayFlipX: bannerOverlayFlipX,
+    overlayRotate: bannerOverlayRotate,
+    overlayScale: bannerOverlayScale,
+    bgFilter,
+    overlayFilter,
+    bgGradientOverlay: {
+      enabled: bgGradientOverlayEnabled,
+      color: bgGradientOverlayColor,
+      opacityLeft: bgGradientOverlayOpacityLeft,
+      opacityRight: bgGradientOverlayOpacityRight,
+      angle: bgGradientOverlayAngle
+    },
+    layers
+  });
+
+  const restoreSnapshot = (snap) => {
+    if (!snap) return;
+    setBannerHeading(snap.heading);
+    setBannerHeadingStyle(snap.headingStyle);
+    setBannerTitle(snap.title);
+    setBannerDescription(snap.description);
+    setBannerButtonText(snap.buttonText);
+    setBannerBadgeStyle(snap.badgeStyle);
+    setBannerLink(snap.link);
+    setBannerType(snap.type);
+    setBannerProductId(snap.productId);
+    setBannerBgType(snap.bgType);
+    setBannerBgColor(snap.bgColor);
+    setBannerGradientLeft(snap.gradientLeft);
+    setBannerGradientRight(snap.gradientRight);
+    setBannerGradientAngle(snap.gradientAngle);
+    setBannerImage(snap.image);
+    setBannerOverlayImageUrl(snap.overlayImageUrl);
+    setBannerOverlayFlipX(snap.overlayFlipX);
+    setBannerOverlayRotate(snap.overlayRotate);
+    setBannerOverlayScale(snap.overlayScale);
+    setBgFilter(snap.bgFilter);
+    setOverlayFilter(snap.overlayFilter);
+    if (snap.bgGradientOverlay) {
+      setBgGradientOverlayEnabled(snap.bgGradientOverlay.enabled);
+      setBgGradientOverlayColor(snap.bgGradientOverlay.color);
+      setBgGradientOverlayOpacityLeft(snap.bgGradientOverlay.opacityLeft);
+      setBgGradientOverlayOpacityRight(snap.bgGradientOverlay.opacityRight);
+      setBgGradientOverlayAngle(snap.bgGradientOverlay.angle);
+    }
+    setLayers(snap.layers);
+  };
+
+  const pushHistory = (customSnap = null) => {
+    const snap = customSnap || getSnapshot();
+    setHistory(prev => {
+      const nextHistory = prev.slice(0, historyIndex + 1);
+      if (nextHistory.length > 0 && JSON.stringify(nextHistory[nextHistory.length - 1]) === JSON.stringify(snap)) {
+        return prev;
+      }
+      const updated = [...nextHistory, snap];
+      setHistoryIndex(updated.length - 1);
+      return updated;
+    });
+  };
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevIndex = historyIndex - 1;
+      setHistoryIndex(prevIndex);
+      restoreSnapshot(history[prevIndex]);
+      toast.info('Undo berhasil');
+    }
+  }, [history, historyIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      restoreSnapshot(history[nextIndex]);
+      toast.info('Redo berhasil');
+    }
+  }, [history, historyIndex]);
+
+  const hexToRgb = (hex) => {
+    if (!hex) return '0, 0, 0';
+    const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
+    const r = parseInt(cleanHex.slice(0, 2), 16) || 0;
+    const g = parseInt(cleanHex.slice(2, 4), 16) || 0;
+    const b = parseInt(cleanHex.slice(4, 6), 16) || 0;
+    return `${r}, ${g}, ${b}`;
+  };
+
   // --- Product Auto Overlay Binding ---
+
   const handleProductSelect = useCallback((prodId) => {
     setBannerProductId(prodId);
     if (!prodId) {
@@ -316,24 +448,35 @@ export default function App() {
       setBannerBgType(banner.bgType || 'gradient');
       setBannerBgColor(banner.bgColor || '#1E293B');
 
+      let gradientLeftVal = '#0061ff';
+      let gradientRightVal = '#60efff';
+      let gradientAngleVal = 135;
+
       if (banner.bgGradient) {
         const match = banner.bgGradient.match(/linear-gradient\((\d+)deg,\s*(.+?),\s*(.+?)\)/);
         if (match) {
-          setBannerGradientAngle(Number(match[1]));
-          setBannerGradientLeft(match[2]);
-          setBannerGradientRight(match[3]);
-        } else {
-          setBannerGradientLeft('#0061ff');
-          setBannerGradientRight('#60efff');
-          setBannerGradientAngle(135);
+          gradientAngleVal = Number(match[1]);
+          gradientLeftVal = match[2];
+          gradientRightVal = match[3];
         }
-      } else {
-        setBannerGradientLeft('#0061ff');
-        setBannerGradientRight('#60efff');
-        setBannerGradientAngle(135);
       }
+      setBannerGradientLeft(gradientLeftVal);
+      setBannerGradientRight(gradientRightVal);
+      setBannerGradientAngle(gradientAngleVal);
+
       setBannerImage(banner.imageUrl || null);
-      setBgFilter(banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 });
+      const bgFilterVal = banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+      setBgFilter(bgFilterVal);
+
+      const overlayFilterVal = banner.canvasOverlayFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+      setOverlayFilter(overlayFilterVal);
+
+      const overlayGradient = banner.bgGradientOverlay || { enabled: false, color: '#000000', opacityLeft: 70, opacityRight: 0, angle: 90 };
+      setBgGradientOverlayEnabled(overlayGradient.enabled || false);
+      setBgGradientOverlayColor(overlayGradient.color || '#000000');
+      setBgGradientOverlayOpacityLeft(overlayGradient.opacityLeft !== undefined ? overlayGradient.opacityLeft : 70);
+      setBgGradientOverlayOpacityRight(overlayGradient.opacityRight !== undefined ? overlayGradient.opacityRight : 0);
+      setBgGradientOverlayAngle(overlayGradient.angle !== undefined ? overlayGradient.angle : 90);
 
       // Direct values
       setBannerHeading(banner.heading || '');
@@ -355,13 +498,43 @@ export default function App() {
       const buttonP = banner.buttonPos ?? { x: 10, y: 82 };
       const overP = banner.overlayPos ?? { x: 80, y: 50 };
 
-      setLayers([
+      const loadedLayers = [
         { id: 'heading-box', role: 'heading-box', x: headingP.x, y: headingP.y, zIndex: 10, visible: true },
         { id: 'title-box', role: 'title-box', x: titleP.x, y: titleP.y, zIndex: 10, visible: true },
         { id: 'desc-box', role: 'desc-box', x: descP.x, y: descP.y, zIndex: 10, visible: true },
         { id: 'button-box', role: 'button-box', x: buttonP.x, y: buttonP.y, zIndex: 10, visible: true },
         { id: 'overlay-image', role: 'overlay-image', x: overP.x, y: overP.y, zIndex: 5, visible: true }
-      ]);
+      ];
+      setLayers(loadedLayers);
+
+      // Set initial Undo/Redo state
+      const initialSnapshot = {
+        heading: banner.heading || '',
+        headingStyle: banner.headingStyle || 'glass',
+        title: banner.title || '',
+        description: banner.description || '',
+        buttonText: banner.buttonText || '',
+        badgeStyle: banner.badgeStyle || 'solid',
+        link: banner.link || '',
+        type: banner.type || 'custom',
+        productId: banner.productId ? String(banner.productId) : '',
+        bgType: banner.bgType || 'gradient',
+        bgColor: banner.bgColor || '#1E293B',
+        gradientLeft: gradientLeftVal,
+        gradientRight: gradientRightVal,
+        gradientAngle: gradientAngleVal,
+        image: banner.imageUrl || null,
+        overlayImageUrl: banner.overlayImageUrl || null,
+        overlayFlipX: banner.overlayFlipX || false,
+        overlayRotate: banner.overlayRotate || 0,
+        overlayScale: banner.overlayScale ?? 1,
+        bgFilter: bgFilterVal,
+        overlayFilter: overlayFilterVal,
+        bgGradientOverlay: overlayGradient,
+        layers: loadedLayers
+      };
+      setHistory([initialSnapshot]);
+      setHistoryIndex(0);
     } else {
       setEditBanner(null);
       setBannerType('custom');
@@ -375,6 +548,12 @@ export default function App() {
       setBannerGradientAngle(135);
       setBannerImage(null);
       setBgFilter({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
+      setOverlayFilter({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
+      setBgGradientOverlayEnabled(false);
+      setBgGradientOverlayColor('#000000');
+      setBgGradientOverlayOpacityLeft(70);
+      setBgGradientOverlayOpacityRight(0);
+      setBgGradientOverlayAngle(90);
 
       setBannerHeading('SPESIAL PENAWARAN');
       setBannerTitle('Promo Berkah Idul Adha');
@@ -388,13 +567,42 @@ export default function App() {
       setBannerOverlayRotate(0);
       setBannerOverlayScale(1);
 
-      setLayers([
+      const defaultLayers = [
         { id: 'heading-box', role: 'heading-box', x: 10, y: 20, zIndex: 10, visible: true },
         { id: 'title-box', role: 'title-box', x: 10, y: 38, zIndex: 10, visible: true },
         { id: 'desc-box', role: 'desc-box', x: 10, y: 60, zIndex: 10, visible: true },
         { id: 'button-box', role: 'button-box', x: 10, y: 82, zIndex: 10, visible: true },
         { id: 'overlay-image', role: 'overlay-image', x: 80, y: 50, zIndex: 5, visible: true }
-      ]);
+      ];
+      setLayers(defaultLayers);
+
+      const initialSnapshot = {
+        heading: 'SPESIAL PENAWARAN',
+        headingStyle: 'glass',
+        title: 'Promo Berkah Idul Adha',
+        description: 'Nikmati Keberkahan Idul Adha Promo Diskon 75% Dengan Kode Voucher BASITH',
+        buttonText: 'Lihat Detail',
+        badgeStyle: 'solid',
+        link: '',
+        type: 'custom',
+        productId: '',
+        bgType: 'gradient',
+        bgColor: '#1E293B',
+        gradientLeft: '#0061ff',
+        gradientRight: '#60efff',
+        gradientAngle: 135,
+        image: null,
+        overlayImageUrl: null,
+        overlayFlipX: false,
+        overlayRotate: 0,
+        overlayScale: 1,
+        bgFilter: { brightness: 100, contrast: 100, saturate: 100, blur: 0 },
+        overlayFilter: { brightness: 100, contrast: 100, saturate: 100, blur: 0 },
+        bgGradientOverlay: { enabled: false, color: '#000000', opacityLeft: 70, opacityRight: 0, angle: 90 },
+        layers: defaultLayers
+      };
+      setHistory([initialSnapshot]);
+      setHistoryIndex(0);
     }
 
     setSelectedId(null);
@@ -448,6 +656,14 @@ export default function App() {
 
         canvasLayers: [], // Clean up legacy
         canvasBgFilter: bgFilter,
+        canvasOverlayFilter: overlayFilter,
+        bgGradientOverlay: {
+          enabled: bgGradientOverlayEnabled,
+          color: bgGradientOverlayColor,
+          opacityLeft: bgGradientOverlayOpacityLeft,
+          opacityRight: bgGradientOverlayOpacityRight,
+          angle: bgGradientOverlayAngle
+        },
         createdAt: editBanner ? editBanner.createdAt : new Date().toISOString(),
 
         // Unified 5 coordinate fields
@@ -633,6 +849,7 @@ export default function App() {
             transform: `scaleX(${bannerOverlayFlipX ? -1 : 1}) rotate(${bannerOverlayRotate ?? 0}deg)`,
             width: `calc(${bannerOverlayScale ?? 1} * 20cqw)`,
             height: 'auto',
+            filter: `brightness(${overlayFilter.brightness}%) contrast(${overlayFilter.contrast}%) saturate(${overlayFilter.saturate ?? 100}%) blur(${overlayFilter.blur}px)`
           }}
           className="object-contain drop-shadow-2xl max-w-none select-none"
           alt="Overlay Banner"
@@ -655,7 +872,14 @@ export default function App() {
           >
             {/* Scale controls */}
             <button 
-              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayScale(s => Math.max(0.1, s - 0.05)); }}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setBannerOverlayScale(s => {
+                  const nextScale = Math.max(0.1, s - 0.05);
+                  pushHistory({ ...getSnapshot(), overlayScale: nextScale });
+                  return nextScale;
+                });
+              }}
               className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center font-black transition-colors"
             >
               -
@@ -664,7 +888,14 @@ export default function App() {
               {Math.round(bannerOverlayScale * 100)}%
             </span>
             <button 
-              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayScale(s => Math.min(3, s + 0.05)); }}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setBannerOverlayScale(s => {
+                  const nextScale = Math.min(3, s + 0.05);
+                  pushHistory({ ...getSnapshot(), overlayScale: nextScale });
+                  return nextScale;
+                });
+              }}
               className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center font-black transition-colors"
             >
               +
@@ -674,7 +905,14 @@ export default function App() {
 
             {/* Rotate Left 15 */}
             <button 
-              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayRotate(r => r - 15); }}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setBannerOverlayRotate(r => {
+                  const nextRot = r - 15;
+                  pushHistory({ ...getSnapshot(), overlayRotate: nextRot });
+                  return nextRot;
+                });
+              }}
               title="Putar Kiri 15°"
               className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
             >
@@ -682,7 +920,14 @@ export default function App() {
             </button>
             {/* Rotate Right 15 */}
             <button 
-              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayRotate(r => r + 15); }}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setBannerOverlayRotate(r => {
+                  const nextRot = r + 15;
+                  pushHistory({ ...getSnapshot(), overlayRotate: nextRot });
+                  return nextRot;
+                });
+              }}
               title="Putar Kanan 15°"
               className="w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
             >
@@ -693,7 +938,12 @@ export default function App() {
 
             {/* Flip Horizontal */}
             <button 
-              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayFlipX(!bannerOverlayFlipX); }}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                const nextFlip = !bannerOverlayFlipX;
+                setBannerOverlayFlipX(nextFlip);
+                pushHistory({ ...getSnapshot(), overlayFlipX: nextFlip });
+              }}
               title="Balik Horisontal"
               className={cn("w-7 h-7 hover:bg-white/10 active:bg-white/20 rounded-lg flex items-center justify-center transition-colors", bannerOverlayFlipX && "text-blue-400 bg-white/5")}
             >
@@ -704,7 +954,12 @@ export default function App() {
 
             {/* Remove overlay */}
             <button 
-              onClick={(ev) => { ev.stopPropagation(); setBannerOverlayImageUrl(null); setSelectedId(null); }}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setBannerOverlayImageUrl(null);
+                setSelectedId(null);
+                pushHistory({ ...getSnapshot(), overlayImageUrl: null });
+              }}
               title="Hapus Stiker Overlay"
               className="w-7 h-7 text-red-400 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors"
             >
@@ -810,35 +1065,18 @@ export default function App() {
         </div>
       </PanelSection>
 
-      {/* 2. TIPE & DESAIN LATAR */}
-      <PanelSection title="Tipe & Desain Latar" icon={Layout} defaultOpen={false}>
+      {/* 2. DESAIN & GAYA LATAR BELAKANG */}
+      <PanelSection title="Desain & Gaya Latar Belakang" icon={Layout} defaultOpen={false}>
         <div className="space-y-5 pt-1">
-          <div>
-            <Label>Tipe Banner</Label>
-            <select value={bannerType} onChange={(e) => handleBannerTypeChange(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
-              <option value="custom">Kustom Bebas</option>
-              <option value="menu">Menu / Produk</option>
-            </select>
-          </div>
-
-          {bannerType === 'menu' && (
-            <div>
-              <Label>Produk Terkait</Label>
-              <select value={bannerProductId} onChange={(e) => handleProductSelect(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
-                <option value="">-- Pilih Produk --</option>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-          )}
-
-          <hr className="border-zinc-200 dark:border-zinc-800" />
-
           {/* Background Settings */}
           <div>
             <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Tipe Background</p>
             <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
               {['solid', 'gradient', 'image'].map(t => (
-                <button key={t} onClick={() => setBannerBgType(t)}
+                <button key={t} onClick={() => {
+                  setBannerBgType(t);
+                  pushHistory({ ...getSnapshot(), bgType: t });
+                }}
                   className={cn('flex-1 h-9 rounded-lg text-xs font-bold capitalize transition-all', bannerBgType === t ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300')}>
                   {t}
                 </button>
@@ -849,7 +1087,10 @@ export default function App() {
           {bannerBgType === 'solid' && (
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Warna Solid</p>
-              <ColorGrid value={bannerBgColor} onChange={setBannerBgColor} />
+              <ColorGrid value={bannerBgColor} onChange={c => {
+                setBannerBgColor(c);
+                pushHistory({ ...getSnapshot(), bgColor: c });
+              }} />
             </div>
           )}
 
@@ -859,14 +1100,20 @@ export default function App() {
               <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
                 <div>
                   <Label>Warna Kiri (Mulai)</Label>
-                  <ColorGrid value={bannerGradientLeft} onChange={setBannerGradientLeft} />
+                  <ColorGrid value={bannerGradientLeft} onChange={c => {
+                    setBannerGradientLeft(c);
+                    pushHistory({ ...getSnapshot(), gradientLeft: c });
+                  }} />
                 </div>
                 <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
                   <Label>Warna Kanan (Akhir)</Label>
-                  <ColorGrid value={bannerGradientRight} onChange={setBannerGradientRight} />
+                  <ColorGrid value={bannerGradientRight} onChange={c => {
+                    setBannerGradientRight(c);
+                    pushHistory({ ...getSnapshot(), gradientRight: c });
+                  }} />
                 </div>
                 <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                  <SliderRow label="Sudut Kemiringan" value={bannerGradientAngle} min={0} max={360} onChange={setBannerGradientAngle} unit="°" />
+                  <SliderRow label="Sudut Kemiringan" value={bannerGradientAngle} min={0} max={360} defaultValue={135} onChange={setBannerGradientAngle} onPointerUp={() => pushHistory()} unit="°" />
                 </div>
               </div>
             </div>
@@ -889,15 +1136,70 @@ export default function App() {
                 )}
               </div>
               {bannerImage && (
-                <Button variant="danger" className="w-full" onClick={() => setBannerImage(null)}>Hapus Gambar</Button>
+                <Button variant="danger" className="w-full" onClick={() => {
+                  setBannerImage(null);
+                  pushHistory({ ...getSnapshot(), image: null });
+                }}>Hapus Gambar</Button>
               )}
 
               <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
                 <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Latar Belakang</p>
-                <SliderRow label="Kecerahan" value={bgFilter.brightness} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, brightness: v }))} unit="%" />
-                <SliderRow label="Kontras" value={bgFilter.contrast} min={0} max={200} onChange={v => setBgFilter(f => ({ ...f, contrast: v }))} unit="%" />
-                <SliderRow label="Blur" value={bgFilter.blur} min={0} max={20} onChange={v => setBgFilter(f => ({ ...f, blur: v }))} unit="px" />
+                <SliderRow label="Kecerahan" value={bgFilter.brightness} min={0} max={200} defaultValue={100} onChange={v => setBgFilter(f => ({ ...f, brightness: v }))} onPointerUp={() => pushHistory()} unit="%" />
+                <SliderRow label="Kontras" value={bgFilter.contrast} min={0} max={200} defaultValue={100} onChange={v => setBgFilter(f => ({ ...f, contrast: v }))} onPointerUp={() => pushHistory()} unit="%" />
+                <SliderRow label="Saturasi" value={bgFilter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={v => setBgFilter(f => ({ ...f, saturate: v }))} onPointerUp={() => pushHistory()} unit="%" />
+                <SliderRow label="Blur" value={bgFilter.blur} min={0} max={20} defaultValue={0} onChange={v => setBgFilter(f => ({ ...f, blur: v }))} onPointerUp={() => pushHistory()} unit="px" />
               </div>
+
+              {/* Adjustable Darkness Gradient Overlay Section */}
+              {bannerImage && (
+                <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Overlay Gradasi Gelap (Legibilitas)</p>
+                    <Switch checked={bgGradientOverlayEnabled} onCheckedChange={checked => {
+                      setBgGradientOverlayEnabled(checked);
+                      pushHistory({
+                        ...getSnapshot(),
+                        bgGradientOverlay: {
+                          enabled: checked,
+                          color: bgGradientOverlayColor,
+                          opacityLeft: bgGradientOverlayOpacityLeft,
+                          opacityRight: bgGradientOverlayOpacityRight,
+                          angle: bgGradientOverlayAngle
+                        }
+                      });
+                    }} />
+                  </div>
+                  {bgGradientOverlayEnabled && (
+                    <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
+                      <div>
+                        <Label>Warna Overlay</Label>
+                        <ColorGrid value={bgGradientOverlayColor} onChange={color => {
+                          setBgGradientOverlayColor(color);
+                          pushHistory({
+                            ...getSnapshot(),
+                            bgGradientOverlay: {
+                              enabled: bgGradientOverlayEnabled,
+                              color: color,
+                              opacityLeft: bgGradientOverlayOpacityLeft,
+                              opacityRight: bgGradientOverlayOpacityRight,
+                              angle: bgGradientOverlayAngle
+                            }
+                          });
+                        }} />
+                      </div>
+                      <div className="pt-2">
+                        <SliderRow label="Transparansi Kiri (Mulai)" value={bgGradientOverlayOpacityLeft} min={0} max={100} defaultValue={70} onChange={setBgGradientOverlayOpacityLeft} onPointerUp={() => pushHistory()} unit="%" />
+                      </div>
+                      <div className="pt-2">
+                        <SliderRow label="Transparansi Kanan (Akhir)" value={bgGradientOverlayOpacityRight} min={0} max={100} defaultValue={0} onChange={setBgGradientOverlayOpacityRight} onPointerUp={() => pushHistory()} unit="%" />
+                      </div>
+                      <div className="pt-2">
+                        <SliderRow label="Sudut Arah Gradasi" value={bgGradientOverlayAngle} min={0} max={360} defaultValue={90} onChange={setBgGradientOverlayAngle} onPointerUp={() => pushHistory()} unit="°" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -906,47 +1208,88 @@ export default function App() {
       {/* 3. GAMBAR & STIKER TAMBAHAN */}
       <PanelSection title="Gambar & Stiker Tambahan" icon={Palette} defaultOpen={false}>
         <div className="space-y-5 pt-1">
+          {/* Tipe Banner (custom vs menu) */}
           <div>
-            <Label>Pilih Gambar Overlay (PNG / JPG)</Label>
-            <input ref={overlayFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAddImageFile} />
-            <button onClick={() => overlayFileInputRef.current?.click()}
-              className="w-full h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 border-2 border-dashed border-blue-200 dark:border-blue-800/30 hover:border-blue-400 transition-all flex items-center justify-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400">
-              <ImageIcon className="w-5 h-5" /> Cari Gambar Overlay
-            </button>
+            <Label>Tipe Banner</Label>
+            <select value={bannerType} onChange={(e) => {
+              const val = e.target.value;
+              handleBannerTypeChange(val);
+              pushHistory({ ...getSnapshot(), type: val, productId: '', overlayImageUrl: null });
+            }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
+              <option value="custom">Kustom Bebas</option>
+              <option value="menu">Menu / Produk saja</option>
+            </select>
           </div>
+
+          {/* Conditional Controls based on Tipe Banner */}
+          {bannerType === 'menu' ? (
+            <div>
+              <Label>Produk Terkait</Label>
+              <select value={bannerProductId} onChange={(e) => {
+                const prodId = e.target.value;
+                handleProductSelect(prodId);
+                const prod = products?.find(p => String(p.id) === String(prodId));
+                const photo = prod?.photo || null;
+                pushHistory({
+                  ...getSnapshot(),
+                  productId: prodId,
+                  overlayImageUrl: photo
+                });
+              }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
+                <option value="">-- Pilih Produk --</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <Label>Pilih Gambar Overlay (PNG / JPG)</Label>
+              <input ref={overlayFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAddImageFile} />
+              <button onClick={() => overlayFileInputRef.current?.click()}
+                className="w-full h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 border-2 border-dashed border-blue-200 dark:border-blue-800/30 hover:border-blue-400 transition-all flex items-center justify-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400">
+                <ImageIcon className="w-5 h-5" /> Cari Gambar Overlay
+              </button>
+            </div>
+          )}
 
           {bannerOverlayImageUrl && (
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
               <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transformasi Stiker</p>
               
-              <SliderRow label="Skala (Lebar)" value={Math.round(bannerOverlayScale * 100)} min={10} max={300} onChange={v => setBannerOverlayScale(v / 100)} unit="%" />
-              <SliderRow label="Rotasi" value={bannerOverlayRotate} min={-180} max={180} onChange={setBannerOverlayRotate} unit="°" />
+              <SliderRow label="Skala (Lebar)" value={Math.round(bannerOverlayScale * 100)} min={10} max={300} defaultValue={100} onChange={v => setBannerOverlayScale(v / 100)} onPointerUp={() => pushHistory()} unit="%" />
+              <SliderRow label="Rotasi" value={bannerOverlayRotate} min={-180} max={180} defaultValue={0} onChange={setBannerOverlayRotate} onPointerUp={() => pushHistory()} unit="°" />
               
               <div className="flex gap-2">
-                <button onClick={() => setBannerOverlayFlipX(!bannerOverlayFlipX)}
+                <button onClick={() => {
+                  const flip = !bannerOverlayFlipX;
+                  setBannerOverlayFlipX(flip);
+                  pushHistory({ ...getSnapshot(), overlayFlipX: flip });
+                }}
                   className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2 text-xs', bannerOverlayFlipX ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
                   <FlipHorizontal className="w-4 h-4" /> Balik Horisontal
                 </button>
               </div>
 
-              <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => setBannerOverlayImageUrl(null)}>
+              {/* Slider Filters for Overlay Image */}
+              <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
+                <SliderRow label="Kecerahan" value={overlayFilter.brightness} min={0} max={200} defaultValue={100} onChange={v => setOverlayFilter(f => ({ ...f, brightness: v }))} onPointerUp={() => pushHistory()} unit="%" />
+                <SliderRow label="Kontras" value={overlayFilter.contrast} min={0} max={200} defaultValue={100} onChange={v => setOverlayFilter(f => ({ ...f, contrast: v }))} onPointerUp={() => pushHistory()} unit="%" />
+                <SliderRow label="Saturasi" value={overlayFilter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={v => setOverlayFilter(f => ({ ...f, saturate: v }))} onPointerUp={() => pushHistory()} unit="%" />
+                <SliderRow label="Blur" value={overlayFilter.blur} min={0} max={20} defaultValue={0} onChange={v => setOverlayFilter(f => ({ ...f, blur: v }))} onPointerUp={() => pushHistory()} unit="px" />
+              </div>
+
+              <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => {
+                setBannerOverlayImageUrl(null);
+                setBannerProductId('');
+                setSelectedId(null);
+                pushHistory({ ...getSnapshot(), overlayImageUrl: null, productId: '' });
+              }}>
                 <Trash className="w-4 h-4 mr-2" /> Hapus Stiker Overlay
               </Button>
             </div>
           )}
         </div>
       </PanelSection>
-
-      {/* 4. STATUS TAYANG (DI LUAR 3 MENU, DI PALING BAWAH) */}
-      <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 space-y-1 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Status Tayang</p>
-            <p className="text-[10px] text-zinc-500 font-medium">Tampilkan banner ini di aplikasi pelanggan</p>
-          </div>
-          <Switch checked={bannerIsActive} onCheckedChange={setBannerIsActive} />
-        </div>
-      </div>
       
     </div>
   );
@@ -966,19 +1309,33 @@ export default function App() {
             </Button>
             <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
             
-            {/* Grid & Magnet Snapping Quick Toggles */}
+            {/* Undo, Redo, & Magnet Snapping Quick Toggles */}
             <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 rounded-full p-1 h-10 shrink-0">
               <button 
-                onClick={() => setShowGrid(!showGrid)} 
-                title="Toggle Garis Grid"
-                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", showGrid ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
+                onClick={handleUndo} 
+                disabled={historyIndex <= 0}
+                title="Undo (Kembali)"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", historyIndex <= 0 ? "opacity-35 cursor-not-allowed text-zinc-400" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
               >
-                <Grid className="w-4 h-4" />
+                <Undo2 className="w-4 h-4" />
               </button>
               <button 
-                onClick={() => setSnapEnabled(!snapEnabled)} 
+                onClick={handleRedo} 
+                disabled={historyIndex >= history.length - 1}
+                title="Redo (Maju)"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", historyIndex >= history.length - 1 ? "opacity-35 cursor-not-allowed text-zinc-400" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
+              >
+                <Redo2 className="w-4 h-4" />
+              </button>
+              <div className="w-[1px] h-4 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
+              <button 
+                onClick={() => {
+                  const snap = !snapEnabled;
+                  setSnapEnabled(snap);
+                  pushHistory({ ...getSnapshot(), snapEnabled: snap });
+                }} 
                 title="Toggle Magnet Snapping"
-                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", snapEnabled ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", snapEnabled ? "bg-blue-600 text-white shadow-sm font-black" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
               >
                 <Sparkles className="w-4 h-4" />
               </button>
@@ -1024,13 +1381,9 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center Canvas Area (Grid overlay adaptif Light/Dark mode) */}
+          {/* Center Canvas Area */}
           <div 
-            className="flex-1 relative overflow-auto flex items-center justify-center p-4 sm:p-12 pb-24 md:pb-12 bg-zinc-50 dark:bg-[#09090b] text-zinc-300/30 dark:text-zinc-800/15"
-            style={{ 
-              backgroundImage: showGrid ? 'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)' : undefined, 
-              backgroundSize: showGrid ? '32px 32px' : undefined,
-            }}
+            className="flex-1 relative overflow-auto flex items-center justify-center p-4 sm:p-12 pb-24 md:pb-12 bg-zinc-50 dark:bg-[#09090b]"
             onPointerDown={() => setSelectedId(null)}
           >
             
@@ -1048,7 +1401,17 @@ export default function App() {
               {/* Canvas Background Image */}
               {bannerBgType === 'image' && bannerImage && (
                 <div className="absolute inset-0 z-0 pointer-events-none">
-                  <img src={bannerImage} alt="bg" className="w-full h-full object-cover" style={{ filter: bgFilterStyle }} />
+                  <img src={bannerImage} alt="bg" className="w-full h-full object-cover opacity-55" style={{ filter: bgFilterStyle }} />
+                  {bgGradientOverlayEnabled ? (
+                    <div 
+                      className="absolute inset-0 z-10" 
+                      style={{ 
+                        background: `linear-gradient(${bgGradientOverlayAngle}deg, rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityLeft / 100}), rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityRight / 100}))` 
+                      }} 
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent z-10" />
+                  )}
                 </div>
               )}
               {bannerBgType === 'image' && !bannerImage && (
@@ -1086,11 +1449,7 @@ export default function App() {
 
             {/* Floating Action Menu inside canvas (Desktop) */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-zinc-200/50 dark:border-zinc-800/50 z-30">
-               <button onClick={() => setShowGrid(!showGrid)} className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all", showGrid ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")}>
-                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
-               </button>
-               <div className="w-[1px] h-6 bg-zinc-200 dark:bg-zinc-700" />
-               <span className="text-xs font-bold text-zinc-500 px-2">5 Objek Canva Premium</span>
+               <span className="text-xs font-bold text-zinc-500 px-4 py-1">5 Objek Kanvas Canva Premium</span>
             </div>
           </div>
 
