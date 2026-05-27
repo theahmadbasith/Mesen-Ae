@@ -1318,69 +1318,89 @@ export default function App() {
     return (
       <div className="fixed inset-0 z-50 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col overflow-hidden transition-colors duration-300">
         
-        {/* --- Topbar --- */}
-        <div className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 z-40 relative">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setIsEditorOpen(false)} className="rounded-full">
+        {/* --- Topbar: 3-column grid, no absolute positioning --- */}
+        <div className="h-14 sm:h-16 grid grid-cols-[auto_1fr_auto] items-center px-2 sm:px-4 gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 z-40">
+
+          {/* LEFT: back + undo/redo/snap */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => setIsEditorOpen(false)} className="rounded-full shrink-0 w-9 h-9">
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
-            
-            {/* Undo, Redo, & Magnet Snapping Quick Toggles */}
-            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 rounded-full p-1 h-10 shrink-0">
-              <button 
-                onClick={handleUndo} 
-                disabled={historyIndex <= 0}
-                title="Undo (Kembali)"
-                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", historyIndex <= 0 ? "opacity-35 cursor-not-allowed text-zinc-400" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
-              >
+
+            {/* Undo / Redo / Snap — hidden on xs, shown on sm+ */}
+            <div className="hidden sm:flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 rounded-full p-1 shrink-0">
+              <button onClick={handleUndo} disabled={historyIndex <= 0} title="Undo"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                  historyIndex <= 0 ? "opacity-30 cursor-not-allowed text-zinc-400" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800")}>
                 <Undo2 className="w-4 h-4" />
               </button>
-              <button 
-                onClick={handleRedo} 
-                disabled={historyIndex >= history.length - 1}
-                title="Redo (Maju)"
-                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", historyIndex >= history.length - 1 ? "opacity-35 cursor-not-allowed text-zinc-400" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
-              >
+              <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} title="Redo"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                  historyIndex >= history.length - 1 ? "opacity-30 cursor-not-allowed text-zinc-400" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800")}>
                 <Redo2 className="w-4 h-4" />
               </button>
-              <div className="w-[1px] h-4 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-              <button 
-                onClick={() => {
-                  const snap = !snapEnabled;
-                  setSnapEnabled(snap);
-                  pushHistory({ ...getSnapshot(), snapEnabled: snap });
-                }} 
-                title="Toggle Magnet Snapping"
-                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", snapEnabled ? "bg-blue-600 text-white shadow-sm font-black" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}
-              >
+              <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-0.5" />
+              <button
+                onClick={() => { const s = !snapEnabled; setSnapEnabled(s); pushHistory({ ...getSnapshot(), snapEnabled: s }); }}
+                title="Magnet Snap"
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                  snapEnabled ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800")}>
                 <Sparkles className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-500 hidden sm:block" />
-            <span className="text-sm font-black tracking-tight hidden sm:block">{storeSettings?.storeName ? `${storeSettings.storeName} Banner` : 'Banner Studio'}</span>
-            <span className="text-sm font-black tracking-tight sm:hidden">{bannerTitle || 'Banner Baru'}</span>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden sm:flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 rounded-full px-3 h-10">
-              <button onClick={() => setZoom(z => Math.max(30, z - 10))} className="p-1 hover:text-blue-500 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            {/* Mobile-only: compact undo/redo/snap row (xs only) */}
+            <div className="flex sm:hidden items-center gap-0.5 bg-zinc-100 dark:bg-zinc-900 rounded-full p-0.5 shrink-0">
+              <button onClick={handleUndo} disabled={historyIndex <= 0}
+                className={cn("w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                  historyIndex <= 0 ? "opacity-30 cursor-not-allowed text-zinc-400" : "text-zinc-600 dark:text-zinc-300 active:bg-zinc-200 dark:active:bg-zinc-800")}>
+                <Undo2 className="w-3.5 h-3.5" />
               </button>
-              <span className="text-xs font-mono font-bold w-12 text-center">{zoom}%</span>
-              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 hover:text-blue-500 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              <button onClick={handleRedo} disabled={historyIndex >= history.length - 1}
+                className={cn("w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                  historyIndex >= history.length - 1 ? "opacity-30 cursor-not-allowed text-zinc-400" : "text-zinc-600 dark:text-zinc-300 active:bg-zinc-200 dark:active:bg-zinc-800")}>
+                <Redo2 className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-px h-3.5 bg-zinc-300 dark:bg-zinc-700 mx-0.5" />
+              <button
+                onClick={() => { const s = !snapEnabled; setSnapEnabled(s); pushHistory({ ...getSnapshot(), snapEnabled: s }); }}
+                className={cn("w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                  snapEnabled ? "bg-blue-600 text-white" : "text-zinc-500 active:bg-zinc-200 dark:active:bg-zinc-700")}>
+                <Sparkles className="w-3.5 h-3.5" />
               </button>
             </div>
-            
-            <Button variant="primary" size="sm" onClick={handleSaveBanner} className="hidden sm:flex rounded-full px-4 h-9 sm:h-10 text-xs sm:text-sm shadow-blue-500/20">
-              <Check className="w-4 h-4 mr-2" />{editBanner ? 'Simpan' : 'Terbitkan'}
+          </div>
+
+          {/* CENTER: title — always truncated, never overlaps */}
+          <div className="flex items-center justify-center gap-1.5 min-w-0 overflow-hidden">
+            <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0 hidden sm:block" />
+            <span className="text-xs sm:text-sm font-black tracking-tight truncate text-zinc-800 dark:text-zinc-100">
+              {/* Desktop: store name banner; Mobile: banner title */}
+              <span className="hidden sm:inline">
+                {storeSettings?.storeName ? `${storeSettings.storeName} Banner` : 'Banner Studio'}
+              </span>
+              <span className="sm:hidden">{bannerTitle || 'Banner Baru'}</span>
+            </span>
+          </div>
+
+          {/* RIGHT: zoom + save (desktop only — save on mobile is in bottom sheet) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 rounded-full px-2.5 h-9">
+              <button onClick={() => setZoom(z => Math.max(30, z - 10))} className="p-1 hover:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              </button>
+              <span className="text-xs font-mono font-bold w-10 text-center">{zoom}%</span>
+              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 hover:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              </button>
+            </div>
+            <Button variant="primary" size="sm" onClick={handleSaveBanner}
+              className="hidden sm:flex rounded-full px-4 h-9 text-sm font-bold shadow-blue-500/20 shrink-0">
+              <Check className="w-4 h-4 mr-1.5" />{editBanner ? 'Simpan' : 'Terbitkan'}
             </Button>
           </div>
         </div>
+
 
         {/* --- Main Workspace --- */}
         <div className="flex-1 flex overflow-hidden relative bg-zinc-50 dark:bg-[#09090b]">
