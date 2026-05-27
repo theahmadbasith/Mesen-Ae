@@ -182,12 +182,9 @@ export default function App() {
 
   // --- Quick Form State ---
   const [bannerType, setBannerType] = useState('custom');
-  const [bannerTitle, setBannerTitle] = useState('');
-  const [bannerDesc, setBannerDesc] = useState('');
   const [bannerVoucherId, setBannerVoucherId] = useState('');
   const [bannerProductId, setBannerProductId] = useState('');
   const [bannerLink, setBannerLink] = useState('');
-  const [bannerButtonText, setBannerButtonText] = useState('');
   const [bannerIsActive, setBannerIsActive] = useState(true);
   const [bannerBgType, setBannerBgType] = useState('gradient');
   const [bannerBgColor, setBannerBgColor] = useState('#1E293B');
@@ -195,7 +192,6 @@ export default function App() {
   const [bannerGradientRight, setBannerGradientRight] = useState('#60efff');
   const [bannerGradientAngle, setBannerGradientAngle] = useState(135);
   const [bannerImage, setBannerImage] = useState(null);
-  const [bannerHeading, setBannerHeading] = useState('');
   const [bannerBadgeStyle, setBannerBadgeStyle] = useState('solid');
 
   // --- Canvas Editor State ---
@@ -396,14 +392,10 @@ export default function App() {
     if (banner) {
       setEditBanner(banner);
       setBannerType(banner.type || 'custom');
-      setBannerHeading(banner.heading || '');
       setBannerBadgeStyle('solid');
-      setBannerTitle(banner.title || '');
-      setBannerDesc(banner.description || '');
       setBannerVoucherId(String(banner.voucherId || ''));
       setBannerProductId(String(banner.productId || ''));
       setBannerLink(banner.link || '');
-      setBannerButtonText(banner.buttonText || '');
       setBannerIsActive(banner.isActive !== false);
       setBannerBgType(banner.bgType || 'gradient');
       setBannerBgColor(banner.bgColor || '#1E293B');
@@ -440,10 +432,10 @@ export default function App() {
       setBannerImage(null);
       
       const seedLayers = [
-        defaultTextLayer({ role: 'heading', content: 'PROMO TERBATAS', x: 50, y: 35, fontSize: 24, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 80, borderWidth: 2, borderColor: '#FFFFFF', padding: 8, bgOpacity: 0 }),
-        defaultTextLayer({ role: 'subheading', content: 'Judul Promo', x: 50, y: 55, fontSize: 48, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 90, lineHeight: 1.15 }),
-        defaultTextLayer({ role: 'body', content: 'Deskripsi singkat...', x: 50, y: 72, fontSize: 18, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'center', shadow: false, width: 80, lineHeight: 1.5 }),
-        defaultTextLayer({ role: 'button', content: 'LIHAT DETAIL', x: 50, y: 88, fontSize: 16, fontWeight: 'bold', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 30, padding: 12, borderRadius: 12 }),
+        defaultTextLayer({ role: 'heading', content: 'SPESIAL PENAWARAN', x: 25, y: 25, fontSize: 14, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', shadow: false, width: 35, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', padding: 8, borderRadius: 4, bgOpacity: 20, backdropBlur: true, letterSpacing: 3 }),
+        defaultTextLayer({ role: 'subheading', content: 'Promo Berkah Idul Adha', x: 30, y: 45, fontSize: 56, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', shadow: true, width: 45, lineHeight: 1.1 }),
+        defaultTextLayer({ role: 'body', content: 'Nikmati Keberkahan Idul Adha Promo Diskon 75% Dengan Kode Voucher BASITH', x: 30, y: 65, fontSize: 18, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'left', shadow: true, width: 45, lineHeight: 1.4 }),
+        defaultTextLayer({ role: 'button', content: 'Lihat Detail', x: 17, y: 82, fontSize: 16, fontWeight: '900', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 18, padding: 12, borderRadius: 8 }),
       ];
       setLayers(seedLayers);
       setHistory([seedLayers]);
@@ -459,7 +451,10 @@ export default function App() {
   };
 
   const handleSaveBanner = async () => {
-    if (!bannerTitle.trim()) { toast.error('Judul banner wajib diisi'); return; }
+    const titleLayer = layers.find(l => l.role === 'subheading');
+    const derivedTitle = titleLayer ? titleLayer.content : 'Banner Baru';
+
+    if (!derivedTitle.trim()) { toast.error('Judul (layer Subheading) tidak boleh kosong'); return; }
 
     const loadingToastId = toast.loading('Menyimpan banner...');
     
@@ -482,9 +477,9 @@ export default function App() {
 
       const bannerData = {
         type: bannerType, 
-        heading: bannerHeading.trim(),
-        title: bannerTitle.trim(), 
-        description: bannerDesc.trim(),
+        heading: '',
+        title: derivedTitle.trim(), 
+        description: '',
         voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) : null,
         productId: bannerType === 'menu' ? Number(bannerProductId) : null,
         imageUrl: finalBannerImage, 
@@ -908,50 +903,22 @@ export default function App() {
         </div>
       )}
 
-      <div>
-        <Label>Heading Banner</Label>
-        <Input value={bannerHeading} onChange={e => {
-          setBannerHeading(e.target.value);
-          syncLayerByRole('heading', { content: e.target.value || 'PROMO TERBATAS' });
-        }} placeholder="Misal: Promo Terbatas" />
-      </div>
 
-      <div>
-        <Label>Judul (Subheading)</Label>
-        <Input value={bannerTitle} onChange={e => {
-          setBannerTitle(e.target.value);
-          syncLayerByRole('subheading', { content: e.target.value || 'Judul Promo' });
-        }} placeholder="Promo Kemerdekaan..." />
-      </div>
-
-      <div>
-        <Label>Deskripsi (Body Text)</Label>
-        <textarea value={bannerDesc} onChange={e => {
-          setBannerDesc(e.target.value);
-          syncLayerByRole('body', { content: e.target.value || 'Deskripsi singkat...' });
-        }} rows={3} placeholder="Penjelasan promo..."
-          className="w-full p-3 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-
-      <div>
-        <Label>Teks Tombol (Badge)</Label>
-        <Input value={bannerButtonText} onChange={e => {
-          setBannerButtonText(e.target.value);
-          syncLayerByRole('button', { content: e.target.value || 'LIHAT DETAIL' });
-        }} placeholder="Misal: Beli Sekarang" />
-      </div>
 
       <div>
         <Label>Gaya Tombol (Badge)</Label>
         <select value={bannerBadgeStyle} onChange={(e) => {
           const style = e.target.value;
           setBannerBadgeStyle(style);
-          if (style === 'solid') {
-             syncLayerByRole('button', { bgColor: '#FFFFFF', color: '#0F172A', bgOpacity: 100, borderWidth: 0 });
-          } else if (style === 'outline') {
-             syncLayerByRole('button', { bgColor: '#000000', color: '#FFFFFF', bgOpacity: 0, borderWidth: 2, borderColor: '#FFFFFF' });
-          } else if (style === 'glass') {
-             syncLayerByRole('button', { bgColor: '#FFFFFF', color: '#FFFFFF', bgOpacity: 20, borderWidth: 1, borderColor: '#FFFFFF', backdropBlur: true });
+          const btn = layers.find(l => l.role === 'button');
+          if (btn) {
+              if (style === 'solid') {
+                 updateLayer(btn.id, { bgColor: '#FFFFFF', color: '#0F172A', bgOpacity: 100, borderWidth: 0 });
+              } else if (style === 'outline') {
+                 updateLayer(btn.id, { bgColor: '#000000', color: '#FFFFFF', bgOpacity: 0, borderWidth: 2, borderColor: '#FFFFFF' });
+              } else if (style === 'glass') {
+                 updateLayer(btn.id, { bgColor: '#FFFFFF', color: '#FFFFFF', bgOpacity: 20, borderWidth: 1, borderColor: '#FFFFFF', backdropBlur: true });
+              }
           }
         }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
           <option value="solid">Solid (Warna Penuh)</option>
@@ -1005,7 +972,7 @@ export default function App() {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
             <Wand2 className="w-4 h-4 text-blue-500 hidden sm:block" />
             <span className="text-sm font-black tracking-tight hidden sm:block">Creative Studio</span>
-            <span className="text-sm font-black tracking-tight sm:hidden">{bannerTitle || 'Banner Baru'}</span>
+            <span className="text-sm font-black tracking-tight sm:hidden">{layers.find(l => l.role === 'subheading')?.content || 'Banner Baru'}</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
