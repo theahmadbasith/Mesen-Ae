@@ -290,8 +290,8 @@ export default function Produk() {
                 >
                   {p.photo ? (
                     <>
-                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
                         <ZoomIn className="w-5 h-5 text-white" />
                       </div>
                     </>
@@ -330,7 +330,7 @@ export default function Produk() {
 
                 {/* 4. Actions (Hover Slide In) */}
                 {hasEditAccess && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex-col gap-2 shrink-0 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:flex bg-card/80 backdrop-blur-sm p-1.5 rounded-xl border border-border/50 shadow-sm z-20">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex-col gap-2 shrink-0 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:flex bg-card/95 p-1.5 rounded-xl border border-border/50 shadow-sm z-20">
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => openEdit(p)}>
                       <Edit2 className="w-4 h-4" />
                     </Button>
