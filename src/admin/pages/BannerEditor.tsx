@@ -696,6 +696,25 @@ export default function BannerEditor() {
     setZoom(100);
   }
 
+  // ── Initialize from URL params ─────────────────────────────────────────────
+  // Placed AFTER function openEditor so hoisting guarantees it's callable here
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    if (!banners) return;
+    hasInitialized.current = true;
+    if (id === 'new') {
+      openEditor(null);
+    } else {
+      const b = (banners as any[]).find((b: any) => String(b.id) === id);
+      if (b) {
+        openEditor(b);
+      } else {
+        navigate('/admin/banner');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [banners, id]);
+
   // --- Save / Publisher ---
   const handleSaveBanner = async () => {
     if (!bannerTitle.trim()) { toast.error('Judul Utama (Title) tidak boleh kosong'); return; }
@@ -714,26 +733,6 @@ export default function BannerEditor() {
         const url = await dbUploadFile('banners', `overlay_${Date.now()}`, bannerOverlayImageUrl);
         if (url) finalOverlayImage = url;
       }
-
-      // Read positions directly from canvas state
-      const headL = layers.find(l => l.role === 'heading-box') || { x: 10, y: 20 };
-
-  // Load banner from URL params - fires after openEditor is declared (hoisted)
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    if (!banners) return;
-    hasInitialized.current = true;
-    if (id === 'new') {
-      openEditor(null);
-    } else {
-      const b = (banners as any[]).find((b: any) => String(b.id) === id);
-      if (b) {
-        openEditor(b);
-      } else {
-        navigate('/admin/banner');
-      }
-    }
-  }, [banners, id]);
 
       const headL = layers.find(l => l.role === 'heading-box') || { x: 10, y: 20 };
       const titleL = layers.find(l => l.role === 'title-box') || { x: 10, y: 38 };
