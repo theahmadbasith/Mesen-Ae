@@ -120,7 +120,8 @@ export default function SharedLogin() {
   return (
     <div className="min-h-screen flex bg-background text-foreground relative selection:bg-primary/20 selection:text-primary">
       {/* Background Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--primary)/0.08)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--primary)/0.08)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+      <div className="absolute inset-0 bg-primary/5"></div>
       
       <div className="relative z-10 flex w-full min-h-screen">
         <LoginLeftColumn />
