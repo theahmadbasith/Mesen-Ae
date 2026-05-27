@@ -377,41 +377,44 @@ export default function QrCodeMenu() {
                 </div>
               ) : (
                 <>
-                  {/* Full card yang akan di-capture untuk PNG */}
-                  <div 
-                    ref={cardRef}
-                    className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 mb-8 relative border border-border/50 transform transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 mx-auto"
-                    style={{ width: '340px' }}
-                  >
-                    <div className="text-center mb-6">
-                      <h4 className="font-bold text-gray-900 uppercase tracking-widest text-sm mb-1">
-                        {storeSettings?.storeName || 'Toko Kami'}
-                      </h4>
-                      <p className="text-xs text-gray-500">Scan untuk memesan</p>
-                    </div>
-
+                  {/* Wrapper for layout and effects, keeping cardRef pristine for html-to-image */}
+                  <div className="mx-auto mb-8 transform transition-all hover:scale-[1.02] hover:shadow-2xl">
+                    {/* Full card yang akan di-capture untuk PNG */}
                     <div 
-                      ref={qrRef} 
-                      className="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-flex justify-center items-center"
+                      ref={cardRef}
+                      className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 relative border border-border/50 flex flex-col items-center text-center"
+                      style={{ width: '340px', boxSizing: 'border-box' }}
                     >
-                      <QRCodeSVG 
-                        value={generatedUrl} 
-                        size={240} 
-                        level={"H"}
-                        includeMargin={false}
-                        imageSettings={storeSettings?.logo ? {
-                          src: storeSettings.logo,
-                          height: 56,
-                          width: 56,
-                          excavate: true,
-                          crossOrigin: "anonymous",
-                        } : undefined}
-                      />
-                    </div>
-                    
-                    <div className="mt-6 text-center">
-                      <div className="inline-block bg-gray-900 text-white font-bold px-6 py-2 rounded-full text-lg">
-                        {formatTableLabel(activeTable)}
+                      <div className="w-full mb-6">
+                        <h4 className="font-bold text-gray-900 uppercase tracking-widest text-sm mb-1">
+                          {storeSettings?.storeName || 'Toko Kami'}
+                        </h4>
+                        <p className="text-xs text-gray-500">Scan untuk memesan</p>
+                      </div>
+
+                      <div 
+                        ref={qrRef} 
+                        className="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-block"
+                      >
+                        <QRCodeSVG 
+                          value={generatedUrl} 
+                          size={240} 
+                          level={"H"}
+                          includeMargin={false}
+                          imageSettings={storeSettings?.logo ? {
+                            src: storeSettings.logo,
+                            height: 56,
+                            width: 56,
+                            excavate: true,
+                            crossOrigin: "anonymous",
+                          } : undefined}
+                        />
+                      </div>
+                      
+                      <div className="mt-6 w-full">
+                        <div className="inline-block bg-gray-900 text-white font-bold px-6 py-2 rounded-full text-lg">
+                          {formatTableLabel(activeTable)}
+                        </div>
                       </div>
                     </div>
                   </div>
