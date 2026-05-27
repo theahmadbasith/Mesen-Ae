@@ -1376,8 +1376,8 @@ export default function App() {
               </button>
             </div>
             
-            <Button variant="primary" size="sm" onClick={handleSaveBanner} className="rounded-full px-5 h-9 sm:h-10 text-xs sm:text-sm shadow-blue-500/20">
-              <Check className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{editBanner ? 'Simpan' : 'Terbitkan'}</span>
+            <Button variant="primary" size="sm" onClick={handleSaveBanner} className="hidden sm:flex rounded-full px-4 h-9 sm:h-10 text-xs sm:text-sm shadow-blue-500/20">
+              <Check className="w-4 h-4 mr-2" />{editBanner ? 'Simpan' : 'Terbitkan'}
             </Button>
           </div>
         </div>
@@ -1398,34 +1398,33 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center Canvas Area */}
-          <div 
-            className="flex-1 relative overflow-auto flex items-center justify-center p-4 sm:p-12 pb-24 md:pb-12 bg-zinc-50 dark:bg-[#09090b]"
+          {/* Canvas Area — mobile: full width; desktop: zoom-controlled width */}
+          <div
+            className="flex-1 relative overflow-auto flex items-start md:items-center justify-center p-3 pt-4 md:p-10 bg-zinc-100 dark:bg-zinc-900 md:bg-zinc-50 md:dark:bg-[#09090b]"
+            style={{ paddingBottom: '72px' }}
             onPointerDown={() => setSelectedId(null)}
           >
-            
             {/* Canvas Container */}
-            <div ref={canvasRef} className="relative shadow-2xl overflow-hidden"
+            <div
+              ref={canvasRef}
+              className="relative shadow-xl overflow-hidden w-full md:w-auto"
               style={{
-                width: `${zoom}%`, minWidth: '300px', maxWidth: '1200px', aspectRatio: '21/9',
+                width: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${zoom}%` : undefined,
+                minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? '300px' : undefined,
+                maxWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? '1200px' : '100%',
+                aspectRatio: '21/9',
                 background: canvasBg || '#ffffff',
-                borderRadius: '16px',
-                border: selectedId ? 'none' : '2px solid transparent',
-                outline: selectedId ? undefined : '1px solid rgba(150,150,150,0.2)',
-                containerType: 'inline-size'
-              }}>
-              
+                borderRadius: '12px',
+                containerType: 'inline-size',
+                outline: '1px solid rgba(150,150,150,0.15)',
+              }}
+            >
               {/* Canvas Background Image */}
               {bannerBgType === 'image' && bannerImage && (
                 <div className="absolute inset-0 z-0 pointer-events-none">
                   <img src={bannerImage} alt="bg" className="w-full h-full object-cover opacity-55" style={{ filter: bgFilterStyle }} />
                   {bgGradientOverlayEnabled ? (
-                    <div 
-                      className="absolute inset-0 z-10" 
-                      style={{ 
-                        background: `linear-gradient(${bgGradientOverlayAngle}deg, rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityLeft / 100}), rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityRight / 100}))` 
-                      }} 
-                    />
+                    <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(${bgGradientOverlayAngle}deg, rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityLeft / 100}), rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityRight / 100}))` }} />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent z-10" />
                   )}
@@ -1438,55 +1437,84 @@ export default function App() {
                 </div>
               )}
 
-              {/* CANVAS SNAP GLOWING VISUAL GUIDES */}
+              {/* Snap guides */}
               {activeSnapX !== null && (
-                <div 
-                  className="absolute top-0 bottom-0 w-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]"
-                  style={{ 
-                    left: `${activeSnapX}%`, 
-                    color: activeSnapX === 50 ? '#22d3ee' : '#f43f5e',
-                    backgroundColor: 'currentColor'
-                  }} 
-                />
+                <div className="absolute top-0 bottom-0 w-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]" style={{ left: `${activeSnapX}%`, color: activeSnapX === 50 ? '#22d3ee' : '#f43f5e', backgroundColor: 'currentColor' }} />
               )}
               {activeSnapY !== null && (
-                <div 
-                  className="absolute left-0 right-0 h-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]"
-                  style={{ 
-                    top: `${activeSnapY}%`, 
-                    color: activeSnapY === 50 ? '#22d3ee' : '#f43f5e',
-                    backgroundColor: 'currentColor'
-                  }} 
-                />
+                <div className="absolute left-0 right-0 h-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]" style={{ top: `${activeSnapY}%`, color: activeSnapY === 50 ? '#22d3ee' : '#f43f5e', backgroundColor: 'currentColor' }} />
               )}
 
-              {/* 5 Draggable Canvas Elements */}
+              {/* Canvas layers */}
               {layers.map(renderCanvasLayer)}
             </div>
           </div>
 
-          {/* --- MOBILE BOTTOM TABS & SHEET --- */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex flex-col justify-end h-full">
+          {/* ============================================================
+              MOBILE BOTTOM SHEET — always anchored, slides up from bottom
+          ============================================================ */}
+          <div className="md:hidden">
+            {/* Backdrop */}
             {isMobilePanelOpen && (
-              <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm pointer-events-auto transition-opacity" onClick={() => setIsMobilePanelOpen(false)} />
+              <div
+                className="fixed inset-0 z-[58] bg-black/50 backdrop-blur-sm"
+                onClick={() => setIsMobilePanelOpen(false)}
+              />
             )}
 
-            <div className={cn("bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-zinc-200 dark:border-zinc-800 transition-transform duration-300 ease-out pointer-events-auto flex flex-col max-h-[70vh]", isMobilePanelOpen ? "translate-y-0" : "translate-y-full")}>
-              <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
-                <span className="text-sm font-black uppercase tracking-wider">Formulir Editor Banner</span>
-                <button onClick={() => setIsMobilePanelOpen(false)} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center text-zinc-800 dark:text-zinc-100"><X className="w-4 h-4" /></button>
-              </div>
+            {/* Sheet */}
+            <div
+              className="fixed bottom-0 left-0 right-0 z-[59] flex flex-col bg-white dark:bg-zinc-950 rounded-t-2xl border-t border-zinc-200 dark:border-zinc-800 shadow-[0_-8px_32px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out will-change-transform"
+              style={{
+                maxHeight: '80vh',
+                transform: isMobilePanelOpen ? 'translateY(0)' : 'translateY(calc(100% - 60px))',
+              }}
+            >
+              {/* Handle bar — always visible */}
+              <button
+                className="flex flex-col items-center gap-1 w-full pt-2.5 pb-2.5 px-4 shrink-0 touch-manipulation select-none"
+                onClick={() => setIsMobilePanelOpen(v => !v)}
+              >
+                {/* Drag pill */}
+                <div className="w-9 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 mb-1" />
+                {/* Row: label + save */}
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2 text-zinc-800 dark:text-zinc-100">
+                    <SlidersHorizontal className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="text-sm font-bold">
+                      {isMobilePanelOpen ? 'Tutup Editor' : 'Edit Banner'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={e => { e.stopPropagation(); handleSaveBanner(); }}
+                      className="flex items-center gap-1.5 bg-blue-600 active:bg-blue-700 text-white text-xs font-bold px-3.5 h-7 rounded-full shadow-md"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      {editBanner ? 'Simpan' : 'Terbitkan'}
+                    </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      className={cn('text-zinc-400 transition-transform duration-300', isMobilePanelOpen ? 'rotate-180' : '')}
+                    >
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                  </div>
+                </div>
+              </button>
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar pb-8 p-4">
-                {renderFormContent()}
-              </div>
-            </div>
-
-            <div className="h-16 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0 pointer-events-auto pb-safe">
-               <button onClick={() => setIsMobilePanelOpen(true)}
-                 className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-10 rounded-full shadow-lg shadow-blue-500/20 text-xs">
-                 <SlidersHorizontal className="w-4 h-4" /> Buka Formulir Editor Banner
-               </button>
+              {/* Scrollable form — hidden when sheet is collapsed */}
+              {isMobilePanelOpen && (
+                <div
+                  className="flex-1 overflow-y-auto overscroll-contain pb-8"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div className="p-4 space-y-1">
+                    {renderFormContent()}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
