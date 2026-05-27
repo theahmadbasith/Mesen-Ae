@@ -933,7 +933,7 @@ export default function Kasir() {
         </div>
 
         {/* Desktop Cart Panel */}
-        <div className="hidden md:flex md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0 h-fit min-h-[450px] max-h-[calc(100vh-100px)] sticky top-[80px] self-start shadow-sm">
+        <div className="hidden md:flex md:w-80 lg:w-96 flex-col bg-card rounded-xl border border-border shrink-0 h-fit min-h-[450px] self-start shadow-sm mt-4">
           <div className="p-4 border-b border-border shrink-0">
             <h3 className="text-base font-bold flex items-center gap-2">
               <ShoppingCart className="w-4 h-4 text-primary" />
@@ -946,8 +946,8 @@ export default function Kasir() {
               <p className="text-sm text-muted-foreground">Keranjang kosong</p>
             </div>
           ) : (
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto space-y-3 p-4">
+            <div className="flex flex-col flex-1">
+              <div className="flex-1 space-y-3 p-4">
                 {cart.map((item, index) => (
                   <div key={index} className="bg-muted/50 p-3 rounded-xl space-y-1.5">
                     <div className="flex items-center gap-3">
