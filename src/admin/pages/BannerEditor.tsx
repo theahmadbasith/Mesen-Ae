@@ -265,18 +265,7 @@ export default function BannerEditor() {
 
   const canvasRef = useRef(null);
 
-  useEffect(() => {
-    if (banners) {
-      if (id === 'new') {
-        openEditor(null);
-      } else {
-        const b = banners.find((b) => String(b.id) === id);
-        if (b) openEditor(b);
-        else navigate('/admin/banner');
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [banners, id]);
+  // Will mount effect AFTER openEditor is defined below - see line ~740
 
   const bgFileInputRef = useRef(null);
   const overlayFileInputRef = useRef(null);
@@ -536,7 +525,7 @@ export default function BannerEditor() {
   };
 
   // --- Editor Open/Close ---
-  const openEditor = (banner = null) => {
+  const openEditor = useCallback((banner = null) => {
     if (banner) {
       setEditBanner(banner);
       setBannerType(banner.type || 'custom');
@@ -707,9 +696,20 @@ export default function BannerEditor() {
 
     setSelectedId(null);
     setZoom(100);
-    
-    
-  };
+  }, []);
+
+  // Load banner from URL param - placed AFTER openEditor is defined
+  useEffect(() => {
+    if (!banners) return;
+    if (id === 'new') {
+      openEditor(null);
+    } else {
+      const b = banners.find((b: any) => String(b.id) === id);
+      if (b) openEditor(b);
+      else navigate('/admin/banner');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [banners, id, openEditor]);
 
   // --- Save / Publisher ---
   const handleSaveBanner = async () => {
