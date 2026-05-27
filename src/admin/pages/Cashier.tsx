@@ -933,7 +933,7 @@ export default function Kasir() {
         </div>
 
         {/* Desktop Cart Panel */}
-        <div className="hidden md:flex md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0 h-fit sticky top-[80px] max-h-[calc(100vh-100px)] shadow-sm">
+        <div className="hidden md:flex md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0 h-fit min-h-[450px] max-h-[calc(100vh-100px)] sticky top-[80px] self-start shadow-sm">
           <div className="p-4 border-b border-border shrink-0">
             <h3 className="text-base font-bold flex items-center gap-2">
               <ShoppingCart className="w-4 h-4 text-primary" />
