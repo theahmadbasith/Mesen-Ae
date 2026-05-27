@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2, Link as LinkIcon, Save } from 'lucide-react';
-import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate } from '@/hooks/db-hooks';
@@ -139,10 +139,9 @@ export default function QrCodeMenu() {
 
   const printQrCode = () => {
     if (!qrRef.current) return;
-    const canvasEl = qrRef.current.querySelector('canvas');
-    if (!canvasEl) return;
+    const svg = qrRef.current.querySelector('svg');
+    if (!svg) return;
 
-    const qrDataUrl = canvasEl.toDataURL('image/png');
     const storeName = storeSettings?.storeName || 'MesenAe Resto';
     const printWindow = window.open('', '', 'width=800,height=900');
     
@@ -227,7 +226,7 @@ export default function QrCodeMenu() {
               <div class="instruction">Scan QR Code ini untuk melihat menu dan memesan langsung dari HP Anda.</div>
               
               <div class="qr-wrapper">
-                <img src="${qrDataUrl}" width="240" height="240" style="display: block;" />
+                ${svg.outerHTML}
               </div>
               
               ${activeTable ? `<div class="table-badge">MEJA ${activeTable}</div>` : ''}
@@ -392,17 +391,17 @@ export default function QrCodeMenu() {
                       ref={qrRef} 
                       className="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-block"
                     >
-                      <QRCodeCanvas 
+                      <QRCodeSVG 
                         value={generatedUrl} 
                         size={240} 
                         level={"H"}
                         includeMargin={false}
-                        imageSettings={{
-                          src: "/icon-192.png",
+                        imageSettings={storeSettings?.logo ? {
+                          src: storeSettings.logo,
                           height: 56,
                           width: 56,
                           excavate: true,
-                        }}
+                        } : undefined}
                       />
                     </div>
                     
