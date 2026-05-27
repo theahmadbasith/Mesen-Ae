@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { type Banner } from '@/hooks/db-hooks';
-import { Gift, ArrowRight } from 'lucide-react';
+import { Gift } from 'lucide-react';
 
 interface PromoBannerProps {
   banner: Banner;
@@ -11,9 +11,14 @@ interface PromoBannerProps {
 
 export default function PromoBanner({ banner, className, onAction }: PromoBannerProps) {
   // Koordinat Default Jika Belum Di-set
-  const titleP = banner.titlePos ?? { x: 8, y: 30 };
-  const descP = banner.descPos ?? { x: 8, y: 70 };
+  const headingP = banner.headingPos ?? { x: 8, y: 15 };
+  const titleP = banner.titlePos ?? { x: 8, y: 35 };
+  const descP = banner.descPos ?? { x: 8, y: 65 };
+  const buttonP = banner.buttonPos ?? { x: 8, y: 85 };
   const overP = banner.overlayPos ?? { x: 85, y: 50 };
+
+  const bgFilter = banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+  const bgFilterStyle = `brightness(${bgFilter.brightness}%) contrast(${bgFilter.contrast}%) saturate(${bgFilter.saturate}%) blur(${bgFilter.blur}px)`;
 
   return (
     <div 
@@ -26,7 +31,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
       {/* LAYER 1: BACKGROUND */}
       {(!banner.bgType || banner.bgType === 'image') && banner.imageUrl && !banner.imageUrl.startsWith('preset:') ? (
         <div className="absolute inset-0 z-0">
-          <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover opacity-55" />
+          <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover opacity-55" style={{ filter: bgFilterStyle }} />
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
         </div>
       ) : banner.bgType === 'solid' ? (
@@ -55,92 +60,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
         </div>
       )}
 
-      {/* RENDER CANVAS LAYERS IF EXIST */}
-      {banner.canvasLayers && banner.canvasLayers.length > 0 ? (
-        <div className="absolute inset-0 pointer-events-none">
-          {banner.canvasLayers.filter(l => l.visible).sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).map(layer => {
-            const baseStyle = {
-              position: 'absolute' as any,
-              left: `${layer.x}%`,
-              top: `${layer.y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: layer.zIndex,
-              opacity: (layer.opacity || 100) / 100,
-              width: `${layer.width}%`,
-            };
-
-            if (layer.type === 'text') {
-              const bgOp = layer.bgOpacity || 0;
-              const bgColorHex = layer.bgColor || '#000000';
-              const alphaHex = Math.round(bgOp * 2.55).toString(16).padStart(2, '0');
-              
-              const isButton = layer.role === 'button';
-              const pointerEvents = isButton ? 'auto' : 'none';
-              
-              return (
-                <div key={layer.id} style={{ ...baseStyle, pointerEvents }}>
-                  <p 
-                    onClick={(e) => {
-                      if (isButton) {
-                        e.stopPropagation();
-                        const targetLink = layer.link || banner.link;
-                        if (targetLink) {
-                          if (targetLink.startsWith('http')) window.open(targetLink, '_blank');
-                          else window.location.href = targetLink;
-                        } else if (onAction) onAction();
-                      }
-                    }}
-                    className={cn(isButton && "cursor-pointer hover:scale-105 active:scale-95 transition-all")}
-                    style={{
-                      fontSize: `${(layer.fontSize || 32) / 8}cqw`, 
-                      fontWeight: layer.fontWeight, 
-                      fontStyle: layer.fontStyle,
-                      textAlign: layer.textAlign, 
-                      color: layer.color, 
-                      letterSpacing: `${(layer.letterSpacing || 0) / 8}cqw`,
-                      lineHeight: layer.lineHeight, 
-                      fontFamily: layer.fontFamily,
-                      textDecoration: layer.textDecoration, 
-                      textTransform: layer.uppercase ? 'uppercase' : 'none',
-                      padding: `${(layer.padding || 0) / 8}cqw`, 
-                      borderRadius: `${(layer.borderRadius || 0) / 8}cqw`,
-                      backgroundColor: bgOp > 0 ? `${bgColorHex}${alphaHex}` : 'transparent',
-                      backdropFilter: layer.backdropBlur ? 'blur(8px)' : undefined,
-                      textShadow: layer.shadow ? '0 0.5cqw 2cqw rgba(0,0,0,0.6)' : undefined,
-                      border: (layer.borderWidth && layer.borderWidth > 0) ? `${(layer.borderWidth || 0) / 8}cqw ${layer.borderStyle || 'solid'} ${layer.borderColor}` : undefined,
-                      margin: 0, 
-                      whiteSpace: 'pre-wrap', 
-                      wordBreak: 'break-word',
-                      transform: `rotate(${layer.rotate || 0}deg)`,
-                    }}>
-                    {layer.content}
-                  </p>
-                </div>
-              );
-            }
-
-            if (layer.type === 'image') {
-              const filterStr = `brightness(${layer.brightness || 100}%) contrast(${layer.contrast || 100}%) saturate(${layer.saturate || 100}%) blur(${(layer.blur || 0) / 8}cqw) ${layer.grayscale ? 'grayscale(100%)' : ''} ${layer.sepia ? 'sepia(100%)' : ''}`;
-              return (
-                <div key={layer.id} style={{ ...baseStyle, pointerEvents: 'none' }}>
-                  <img src={layer.src} alt="" 
-                    style={{
-                      width: '100%', height: 'auto', display: 'block',
-                      transform: `rotate(${layer.rotate || 0}deg) scaleX(${layer.flipX ? -1 : 1}) scaleY(${layer.flipY ? -1 : 1})`,
-                      filter: filterStr, 
-                      mixBlendMode: layer.mixBlendMode as any,
-                      borderRadius: `${(layer.borderRadius || 0) / 8}cqw`,
-                      boxShadow: layer.shadow ? '0 1.5cqw 4cqw rgba(0,0,0,0.4)' : undefined,
-                    }} />
-                </div>
-              );
-            }
-            return null;
-          })}
-        </div>
-      ) : (
-        <>
-          {/* LAYER 2: OVERLAY IMAGE (FOTO PNG DEPAN) */}
+      {/* LAYER 2: OVERLAY IMAGE (FOTO PNG DEPAN) */}
       {banner.overlayImageUrl && (
         <div 
           style={{ 
@@ -164,45 +84,92 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
         </div>
       )}
 
-      {/* LAYER 3: TITLE BOX */}
-      <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw]">
-        <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 mb-[1.5cqw]">
-          {banner.type === 'voucher' ? 'Promo Voucher' : banner.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran'}
-        </span>
-        <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm">
-          {banner.title}
-        </h4>
-      </div>
-
-      {/* LAYER 4: DESCRIPTION & BUTTON BOX */}
-      {(banner.description || onAction || banner.link || banner.buttonText) && (
-        <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }} className="w-[70cqw] max-w-[75cqw] pointer-events-none">
-          {banner.description && (
-            <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">
-              {banner.description}
-            </p>
-          )}
-          {(onAction || banner.link || banner.buttonText) && (
-            <div className="mt-[1.5cqw]">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (banner.link) {
-                    if (banner.link.startsWith('http')) window.open(banner.link, '_blank');
-                    else window.location.href = banner.link;
-                  } else if (onAction) onAction();
-                }}
-                className="text-[2.4cqw] bg-white text-slate-900 font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm pointer-events-auto hover:bg-slate-100 active:scale-95 transition-all inline-block"
-              >
-                {banner.buttonText || 'Lihat Detail'}
-              </button>
-            </div>
-          )}
+      {/* LAYER 3: HEADING BOX */}
+      {(banner.heading || banner.type) && (
+        <div 
+          style={{ 
+            position: 'absolute', 
+            left: `${headingP.x}%`, 
+            top: `${headingP.y}%`, 
+            transform: 'translate(0%, -50%)', 
+            zIndex: 10 
+          }} 
+          className="w-[70cqw] max-w-[75cqw]"
+        >
+          <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10">
+            {banner.heading || (banner.type === 'voucher' ? 'Promo Voucher' : banner.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran')}
+          </span>
         </div>
       )}
-        </>
+
+      {/* LAYER 4: TITLE BOX */}
+      {banner.title && (
+        <div 
+          style={{ 
+            position: 'absolute', 
+            left: `${titleP.x}%`, 
+            top: `${titleP.y}%`, 
+            transform: 'translate(0%, -50%)', 
+            zIndex: 10 
+          }} 
+          className="w-[70cqw] max-w-[75cqw]"
+        >
+          <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0">
+            {banner.title}
+          </h4>
+        </div>
+      )}
+
+      {/* LAYER 5: DESCRIPTION BOX */}
+      {banner.description && (
+        <div 
+          style={{ 
+            position: 'absolute', 
+            left: `${descP.x}%`, 
+            top: `${descP.y}%`, 
+            transform: 'translate(0%, -50%)', 
+            zIndex: 10 
+          }} 
+          className="w-[70cqw] max-w-[75cqw]"
+        >
+          <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">
+            {banner.description}
+          </p>
+        </div>
+      )}
+
+      {/* LAYER 6: BUTTON BOX */}
+      {(onAction || banner.link || banner.buttonText) && (
+        <div 
+          style={{ 
+            position: 'absolute', 
+            left: `${buttonP.x}%`, 
+            top: `${buttonP.y}%`, 
+            transform: 'translate(0%, -50%)', 
+            zIndex: 10 
+          }} 
+          className="w-[70cqw] max-w-[75cqw]"
+        >
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (banner.link) {
+                if (banner.link.startsWith('http')) window.open(banner.link, '_blank');
+                else window.location.href = banner.link;
+              } else if (onAction) onAction();
+            }}
+            style={{
+              backgroundColor: banner.badgeStyle === 'solid' ? '#FFFFFF' : banner.badgeStyle === 'outline' ? 'transparent' : 'rgba(255,255,255,0.2)',
+              color: banner.badgeStyle === 'solid' ? '#0F172A' : '#FFFFFF',
+              border: banner.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' : banner.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' : 'none',
+              backdropFilter: banner.badgeStyle === 'glass' ? 'blur(8px)' : undefined
+            }}
+            className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm hover:opacity-90 active:scale-95 transition-all inline-block pointer-events-auto"
+          >
+            {banner.buttonText || 'Lihat Detail'}
+          </button>
+        </div>
       )}
     </div>
   );
 }
-
