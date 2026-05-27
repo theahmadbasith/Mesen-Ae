@@ -700,15 +700,23 @@ export default function BannerEditor() {
   // Placed AFTER function openEditor so hoisting guarantees it's callable here
   useEffect(() => {
     if (hasInitialized.current) return;
-    if (!banners) return;
-    hasInitialized.current = true;
+
     if (id === 'new') {
+      hasInitialized.current = true;
       openEditor(null);
-    } else {
+      return;
+    }
+
+    // useDbQuery returns [] initially while loading from Firestore.
+    // Wait until banners has data before trying to find the requested ID.
+    if (banners && banners.length > 0) {
       const b = (banners as any[]).find((b: any) => String(b.id) === id);
       if (b) {
+        hasInitialized.current = true;
         openEditor(b);
       } else {
+        // Banner not found in database, go back
+        hasInitialized.current = true;
         navigate('/admin/banner');
       }
     }
@@ -1461,15 +1469,22 @@ export default function BannerEditor() {
               }}
             >
               {/* Canvas Background Image */}
-              {bannerBgType === 'image' && bannerImage && (
+              {bannerImage && (
                 <div className="absolute inset-0 z-0 pointer-events-none">
-                  <img src={bannerImage} alt="bg" className="w-full h-full object-cover opacity-55" style={{ filter: bgFilterStyle }} />
+                  <img src={bannerImage} alt="bg" className="w-full h-full object-cover" style={{ filter: bgFilterStyle }} />
                   {bgGradientOverlayEnabled ? (
                     <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(${bgGradientOverlayAngle}deg, rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityLeft / 100}), rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityRight / 100}))` }} />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent z-10" />
                   )}
                 </div>
+              )}
+
+              {/* Background gradient tanpa gambar: tampilkan gradien overlay jika ada */}
+              {!bannerImage && bgGradientOverlayEnabled && (
+                <div className="absolute inset-0 z-10 pointer-events-none" style={{
+                  background: `linear-gradient(${bgGradientOverlayAngle}deg, rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityLeft / 100}), rgba(${hexToRgb(bgGradientOverlayColor)}, ${bgGradientOverlayOpacityRight / 100}))`
+                }} />
               )}
               {bannerBgType === 'image' && !bannerImage && (
                 <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 pointer-events-none flex flex-col items-center justify-center text-zinc-400">
