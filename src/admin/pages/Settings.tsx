@@ -9,7 +9,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat
+  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat, Link as LinkIcon
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 
@@ -213,6 +213,35 @@ export default function Pengaturan() {
   const [deliveryMode, setDeliveryMode] = useState<'ambil' | 'diantar'>('diantar');
   const [isSavingStore, setIsSavingStore] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
+
+  const [customerUrl, setCustomerUrl] = useState('');
+  const [isSavingCustomerUrl, setIsSavingCustomerUrl] = useState(false);
+
+  useEffect(() => {
+    if (storeSettings) setCustomerUrl(storeSettings.customerUrl || '');
+  }, [storeSettings?.customerUrl]);
+
+  const saveCustomerUrl = async () => {
+    if (!hasEditAccess) {
+      toast.error('Akses ditolak.');
+      return;
+    }
+    let url = customerUrl.trim();
+    if (!url) { toast.error('URL tidak boleh kosong'); return; }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+    
+    setIsSavingCustomerUrl(true);
+    try {
+      if (storeSettings?.id) {
+        await dbUpdate('storeSettings', storeSettings.id, { customerUrl: url });
+        toast.success('URL Aplikasi Customer berhasil disimpan');
+      } else {
+        toast.error('Pengaturan toko belum diinisialisasi');
+      }
+    } catch (error: any) {
+      toast.error('Gagal menyimpan URL: ' + (error.message || error));
+    } finally { setIsSavingCustomerUrl(false); }
+  };
 
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -463,6 +492,28 @@ export default function Pengaturan() {
               <SettingRow last label="Sistem Penjualan" description={storeSettings?.deliveryMode === 'ambil' ? 'Pelanggan mengambil pesanan sendiri ke kasir / meja penjemputan.' : 'Pelanggan memesan dari meja dan pesanan akan diantar.'} />
             </SettingCard>
 
+            <div className="mt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide flex items-center gap-1.5"><LinkIcon className="w-3.5 h-3.5" /> URL Aplikasi Customer</p>
+              <SettingCard>
+                <div className="p-4 space-y-3">
+                  <p className="text-xs text-muted-foreground leading-snug">URL domain (hosting) tempat aplikasi pembeli diakses. URL ini akan menjadi dasar pembuatan QR Code pemesanan di meja.</p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={customerUrl}
+                      onChange={e => setCustomerUrl(e.target.value)}
+                      placeholder="https://mesenae-customer.vercel.app"
+                      className="bg-muted/50 h-9"
+                    />
+                    {hasEditAccess && (
+                      <Button onClick={saveCustomerUrl} disabled={isSavingCustomerUrl} className="h-9 px-4 shrink-0 shadow-sm gap-2 font-semibold">
+                        {isSavingCustomerUrl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        Simpan
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </SettingCard>
+            </div>
 
           </Section>
         )}
