@@ -52,7 +52,7 @@ const defaultTextLayer = (extra = {}) => ({
   shadow: true, letterSpacing: 0, lineHeight: 1.3, opacity: 100, rotate: 0,
   width: 50, locked: false, visible: true, zIndex: 10, fontFamily: 'Poppins',
   textDecoration: 'none', uppercase: false, padding: 8, borderRadius: 8,
-  backdropBlur: false, ...extra
+  backdropBlur: false, role: 'none', borderWidth: 0, borderColor: '#FFFFFF', borderStyle: 'solid', ...extra
 });
 
 const defaultImageLayer = (src, extra = {}) => ({
@@ -195,6 +195,8 @@ export default function App() {
   const [bannerGradientRight, setBannerGradientRight] = useState('#60efff');
   const [bannerGradientAngle, setBannerGradientAngle] = useState(135);
   const [bannerImage, setBannerImage] = useState(null);
+  const [bannerHeading, setBannerHeading] = useState('');
+  const [bannerBadgeStyle, setBannerBadgeStyle] = useState('solid');
 
   // --- Canvas Editor State ---
   const [layers, setLayers] = useState([]);
@@ -222,6 +224,21 @@ export default function App() {
     });
     setHistoryIndex(i => Math.min(i + 1, 29));
   }, [historyIndex]);
+  const syncLayerByRole = useCallback((role, patch) => {
+    setLayers(prev => {
+      let changed = false;
+      const next = prev.map(l => {
+        if (l.role === role) {
+          changed = true;
+          return { ...l, ...patch };
+        }
+        return l;
+      });
+      if (changed) pushHistory(next);
+      return next;
+    });
+  }, [pushHistory]);
+
 
   const updateLayer = useCallback((id, patch) => {
     setLayers(prev => {
@@ -379,6 +396,8 @@ export default function App() {
     if (banner) {
       setEditBanner(banner);
       setBannerType(banner.type || 'custom');
+      setBannerHeading(banner.heading || '');
+      setBannerBadgeStyle('solid');
       setBannerTitle(banner.title || '');
       setBannerDesc(banner.description || '');
       setBannerVoucherId(String(banner.voucherId || ''));
@@ -413,7 +432,7 @@ export default function App() {
       setBgFilter(banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 });
     } else {
       setEditBanner(null);
-      setBannerType('custom'); setBannerTitle(''); setBannerDesc('');
+      setBannerType('custom'); setBannerHeading(''); setBannerTitle(''); setBannerDesc(''); setBannerBadgeStyle('solid');
       setBannerVoucherId(''); setBannerProductId(''); setBannerLink('');
       setBannerButtonText(''); setBannerIsActive(true);
       setBannerBgType('gradient'); setBannerBgColor('#1E293B');
@@ -421,9 +440,10 @@ export default function App() {
       setBannerImage(null);
       
       const seedLayers = [
-        defaultTextLayer({ content: 'PROMO SPESIAL', x: 50, y: 35, fontSize: 48, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 80 }),
-        defaultTextLayer({ content: 'Diskon hingga 50% untuk semua produk pilihan!', x: 50, y: 55, fontSize: 18, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'center', shadow: false, width: 70, lineHeight: 1.5 }),
-        defaultTextLayer({ content: 'BELI SEKARANG', x: 50, y: 75, fontSize: 14, fontWeight: 'bold', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 25, padding: 12, borderRadius: 12 }),
+        defaultTextLayer({ role: 'heading', content: 'PROMO TERBATAS', x: 50, y: 35, fontSize: 24, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 80, borderWidth: 2, borderColor: '#FFFFFF', padding: 8, bgOpacity: 0 }),
+        defaultTextLayer({ role: 'subheading', content: 'Judul Promo', x: 50, y: 55, fontSize: 48, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', shadow: true, width: 90, lineHeight: 1.15 }),
+        defaultTextLayer({ role: 'body', content: 'Deskripsi singkat...', x: 50, y: 72, fontSize: 18, fontWeight: 'normal', color: '#E2E8F0', textAlign: 'center', shadow: false, width: 80, lineHeight: 1.5 }),
+        defaultTextLayer({ role: 'button', content: 'LIHAT DETAIL', x: 50, y: 88, fontSize: 16, fontWeight: 'bold', color: '#0F172A', bgColor: '#FFFFFF', bgOpacity: 100, textAlign: 'center', shadow: true, width: 30, padding: 12, borderRadius: 12 }),
       ];
       setLayers(seedLayers);
       setHistory([seedLayers]);
@@ -462,6 +482,7 @@ export default function App() {
 
       const bannerData = {
         type: bannerType, 
+        heading: bannerHeading.trim(),
         title: bannerTitle.trim(), 
         description: bannerDesc.trim(),
         voucherId: bannerType === 'voucher' ? Number(bannerVoucherId) : null,
@@ -543,6 +564,7 @@ export default function App() {
             textDecoration: layer.textDecoration, textTransform: layer.uppercase ? 'uppercase' : 'none',
             padding: `${layer.padding}px`, borderRadius: `${layer.borderRadius}px`,
             backgroundColor: layer.bgOpacity > 0 ? `${layer.bgColor}${Math.round(layer.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent',
+            border: (layer.borderWidth && layer.borderWidth > 0) ? `${layer.borderWidth}px ${layer.borderStyle} ${layer.borderColor}` : undefined,
             backdropFilter: layer.backdropBlur ? 'blur(8px)' : undefined,
             textShadow: layer.shadow ? '0 4px 16px rgba(0,0,0,0.6)' : undefined,
             margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
@@ -887,14 +909,55 @@ export default function App() {
       )}
 
       <div>
-        <Label>Judul Internal (Admin)</Label>
-        <Input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="Promo Kemerdekaan..." />
+        <Label>Heading Banner</Label>
+        <Input value={bannerHeading} onChange={e => {
+          setBannerHeading(e.target.value);
+          syncLayerByRole('heading', { content: e.target.value || 'PROMO TERBATAS' });
+        }} placeholder="Misal: Promo Terbatas" />
       </div>
 
       <div>
-        <Label>Deskripsi Internal</Label>
-        <textarea value={bannerDesc} onChange={e => setBannerDesc(e.target.value)} rows={3} placeholder="Catatan internal..."
+        <Label>Judul (Subheading)</Label>
+        <Input value={bannerTitle} onChange={e => {
+          setBannerTitle(e.target.value);
+          syncLayerByRole('subheading', { content: e.target.value || 'Judul Promo' });
+        }} placeholder="Promo Kemerdekaan..." />
+      </div>
+
+      <div>
+        <Label>Deskripsi (Body Text)</Label>
+        <textarea value={bannerDesc} onChange={e => {
+          setBannerDesc(e.target.value);
+          syncLayerByRole('body', { content: e.target.value || 'Deskripsi singkat...' });
+        }} rows={3} placeholder="Penjelasan promo..."
           className="w-full p-3 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <Label>Teks Tombol (Badge)</Label>
+        <Input value={bannerButtonText} onChange={e => {
+          setBannerButtonText(e.target.value);
+          syncLayerByRole('button', { content: e.target.value || 'LIHAT DETAIL' });
+        }} placeholder="Misal: Beli Sekarang" />
+      </div>
+
+      <div>
+        <Label>Gaya Tombol (Badge)</Label>
+        <select value={bannerBadgeStyle} onChange={(e) => {
+          const style = e.target.value;
+          setBannerBadgeStyle(style);
+          if (style === 'solid') {
+             syncLayerByRole('button', { bgColor: '#FFFFFF', color: '#0F172A', bgOpacity: 100, borderWidth: 0 });
+          } else if (style === 'outline') {
+             syncLayerByRole('button', { bgColor: '#000000', color: '#FFFFFF', bgOpacity: 0, borderWidth: 2, borderColor: '#FFFFFF' });
+          } else if (style === 'glass') {
+             syncLayerByRole('button', { bgColor: '#FFFFFF', color: '#FFFFFF', bgOpacity: 20, borderWidth: 1, borderColor: '#FFFFFF', backdropBlur: true });
+          }
+        }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none">
+          <option value="solid">Solid (Warna Penuh)</option>
+          <option value="outline">Outline (Garis Tepi)</option>
+          <option value="glass">Glassmorphism (Kaca)</option>
+        </select>
       </div>
 
       {bannerType === 'custom' && (
@@ -1182,7 +1245,8 @@ export default function App() {
                         return (
                           <div key={layer.id} style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, transform: 'translate(-50%, -50%)', zIndex: layer.zIndex, opacity: layer.opacity / 100, width: `${layer.width}%` }}>
                             <p style={{
-                              fontSize: `${layer.fontSize}px`, fontWeight: layer.fontWeight, fontStyle: layer.fontStyle, textAlign: layer.textAlign, color: layer.color, letterSpacing: `${layer.letterSpacing}px`, lineHeight: layer.lineHeight, fontFamily: layer.fontFamily, textDecoration: layer.textDecoration, textTransform: layer.uppercase ? 'uppercase' : 'none', padding: `${layer.padding}px`, borderRadius: `${layer.borderRadius}px`, backgroundColor: layer.bgOpacity > 0 ? `${layer.bgColor}${Math.round(layer.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent', textShadow: layer.shadow ? '0 4px 16px rgba(0,0,0,0.8)' : undefined, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', transform: `rotate(${layer.rotate}deg)`,
+                              fontSize: `${layer.fontSize}px`, fontWeight: layer.fontWeight, fontStyle: layer.fontStyle, textAlign: layer.textAlign, color: layer.color, letterSpacing: `${layer.letterSpacing}px`, lineHeight: layer.lineHeight, fontFamily: layer.fontFamily, textDecoration: layer.textDecoration, textTransform: layer.uppercase ? 'uppercase' : 'none', padding: `${layer.padding}px`, borderRadius: `${layer.borderRadius}px`, backgroundColor: layer.bgOpacity > 0 ? `${layer.bgColor}${Math.round(layer.bgOpacity * 2.55).toString(16).padStart(2, '0')}` : 'transparent',
+            border: (layer.borderWidth && layer.borderWidth > 0) ? `${layer.borderWidth}px ${layer.borderStyle} ${layer.borderColor}` : undefined, textShadow: layer.shadow ? '0 4px 16px rgba(0,0,0,0.8)' : undefined, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', transform: `rotate(${layer.rotate}deg)`,
                             }}>{layer.content}</p>
                           </div>
                         );
