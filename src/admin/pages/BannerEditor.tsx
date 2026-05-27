@@ -515,20 +515,47 @@ export default function BannerEditor() {
     if (bgFileInputRef.current) bgFileInputRef.current.value = '';
   };
 
-  const handleBgCropSuccess = (croppedDataUrl: string) => {
+  const handleBgCropSuccess = async (croppedDataUrl: string) => {
     setCropBgOpen(false);
     setBannerImage(croppedDataUrl);
     toast.success("Gambar background berhasil ditambahkan!");
     setCropBgFile(null);
+
+    // Background compression & upload
+    try {
+      const res = await fetch(croppedDataUrl);
+      const blob = await res.blob();
+      const compressedDataUrl = await compressImage(blob, 0.5);
+      const url = await dbUploadFile('banners', `bg_${Date.now()}`, compressedDataUrl);
+      if (url) {
+        setBannerImage(url); // Swap to Cloudinary URL
+      }
+    } catch (e) {
+      console.error("Background upload error", e);
+    }
   };
 
-  const handleAddImageFile = (e) => {
+  const handleAddImageFile = (e: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
-      setBannerOverlayImageUrl(ev.target.result);
+    reader.onload = async ev => {
+      const dataUrl = ev.target?.result as string;
+      setBannerOverlayImageUrl(dataUrl);
       toast.success("Gambar stiker overlay berhasil ditambahkan!");
+
+      // Background compression & upload
+      try {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const compressedDataUrl = await compressImage(blob, 0.5);
+        const url = await dbUploadFile('banners', `overlay_${Date.now()}`, compressedDataUrl);
+        if (url) {
+          setBannerOverlayImageUrl(url); // Swap to Cloudinary URL
+        }
+      } catch (err) {
+        console.error("Overlay upload error", err);
+      }
     };
     reader.readAsDataURL(file);
     if (overlayFileInputRef.current) overlayFileInputRef.current.value = '';
@@ -753,7 +780,10 @@ export default function BannerEditor() {
 
       let finalOverlayImage = bannerOverlayImageUrl;
       if (bannerOverlayImageUrl && bannerOverlayImageUrl.startsWith('data:image')) {
-        const url = await dbUploadFile('banners', `overlay_${Date.now()}`, bannerOverlayImageUrl);
+        const res = await fetch(bannerOverlayImageUrl);
+        const blob = await res.blob();
+        const compressedDataUrl = await compressImage(blob, 0.5);
+        const url = await dbUploadFile('banners', `overlay_${Date.now()}`, compressedDataUrl);
         if (url) finalOverlayImage = url;
       }
 
