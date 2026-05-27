@@ -813,7 +813,7 @@ export default function BannerEditor() {
         await dbInsert('banners', bannerData);
         toast.success('Banner baru berhasil diterbitkan!', { id: loadingToastId });
       }
-      setIsEditorOpen(false);
+      setTimeout(() => navigate('/admin/banner'), 1000);
     } catch (err) {
       console.error(err);
       toast.error('Gagal menyimpan banner', { id: loadingToastId });
