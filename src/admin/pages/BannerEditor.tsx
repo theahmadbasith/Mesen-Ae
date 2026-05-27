@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
+import PhotoCropModal from '@/admin/components/PhotoCropModal';
 
 // ============================================================================
 // 2. CONSTANTS
@@ -264,6 +265,10 @@ export default function BannerEditor() {
   // Mobile drawer
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
 
+  // --- Crop State ---
+  const [cropBgFile, setCropBgFile] = useState<File | null>(null);
+  const [cropBgOpen, setCropBgOpen] = useState(false);
+
   const canvasRef = useRef(null);
   const bgFileInputRef = useRef(null);
   const overlayFileInputRef = useRef(null);
@@ -501,13 +506,23 @@ export default function BannerEditor() {
   };
 
   // --- Background/Image Handlers ---
-  const handleBgImageSelect = (e) => {
+  const handleBgImageSelect = (e: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setBannerImage(ev.target.result);
-    reader.readAsDataURL(file);
+    setCropBgFile(file);
+    setCropBgOpen(true);
     if (bgFileInputRef.current) bgFileInputRef.current.value = '';
+  };
+
+  const handleBgCropSuccess = async (croppedBlob: Blob) => {
+    setCropBgOpen(false);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      setBannerImage(ev.target?.result as string);
+      toast.success("Gambar background berhasil ditambahkan!");
+    };
+    reader.readAsDataURL(croppedBlob);
+    setCropBgFile(null);
   };
 
   const handleAddImageFile = (e) => {
@@ -1573,6 +1588,14 @@ export default function BannerEditor() {
               )}
             </div>
           </div>
+
+          <PhotoCropModal
+            open={cropBgOpen}
+            onOpenChange={setCropBgOpen}
+            file={cropBgFile}
+            onCropped={handleBgCropSuccess}
+            disableCompression={false}
+          />
 
         </div>
       </div>
