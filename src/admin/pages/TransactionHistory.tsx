@@ -32,7 +32,11 @@ export default function TransactionHistory() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'lunas' | 'belum lunas'>('all');
 
   const txResult = useDbQuery<any>('transactions');
-  const transactions = useMemo(() => (txResult || []).sort((a:any, b:any) => new Date(b.date).getTime() - new Date(a.date).getTime()), [txResult]);
+  const transactions = useMemo(() => [...(txResult || [])].sort((a:any, b:any) => {
+    const timeA = a.date ? new Date(a.date).getTime() : 0;
+    const timeB = b.date ? new Date(b.date).getTime() : 0;
+    return timeB - timeA;
+  }), [txResult]);
   
   const productsResult = useDbQuery<any>('products');
   const products = useMemo(() => productsResult || [], [productsResult]);
@@ -76,21 +80,23 @@ export default function TransactionHistory() {
 
   const filtered = useMemo(() => {
     return transactions?.filter(tx => {
+      const txDateObj = tx.date ? new Date(tx.date) : null;
+      // Skip rendering invalid date records to prevent date-fns from throwing RangeError
+      if (!txDateObj || isNaN(txDateObj.getTime())) return false; 
+      
       if (filterStatus !== 'all' && tx.status !== filterStatus) return false;
       if (dateFrom) {
-        const txDate = new Date(tx.date);
-        if (txDate < startOfDay(dateFrom)) return false;
+        if (txDateObj < startOfDay(dateFrom)) return false;
       }
       if (dateTo) {
-        const txDate = new Date(tx.date);
-        if (txDate > endOfDay(dateTo)) return false;
+        if (txDateObj > endOfDay(dateTo)) return false;
       }
       if (search) {
         const q = search.toLowerCase();
         const items = getTxItems(tx.id);
         return (
-          tx.receiptNumber.toLowerCase().includes(q) ||
-          items.some(it => it.productName.toLowerCase().includes(q))
+          (tx.receiptNumber || '').toLowerCase().includes(q) ||
+          items.some(it => (it.productName || '').toLowerCase().includes(q))
         );
       }
       return true;
