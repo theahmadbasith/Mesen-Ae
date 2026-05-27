@@ -31,12 +31,12 @@ export default function LoginRightColumn({
   const storeSettings = storeSettingsList[0] || null;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative bg-zinc-950">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative">
       <div className="w-full max-w-md relative z-10">
 
         {/* Logo Mobile */}
         <div className="lg:hidden flex flex-col items-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="w-20 h-20 bg-white/5 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 mb-4 border border-white/10 p-2">
+          <div className="w-20 h-20 bg-background/50 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 mb-4 border border-border p-2">
             <img
               src={storeSettings?.logo || "/icon-192.png"}
               alt={storeSettings?.storeName || "MesenAe"}
@@ -47,28 +47,28 @@ export default function LoginRightColumn({
                 const parent = target.parentElement;
                 if (parent) {
                   const icon = document.createElement('div');
-                  icon.className = 'flex items-center justify-center w-full h-full text-white font-bold text-2xl';
+                  icon.className = 'flex items-center justify-center w-full h-full text-foreground font-bold text-2xl';
                   icon.innerHTML = (storeSettings?.storeName || 'MesenAe').charAt(0).toUpperCase();
                   parent.appendChild(icon);
                 }
               }}
             />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-black text-foreground tracking-tight">
             {storeSettings?.storeName || 'MesenAe'}
           </h1>
-          <p className="text-sm font-medium text-orange-500 mt-1">Management Portal</p>
+          <p className="text-sm font-medium text-primary mt-1">Management Portal</p>
         </div>
 
         {/* Kartu Form Login */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-[1.5rem] shadow-2xl p-8 sm:p-10 animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-[1.5rem] shadow-2xl shadow-primary/5 p-8 sm:p-10 animate-in fade-in zoom-in-95 duration-500">
           
           {/* Header Form */}
           <div className="mb-8 space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
               Selamat Datang
             </h2>
-            <p className="text-sm text-zinc-400 font-medium">
+            <p className="text-sm text-muted-foreground font-medium">
               Masukkan akun Anda untuk masuk ke Panel Admin atau Monitor Dapur.
             </p>
           </div>
@@ -78,11 +78,11 @@ export default function LoginRightColumn({
             
             {/* Username Field */}
             <div className="space-y-2 group">
-              <Label htmlFor="username" className="text-sm font-bold text-slate-300">
+              <Label htmlFor="username" className="text-sm font-bold text-foreground">
                 Username
               </Label>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-primary transition-colors pointer-events-none">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none">
                   <User className="w-4 h-4" strokeWidth={2.5} />
                 </div>
                 <Input
@@ -94,7 +94,7 @@ export default function LoginRightColumn({
                   autoFocus
                   autoComplete="username"
                   disabled={loading}
-                  className="h-12 pl-10 pr-4 rounded-lg border-zinc-800 bg-zinc-950/50 focus:bg-zinc-950 focus:border-primary shadow-sm transition-all text-sm font-medium text-white placeholder-zinc-600 disabled:opacity-50"
+                  className="h-12 pl-10 pr-4 rounded-lg border-input bg-background/50 focus:bg-background focus:border-primary shadow-sm transition-all text-sm font-medium text-foreground placeholder-muted-foreground disabled:opacity-50"
                 />
               </div>
             </div>
@@ -102,12 +102,12 @@ export default function LoginRightColumn({
             {/* Password Field */}
             <div className="space-y-2 group">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-bold text-slate-300">
+                <Label htmlFor="password" className="text-sm font-bold text-foreground">
                   Password
                 </Label>
               </div>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-primary transition-colors pointer-events-none">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none">
                   <Lock className="w-4 h-4" strokeWidth={2.5} />
                 </div>
                 <Input
@@ -118,14 +118,14 @@ export default function LoginRightColumn({
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   disabled={loading}
-                  className="h-12 pl-10 pr-12 rounded-lg border-zinc-800 bg-zinc-950/50 focus:bg-zinc-950 focus:border-primary shadow-sm transition-all text-sm font-medium text-white placeholder-zinc-600 disabled:opacity-50"
+                  className="h-12 pl-10 pr-12 rounded-lg border-input bg-background/50 focus:bg-background focus:border-primary shadow-sm transition-all text-sm font-medium text-foreground placeholder-muted-foreground disabled:opacity-50"
                 />
                 <button
                   type="button"
                   tabIndex={-1}
                   onClick={() => setShowPassword((prev) => !prev)}
                   disabled={loading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-white transition-colors disabled:opacity-50 rounded-lg focus:outline-none"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 rounded-lg focus:outline-none"
                   aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -162,10 +162,10 @@ export default function LoginRightColumn({
 
         {/* Footer Note */}
         <div className="text-center mt-8 space-y-1">
-          <p className="text-xs font-semibold text-zinc-600">
+          <p className="text-xs font-semibold text-muted-foreground">
             MesenAe Workspace v2.0
           </p>
-          <p className="text-[10px] text-zinc-700">
+          <p className="text-[10px] text-muted-foreground/70">
             Akses khusus staf dan pengelola restoran terotorisasi.
           </p>
         </div>

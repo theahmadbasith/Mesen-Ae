@@ -118,18 +118,23 @@ export default function SharedLogin() {
   };
 
   return (
-    <div className="min-h-screen flex bg-zinc-950 selection:bg-primary/20 selection:text-primary text-slate-100">
-      <LoginLeftColumn />
-      <LoginRightColumn
-        username={username}
-        setUsername={setUsername}
-        password={password}
-        setPassword={setPassword}
-        showPassword={showPassword}
-        setShowPassword={setShowPassword}
-        loading={loading}
-        handleLogin={handleLogin}
-      />
+    <div className="min-h-screen flex bg-background text-foreground relative selection:bg-primary/20 selection:text-primary">
+      {/* Background Grid Pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      
+      <div className="relative z-10 flex w-full min-h-screen">
+        <LoginLeftColumn />
+        <LoginRightColumn
+          username={username}
+          setUsername={setUsername}
+          password={password}
+          setPassword={setPassword}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          loading={loading}
+          handleLogin={handleLogin}
+        />
+      </div>
     </div>
   );
 }
