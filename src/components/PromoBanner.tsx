@@ -11,11 +11,11 @@ interface PromoBannerProps {
 
 export default function PromoBanner({ banner, className, onAction }: PromoBannerProps) {
   // Koordinat Default Jika Belum Di-set
-  const headingP = banner.headingPos ?? { x: 8, y: 15 };
-  const titleP = banner.titlePos ?? { x: 8, y: 35 };
-  const descP = banner.descPos ?? { x: 8, y: 65 };
-  const buttonP = banner.buttonPos ?? { x: 8, y: 85 };
-  const overP = banner.overlayPos ?? { x: 85, y: 50 };
+  const headingP = banner.headingPos ?? { x: 10, y: 20 };
+  const titleP = banner.titlePos ?? { x: 10, y: 38 };
+  const descP = banner.descPos ?? { x: 10, y: 60 };
+  const buttonP = banner.buttonPos ?? { x: 10, y: 82 };
+  const overP = banner.overlayPos ?? { x: 80, y: 50 };
 
   const bgFilter = banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
   const bgFilterStyle = `brightness(${bgFilter.brightness}%) contrast(${bgFilter.contrast}%) saturate(${bgFilter.saturate}%) blur(${bgFilter.blur}px)`;
@@ -96,7 +96,42 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
           }} 
           className="w-[70cqw] max-w-[75cqw]"
         >
-          <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10">
+          <span 
+            style={{
+              backgroundColor: 
+                banner.headingStyle === 'solid-white' ? '#FFFFFF' :
+                banner.headingStyle === 'solid-dark' ? '#09090b' :
+                banner.headingStyle === 'outline-white' ? 'transparent' :
+                banner.headingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
+                banner.headingStyle === 'retro' ? '#fbbf24' :
+                'rgba(255,255,255,0.2)', // default glass
+
+              color: 
+                banner.headingStyle === 'solid-white' ? '#0f172a' :
+                banner.headingStyle === 'solid-dark' ? '#ffffff' :
+                banner.headingStyle === 'outline-white' ? '#ffffff' :
+                banner.headingStyle === 'neon' ? '#a5f3fc' :
+                banner.headingStyle === 'retro' ? '#09090b' :
+                '#ffffff',
+
+              border: 
+                banner.headingStyle === 'solid-white' ? 'none' :
+                banner.headingStyle === 'solid-dark' ? '1px solid #1e293b' :
+                banner.headingStyle === 'outline-white' ? '0.2cqw solid #ffffff' :
+                banner.headingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
+                banner.headingStyle === 'retro' ? '0.2cqw solid #09090b' :
+                '0.1cqw solid rgba(255,255,255,0.1)',
+
+              boxShadow: 
+                banner.headingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
+                banner.headingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
+                'none',
+
+              backdropFilter: 
+                (banner.headingStyle === 'glass' || !banner.headingStyle) ? 'blur(8px)' : undefined
+            }}
+            className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded font-bold inline-block uppercase tracking-widest"
+          >
             {banner.heading || (banner.type === 'voucher' ? 'Promo Voucher' : banner.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran')}
           </span>
         </div>
@@ -114,7 +149,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
           }} 
           className="w-[70cqw] max-w-[75cqw]"
         >
-          <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0">
+          <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 drop-shadow-sm m-0 text-left">
             {banner.title}
           </h4>
         </div>
@@ -132,7 +167,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
           }} 
           className="w-[70cqw] max-w-[75cqw]"
         >
-          <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0">
+          <p className="text-[2.8cqw] text-slate-100 line-clamp-3 leading-[1.3] font-medium drop-shadow-sm m-0 text-left">
             {banner.description}
           </p>
         </div>
@@ -159,10 +194,40 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
               } else if (onAction) onAction();
             }}
             style={{
-              backgroundColor: banner.badgeStyle === 'solid' ? '#FFFFFF' : banner.badgeStyle === 'outline' ? 'transparent' : 'rgba(255,255,255,0.2)',
-              color: banner.badgeStyle === 'solid' ? '#0F172A' : '#FFFFFF',
-              border: banner.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' : banner.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' : 'none',
-              backdropFilter: banner.badgeStyle === 'glass' ? 'blur(8px)' : undefined
+              backgroundColor: 
+                banner.badgeStyle === 'solid' ? '#FFFFFF' :
+                banner.badgeStyle === 'outline' ? 'transparent' :
+                banner.badgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' :
+                banner.badgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' :
+                banner.badgeStyle === 'neon' ? '#06b6d4' :
+                banner.badgeStyle === 'retro' ? '#eab308' :
+                '#FFFFFF', // default solid
+
+              color: 
+                banner.badgeStyle === 'solid' ? '#0F172A' :
+                banner.badgeStyle === 'outline' ? '#FFFFFF' :
+                banner.badgeStyle === 'glass' ? '#FFFFFF' :
+                banner.badgeStyle === 'soft-dark' ? '#FFFFFF' :
+                banner.badgeStyle === 'neon' ? '#ffffff' :
+                banner.badgeStyle === 'retro' ? '#09090b' :
+                '#0F172A',
+
+              border: 
+                banner.badgeStyle === 'solid' ? 'none' :
+                banner.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' :
+                banner.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+                banner.badgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+                banner.badgeStyle === 'neon' ? 'none' :
+                banner.badgeStyle === 'retro' ? '0.25cqw solid #09090b' :
+                'none',
+
+              boxShadow: 
+                banner.badgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' :
+                banner.badgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' :
+                'none',
+
+              backdropFilter: 
+                (banner.badgeStyle === 'glass' || banner.badgeStyle === 'soft-dark') ? 'blur(8px)' : undefined
             }}
             className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm hover:opacity-90 active:scale-95 transition-all inline-block pointer-events-auto"
           >

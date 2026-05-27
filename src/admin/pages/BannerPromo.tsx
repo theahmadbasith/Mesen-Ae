@@ -1,10 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Plus, Edit2, Trash2, Image as ImageIcon, Sparkles,
-  RotateCcw, RotateCw, FlipHorizontal, MousePointer2, X, Bold,
+  RotateCcw, RotateCw, FlipHorizontal, X, Bold,
   Type, Palette, Layers, Layout,
   ChevronDown, ChevronUp, Check, Grid, Sliders, SlidersHorizontal,
-  ChevronLeft, Trash, Eye
+  ChevronLeft, Trash
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile } from '@/hooks/db-hooks';
@@ -150,7 +150,10 @@ export default function App() {
   const [bannerGradientRight, setBannerGradientRight] = useState('#60efff');
   const [bannerGradientAngle, setBannerGradientAngle] = useState(135);
   const [bannerImage, setBannerImage] = useState(null);
+  
+  // Badge Style & Heading Style
   const [bannerBadgeStyle, setBannerBadgeStyle] = useState('solid');
+  const [bannerHeadingStyle, setBannerHeadingStyle] = useState('glass');
 
   const [bannerHeading, setBannerHeading] = useState('SPESIAL PENAWARAN');
   const [bannerTitle, setBannerTitle] = useState('Promo Berkah Idul Adha');
@@ -304,6 +307,7 @@ export default function App() {
       setBannerDescription(banner.description || '');
       setBannerButtonText(banner.buttonText || '');
       setBannerBadgeStyle(banner.badgeStyle || 'solid');
+      setBannerHeadingStyle(banner.headingStyle || 'glass');
 
       setBannerOverlayImageUrl(banner.overlayImageUrl || null);
       setBannerOverlayFlipX(banner.overlayFlipX || false);
@@ -343,6 +347,7 @@ export default function App() {
       setBannerDescription('Nikmati Keberkahan Idul Adha Promo Diskon 75% Dengan Kode Voucher BASITH');
       setBannerButtonText('Lihat Detail');
       setBannerBadgeStyle('solid');
+      setBannerHeadingStyle('glass');
 
       setBannerOverlayImageUrl(null);
       setBannerOverlayFlipX(false);
@@ -406,6 +411,7 @@ export default function App() {
         bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
         bgGradient: bannerBgType === 'gradient' ? `linear-gradient(${bannerGradientAngle}deg, ${bannerGradientLeft}, ${bannerGradientRight})` : null,
         badgeStyle: bannerBadgeStyle,
+        headingStyle: bannerHeadingStyle,
 
         canvasLayers: [], // Clean up legacy
         canvasBgFilter: bgFilter,
@@ -481,7 +487,42 @@ export default function App() {
         <div key={layer.id} style={baseStyle}
           className={cn(isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg p-1')}
           onPointerDown={e => onLayerPointerDown(e, layer.id)}>
-          <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 select-none text-white">
+          <span 
+            style={{
+              backgroundColor: 
+                bannerHeadingStyle === 'solid-white' ? '#FFFFFF' :
+                bannerHeadingStyle === 'solid-dark' ? '#09090b' :
+                bannerHeadingStyle === 'outline-white' ? 'transparent' :
+                bannerHeadingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
+                bannerHeadingStyle === 'retro' ? '#fbbf24' :
+                'rgba(255,255,255,0.2)', // default/glass
+
+              color: 
+                bannerHeadingStyle === 'solid-white' ? '#0f172a' :
+                bannerHeadingStyle === 'solid-dark' ? '#ffffff' :
+                bannerHeadingStyle === 'outline-white' ? '#ffffff' :
+                bannerHeadingStyle === 'neon' ? '#a5f3fc' :
+                bannerHeadingStyle === 'retro' ? '#09090b' :
+                '#ffffff',
+
+              border: 
+                bannerHeadingStyle === 'solid-white' ? 'none' :
+                bannerHeadingStyle === 'solid-dark' ? '1px solid #1e293b' :
+                bannerHeadingStyle === 'outline-white' ? '0.2cqw solid #ffffff' :
+                bannerHeadingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
+                bannerHeadingStyle === 'retro' ? '0.2cqw solid #09090b' :
+                '0.1cqw solid rgba(255,255,255,0.1)',
+
+              boxShadow: 
+                bannerHeadingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
+                bannerHeadingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
+                'none',
+
+              backdropFilter: 
+                (bannerHeadingStyle === 'glass' || !bannerHeadingStyle) ? 'blur(8px)' : undefined
+            }}
+            className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded font-bold inline-block uppercase tracking-widest select-none"
+          >
             {bannerHeading || 'Spesial Penawaran'}
           </span>
         </div>
@@ -519,10 +560,40 @@ export default function App() {
           onPointerDown={e => onLayerPointerDown(e, layer.id)}>
           <span
             style={{
-              backgroundColor: bannerBadgeStyle === 'solid' ? '#FFFFFF' : bannerBadgeStyle === 'outline' ? 'transparent' : 'rgba(255,255,255,0.2)',
-              color: bannerBadgeStyle === 'solid' ? '#0F172A' : '#FFFFFF',
-              border: bannerBadgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' : bannerBadgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' : 'none',
-              backdropFilter: bannerBadgeStyle === 'glass' ? 'blur(8px)' : undefined
+              backgroundColor: 
+                bannerBadgeStyle === 'solid' ? '#FFFFFF' :
+                bannerBadgeStyle === 'outline' ? 'transparent' :
+                bannerBadgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' :
+                bannerBadgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' :
+                bannerBadgeStyle === 'neon' ? '#06b6d4' :
+                bannerBadgeStyle === 'retro' ? '#eab308' :
+                '#FFFFFF', // default solid
+
+              color: 
+                bannerBadgeStyle === 'solid' ? '#0F172A' :
+                bannerBadgeStyle === 'outline' ? '#FFFFFF' :
+                bannerBadgeStyle === 'glass' ? '#FFFFFF' :
+                bannerBadgeStyle === 'soft-dark' ? '#FFFFFF' :
+                bannerBadgeStyle === 'neon' ? '#ffffff' :
+                bannerBadgeStyle === 'retro' ? '#09090b' :
+                '#0F172A',
+
+              border: 
+                bannerBadgeStyle === 'solid' ? 'none' :
+                bannerBadgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' :
+                bannerBadgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+                bannerBadgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+                bannerBadgeStyle === 'neon' ? 'none' :
+                bannerBadgeStyle === 'retro' ? '0.25cqw solid #09090b' :
+                'none',
+
+              boxShadow: 
+                bannerBadgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' :
+                bannerBadgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' :
+                'none',
+
+              backdropFilter: 
+                (bannerBadgeStyle === 'glass' || bannerBadgeStyle === 'soft-dark') ? 'blur(8px)' : undefined
             }}
             className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow-sm select-none inline-block"
           >
@@ -605,6 +676,18 @@ export default function App() {
           </div>
 
           <div>
+            <Label>Gaya Kotak Heading</Label>
+            <select value={bannerHeadingStyle} onChange={(e) => setBannerHeadingStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
+              <option value="glass">Glassmorphism (Kaca Transparan)</option>
+              <option value="solid-white">Solid Putih (Teks Gelap)</option>
+              <option value="solid-dark">Solid Gelap (Teks Terang)</option>
+              <option value="outline-white">Garis Tepi Putih</option>
+              <option value="neon">Neon Cyan (Menyala)</option>
+              <option value="retro">Retro Brutalist (Kuning & Border Hitam Tebal)</option>
+            </select>
+          </div>
+
+          <div>
             <Label>Judul Utama (Title)</Label>
             <Input
               value={bannerTitle}
@@ -631,6 +714,18 @@ export default function App() {
               onChange={e => setBannerButtonText(e.target.value)}
               placeholder="Contoh: Lihat Detail"
             />
+          </div>
+
+          <div>
+            <Label>Gaya Tombol (Badge)</Label>
+            <select value={bannerBadgeStyle} onChange={(e) => setBannerBadgeStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
+              <option value="solid">Solid Putih (Teks Gelap)</option>
+              <option value="outline">Outline (Garis Tepi Putih)</option>
+              <option value="glass">Glassmorphism (Kaca Transparan)</option>
+              <option value="soft-dark">Soft Dark (Gelap Transparan)</option>
+              <option value="neon">Neon Cyan (Menyala)</option>
+              <option value="retro">Retro Brutalist (Kuning & Border Hitam Tebal)</option>
+            </select>
           </div>
 
           <div>
@@ -664,23 +759,6 @@ export default function App() {
               </select>
             </div>
           )}
-
-          <div>
-            <Label>Gaya Tombol (Badge)</Label>
-            <select value={bannerBadgeStyle} onChange={(e) => setBannerBadgeStyle(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100 font-bold">
-              <option value="solid">Solid (Warna Penuh)</option>
-              <option value="outline">Outline (Garis Tepi)</option>
-              <option value="glass">Glassmorphism (Kaca)</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-            <div>
-              <p className="text-sm font-bold">Status Tayang</p>
-              <p className="text-xs text-zinc-500">Tampilkan di aplikasi pelanggan</p>
-            </div>
-            <Switch checked={bannerIsActive} onCheckedChange={setBannerIsActive} />
-          </div>
 
           <hr className="border-zinc-200 dark:border-zinc-800" />
 
@@ -785,13 +863,19 @@ export default function App() {
               </Button>
             </div>
           )}
-
-          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
-            <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Daftar Objek Kanvas (Klik Untuk Seleksi)</p>
-            {renderLayersPanel()}
-          </div>
         </div>
       </PanelSection>
+
+      {/* 4. STATUS TAYANG (DI LUAR 3 MENU, DI PALING BAWAH) */}
+      <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 space-y-1 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Status Tayang</p>
+            <p className="text-[10px] text-zinc-500 font-medium">Tampilkan banner ini di aplikasi pelanggan</p>
+          </div>
+          <Switch checked={bannerIsActive} onCheckedChange={setBannerIsActive} />
+        </div>
+      </div>
       
     </div>
   );
@@ -998,7 +1082,42 @@ export default function App() {
                     {/* Heading tag preview */}
                     {(b.heading || b.type) && (
                       <div style={{ position: 'absolute', left: `${headP.x}%`, top: `${headP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }}>
-                        <span className="bg-white/20 text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest border border-white/10 text-white select-none">
+                        <span 
+                          style={{
+                            backgroundColor: 
+                              b.headingStyle === 'solid-white' ? '#FFFFFF' :
+                              b.headingStyle === 'solid-dark' ? '#09090b' :
+                              b.headingStyle === 'outline-white' ? 'transparent' :
+                              b.headingStyle === 'neon' ? 'rgba(34,211,238,0.15)' :
+                              b.headingStyle === 'retro' ? '#fbbf24' :
+                              'rgba(255,255,255,0.2)', // default glass
+
+                            color: 
+                              b.headingStyle === 'solid-white' ? '#0f172a' :
+                              b.headingStyle === 'solid-dark' ? '#ffffff' :
+                              b.headingStyle === 'outline-white' ? '#ffffff' :
+                              b.headingStyle === 'neon' ? '#a5f3fc' :
+                              b.headingStyle === 'retro' ? '#09090b' :
+                              '#ffffff',
+
+                            border: 
+                              b.headingStyle === 'solid-white' ? 'none' :
+                              b.headingStyle === 'solid-dark' ? '1px solid #1e293b' :
+                              b.headingStyle === 'outline-white' ? '0.2cqw solid #ffffff' :
+                              b.headingStyle === 'neon' ? '0.15cqw solid #22d3ee' :
+                              b.headingStyle === 'retro' ? '0.2cqw solid #09090b' :
+                              '0.1cqw solid rgba(255,255,255,0.1)',
+
+                            boxShadow: 
+                              b.headingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' :
+                              b.headingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' :
+                              'none',
+
+                            backdropFilter: 
+                              (b.headingStyle === 'glass' || !b.headingStyle) ? 'blur(8px)' : undefined
+                          }}
+                          className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded backdrop-blur-md font-bold inline-block uppercase tracking-widest text-white select-none"
+                        >
                           {b.heading || (b.type === 'voucher' ? 'Promo Voucher' : b.type === 'menu' ? 'Menu Rekomendasi' : 'Spesial Penawaran')}
                         </span>
                       </div>
@@ -1027,10 +1146,40 @@ export default function App() {
                       <div style={{ position: 'absolute', left: `${buttonP.x}%`, top: `${buttonP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }}>
                         <span
                           style={{
-                            backgroundColor: b.badgeStyle === 'solid' ? '#FFFFFF' : b.badgeStyle === 'outline' ? 'transparent' : 'rgba(255,255,255,0.2)',
-                            color: b.badgeStyle === 'solid' ? '#0F172A' : '#FFFFFF',
-                            border: b.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' : b.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' : 'none',
-                            backdropFilter: b.badgeStyle === 'glass' ? 'blur(8px)' : undefined
+                            backgroundColor: 
+                              b.badgeStyle === 'solid' ? '#FFFFFF' :
+                              b.badgeStyle === 'outline' ? 'transparent' :
+                              b.badgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' :
+                              b.badgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' :
+                              b.badgeStyle === 'neon' ? '#06b6d4' :
+                              b.badgeStyle === 'retro' ? '#eab308' :
+                              '#FFFFFF',
+
+                            color: 
+                              b.badgeStyle === 'solid' ? '#0F172A' :
+                              b.badgeStyle === 'outline' ? '#FFFFFF' :
+                              b.badgeStyle === 'glass' ? '#FFFFFF' :
+                              b.badgeStyle === 'soft-dark' ? '#FFFFFF' :
+                              b.badgeStyle === 'neon' ? '#ffffff' :
+                              b.badgeStyle === 'retro' ? '#09090b' :
+                              '#0F172A',
+
+                            border: 
+                              b.badgeStyle === 'solid' ? 'none' :
+                              b.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' :
+                              b.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+                              b.badgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' :
+                              b.badgeStyle === 'neon' ? 'none' :
+                              b.badgeStyle === 'retro' ? '0.25cqw solid #09090b' :
+                              'none',
+
+                            boxShadow: 
+                              b.badgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' :
+                              b.badgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' :
+                              'none',
+
+                            backdropFilter: 
+                              (b.badgeStyle === 'glass' || b.badgeStyle === 'soft-dark') ? 'blur(8px)' : undefined
                           }}
                           className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow select-none inline-block"
                         >
