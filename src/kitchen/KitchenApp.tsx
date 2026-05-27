@@ -14,7 +14,7 @@ const KitchenProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   try {
     const auth = JSON.parse(authString);
-    if (!auth || (auth.role !== 'user' && auth.role !== 'admin')) {
+    if (!auth || !['admin', 'user', 'dapur'].includes(auth.role)) {
       return <Navigate to="/login" replace />;
     }
     

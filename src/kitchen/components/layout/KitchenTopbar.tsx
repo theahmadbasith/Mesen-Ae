@@ -55,8 +55,8 @@ export default function KitchenTopbar() {
       
       {/* Brand/Store Info */}
       <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center border border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.3)] shrink-0 overflow-hidden">
-          <img src={storeSettings?.logo || "/icon-192.png"} alt="Store Logo" className={cn("w-10 h-10 object-contain drop-shadow-md", !storeSettings?.logo && "p-1")} />
+        <div className="w-11 h-11 rounded-xl bg-transparent flex items-center justify-center shrink-0 overflow-hidden">
+          <img src={storeSettings?.logo || "/icon-192.png"} alt="Store Logo" className="w-full h-full object-contain" />
         </div>
         <div className="flex flex-col justify-center">
           <h2 className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70 tracking-tight leading-none uppercase">
