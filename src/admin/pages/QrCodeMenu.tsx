@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2, Link as LinkIcon, Save } from 'lucide-react';
-import { QRCodeCanvas } from 'qrcode.react';
-import html2canvas from 'html2canvas';
+import { QRCodeSVG } from 'qrcode.react';
+import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate } from '@/hooks/db-hooks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -120,13 +120,13 @@ export default function QrCodeMenu() {
   const downloadQrCode = async () => {
     if (!cardRef.current) return;
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 3,
-        useCORS: true,
-        logging: false,
+      // Use html-to-image which provides flawless styling and font rendering compared to html2canvas
+      const pngFile = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 3,
+        backgroundColor: '#ffffff'
       });
-      const pngFile = canvas.toDataURL('image/png');
+      
       const downloadLink = document.createElement('a');
       downloadLink.download = `QR_Meja_${activeTable || '1'}.png`;
       downloadLink.href = pngFile;
@@ -137,11 +137,10 @@ export default function QrCodeMenu() {
     }
   };
 
-  const printQrCode = () => {
+  const printQrCode = async () => {
     if (!qrRef.current) return;
-    const canvas = qrRef.current.querySelector('canvas');
-    if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
+    try {
+      const dataUrl = await toPng(qrRef.current, { cacheBust: true, pixelRatio: 3, backgroundColor: '#ffffff' });
 
     const storeName = storeSettings?.storeName || 'MesenAe Resto';
     const printWindow = window.open('', '', 'width=800,height=900');
@@ -240,11 +239,14 @@ export default function QrCodeMenu() {
       printWindow.document.close();
       printWindow.focus();
       
-      // Delay untuk memastikan SVG ter-render sempurna sebelum print dialog muncul
+      // Delay untuk memastikan image ter-render sempurna sebelum print dialog muncul
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
       }, 500);
+    }
+    } catch {
+      toast.error('Gagal memproses cetak');
     }
   };
 
@@ -390,9 +392,9 @@ export default function QrCodeMenu() {
 
                     <div 
                       ref={qrRef} 
-                      className="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-block"
+                      className="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-flex justify-center items-center"
                     >
-                      <QRCodeCanvas 
+                      <QRCodeSVG 
                         value={generatedUrl} 
                         size={240} 
                         level={"H"}
@@ -402,6 +404,7 @@ export default function QrCodeMenu() {
                           height: 56,
                           width: 56,
                           excavate: true,
+                          crossOrigin: "anonymous",
                         } : undefined}
                       />
                     </div>
