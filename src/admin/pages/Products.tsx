@@ -2,7 +2,6 @@ import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } 
 import { type Product, type Category } from '@/hooks/db-hooks';
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X, ImageIcon, ZoomIn, ScanBarcode, Loader2, Tag, Layers, QrCode } from 'lucide-react';
-import { ProductsSkeleton } from '@/admin/components/SkeletonLoaders';
 import { compressImage } from '@/lib/image-utils';
 import BarcodeScanner from '@/admin/components/BarcodeScanner';
 import PhotoCropModal from '@/admin/components/PhotoCropModal';
@@ -131,8 +130,11 @@ export default function Produk() {
     try {
       let finalPhotoUrl = photo;
       if (photo && photo.startsWith('data:image')) {
+        const res = await fetch(photo);
+        const blob = await res.blob();
+        const compressedDataUrl = await compressImage(blob, 0.3);
         const fileName = `product-${Date.now()}.jpg`;
-        const url = await dbUploadFile('products', fileName, photo);
+        const url = await dbUploadFile('products', fileName, compressedDataUrl);
         if (url) finalPhotoUrl = url;
       }
 
@@ -560,10 +562,23 @@ export default function Produk() {
         open={!!cropFile}
         onOpenChange={(open) => { if (!open) setCropFile(null); }}
         file={cropFile}
-        onCropped={(croppedDataUrl) => {
+        onCropped={async (croppedDataUrl) => {
           setPhoto(croppedDataUrl);
           setCropFile(null);
+          
+          try {
+            const res = await fetch(croppedDataUrl);
+            const blob = await res.blob();
+            const compressedDataUrl = await compressImage(blob, 0.3);
+            const url = await dbUploadFile('products', `product-${Date.now()}.jpg`, compressedDataUrl);
+            if (url) {
+              setPhoto(url);
+            }
+          } catch (e) {
+            console.error("Product photo upload error", e);
+          }
         }}
+        disableCompression={true}
       />
       
       <style dangerouslySetInnerHTML={{__html: `

@@ -9,7 +9,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat, Link as LinkIcon, Save
+  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat, Link as LinkIcon, Save, ZoomIn
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 
@@ -82,6 +82,13 @@ function Section({ title, description, action, children }: {
         {action}
       </div>
       {children}
+      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
+        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
+          {lightboxSrc && (
+            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -94,6 +101,13 @@ function SettingCard({ children, className }: { children: React.ReactNode; class
       className
     )}>
       {children}
+      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
+        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
+          {lightboxSrc && (
+            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -113,6 +127,13 @@ function SettingRow({ label, description, children, last }: {
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
       {children && <div className="flex-shrink-0">{children}</div>}
+      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
+        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
+          {lightboxSrc && (
+            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -173,6 +194,7 @@ export default function Pengaturan() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'toko';
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   // Sync tab with URL
   useEffect(() => {
@@ -264,7 +286,10 @@ export default function Pengaturan() {
     try {
       let finalLogoUrl = storeLogo;
       if (storeLogo && storeLogo.startsWith('data:image')) {
-        const url = await dbUploadFile('storeSettings', `logo-${Date.now()}.jpg`, storeLogo);
+        const res = await fetch(storeLogo);
+        const blob = await res.blob();
+        const compressedDataUrl = await compressImage(blob, 0.5);
+        const url = await dbUploadFile('storeSettings', `logo-${Date.now()}.jpg`, compressedDataUrl);
         if (url) finalLogoUrl = url;
       }
 
@@ -472,9 +497,22 @@ export default function Pengaturan() {
             {/* Store hero card */}
             <SettingCard>
               <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-primary/6 via-primary/3 to-transparent">
-                <div className="w-14 h-14 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                <div 
+                  className={cn(
+                    "w-14 h-14 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center overflow-hidden shrink-0 relative",
+                    storeSettings?.logo && "cursor-pointer group hover:border-primary/50 transition-colors"
+                  )}
+                  onClick={() => storeSettings?.logo && setLightboxSrc(storeSettings.logo)}
+                >
                   {storeSettings?.logo
-                    ? <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-cover" />
+                    ? (
+                      <>
+                        <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <ZoomIn className="w-5 h-5 text-white" />
+                        </div>
+                      </>
+                    )
                     : <Store className="w-6 h-6 text-muted-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -840,11 +878,21 @@ export default function Pengaturan() {
               <Label className="text-xs font-medium">Logo Toko</Label>
               <div className="flex items-center gap-3">
                 <div
-                  className="w-16 h-16 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => logoInputRef.current?.click()}
+                  className={cn(
+                    "w-16 h-16 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden shrink-0 relative",
+                    storeLogo ? "cursor-pointer group hover:border-primary/50 transition-colors" : "cursor-pointer hover:border-primary/50 transition-colors"
+                  )}
+                  onClick={() => storeLogo ? setLightboxSrc(storeLogo) : logoInputRef.current?.click()}
                 >
                   {storeLogo
-                    ? <img src={storeLogo} alt="Logo" className="w-full h-full object-cover" />
+                    ? (
+                      <>
+                        <img src={storeLogo} alt="Logo" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <ZoomIn className="w-5 h-5 text-white" />
+                        </div>
+                      </>
+                    )
                     : <Camera className="w-5 h-5 text-muted-foreground/50" />}
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -1111,12 +1159,31 @@ export default function Pengaturan() {
         open={!!cropFile}
         onOpenChange={(v) => { if (!v) setCropFile(null); }}
         file={cropFile}
-        onCropped={(dataUrl) => {
+        onCropped={async (dataUrl) => {
           setStoreLogo(dataUrl);
           setCropFile(null);
+
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const compressedDataUrl = await compressImage(blob, 0.5);
+            const url = await dbUploadFile('storeSettings', `logo-${Date.now()}.jpg`, compressedDataUrl);
+            if (url) {
+              setStoreLogo(url);
+            }
+          } catch (e) {
+            console.error("Store logo upload error", e);
+          }
         }}
         disableCompression={true}
       />
+      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
+        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
+          {lightboxSrc && (
+            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
