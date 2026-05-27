@@ -1504,25 +1504,25 @@ export default function App() {
   // RENDER MAIN LIST
   // ============================================================================
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 p-4 sm:p-8 md:p-12 transition-colors duration-300">
+    <div className="pb-24 space-y-6 w-full animate-in fade-in duration-300">
       
-      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="space-y-6">
         
-        {/* Header - just the action button, title is in topbar */}
+        {/* Header */}
         <div className="flex justify-end">
-          <Button variant="primary" size="md" onClick={() => openEditor()} className="rounded-2xl shrink-0 shadow-blue-500/25">
+          <Button onClick={() => openEditor()} className="h-11 px-5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] shrink-0">
             <Plus className="w-4 h-4 mr-2" /> Buat Banner Baru
           </Button>
         </div>
 
         {/* Content List */}
         {banners.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-16 flex flex-col items-center justify-center text-center">
-            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-6">
-              <Layout className="w-12 h-12 text-zinc-400" strokeWidth={1.5} />
+          <div className="bg-card border-2 border-dashed border-border rounded-3xl p-16 flex flex-col items-center justify-center text-center">
+            <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
+              <Layout className="w-12 h-12 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl font-black mb-2">Kanvas Kosong</h3>
-            <p className="text-zinc-500 dark:text-zinc-400 max-w-sm mb-8">Belum ada banner yang dibuat. Klik tombol di atas untuk memulai mahakarya Anda!</p>
+            <h3 className="text-2xl font-black mb-2 text-foreground">Kanvas Kosong</h3>
+            <p className="text-muted-foreground max-w-sm mb-8">Belum ada banner yang dibuat. Klik tombol di atas untuk memulai mahakarya Anda!</p>
             <Button variant="primary" onClick={() => openEditor()} className="rounded-full px-8 shadow-lg">Mulai Desain</Button>
           </div>
         ) : (
@@ -1538,10 +1538,10 @@ export default function App() {
               const overP = b.overlayPos ?? { x: 80, y: 50 };
 
               return (
-                <Card key={b.id} className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500/50">
+                <Card key={b.id} className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border hover:border-primary/40">
                   
                   {/* Visual Preview */}
-                  <div className="aspect-[21/9] w-full relative bg-zinc-950 overflow-hidden shrink-0 border-b border-zinc-200 dark:border-zinc-800"
+                  <div className="aspect-[21/9] w-full relative bg-zinc-950 overflow-hidden shrink-0 border-b border-border"
                     style={{ 
                       background: bgPreview,
                       containerType: 'inline-size'
@@ -1656,24 +1656,24 @@ export default function App() {
                   </div>
 
                   {/* Info & Actions */}
-                  <div className="p-5 flex flex-col flex-1 bg-white dark:bg-zinc-950">
-                    <h4 className="text-base font-black mb-1 line-clamp-1 text-zinc-900 dark:text-zinc-50">{b.title || '(Tanpa Judul)'}</h4>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-4 flex-1">{b.description ? b.description.replace(/<[^>]*>/g, '') : 'Tidak ada deskripsi'}</p>
+                  <div className="p-5 flex flex-col flex-1 bg-card">
+                    <h4 className="text-base font-black mb-1 line-clamp-1 text-foreground">{b.title || '(Tanpa Judul)'}</h4>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">{b.description ? b.description.replace(/<[^>]*>/g, '') : 'Tidak ada deskripsi'}</p>
                     
-                    <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                      <div className="flex items-center gap-3">
-                         <Switch checked={b.isActive} onCheckedChange={() => handleToggleActive(b.id, b.isActive)} />
-                         <span className="text-xs font-bold text-zinc-500">Tampil</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" className="rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-blue-600" onClick={() => openEditor(b)}>
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-500 hover:text-red-500" onClick={() => setDeleteBannerId(b.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                       <div className="flex items-center gap-3">
+                          <Switch checked={b.isActive} onCheckedChange={() => handleToggleActive(b.id, b.isActive)} />
+                          <span className="text-xs font-bold text-muted-foreground">Tampil</span>
+                       </div>
+                       <div className="flex gap-2">
+                         <Button variant="ghost" size="icon" className="rounded-xl text-muted-foreground hover:text-primary" onClick={() => openEditor(b)}>
+                           <Edit2 className="w-4 h-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" className="rounded-xl text-muted-foreground hover:text-red-500" onClick={() => setDeleteBannerId(b.id)}>
+                           <Trash2 className="w-4 h-4" />
+                         </Button>
+                       </div>
+                     </div>
                   </div>
                 </Card>
               );
