@@ -1,7 +1,9 @@
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "next-themes";
 
 export function Header() {
-  const { dark, toggle } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const dark = theme === 'dark';
+  const toggle = () => setTheme(dark ? 'light' : 'dark');
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
