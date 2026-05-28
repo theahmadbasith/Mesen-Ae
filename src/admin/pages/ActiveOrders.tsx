@@ -40,6 +40,10 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
   const [midtransPaymentType, setMidtransPaymentType] = useState<'qris' | 'transfer' | 'e-wallet' | 'lainnya' | null>(null);
   const [checkoutDataCache, setCheckoutDataCache] = useState<{ bill: Transaction; data: any } | null>(null);
 
+  // Confirm manual web order payment
+  const [confirmManualOpen, setConfirmManualOpen] = useState(false);
+  const [billToConfirmManual, setBillToConfirmManual] = useState<Transaction | null>(null);
+
   // Success modal setelah bayar
   const [successTx, setSuccessTx] = useState<Transaction | null>(null);
   const [successPayMethodName, setSuccessPayMethodName] = useState('Tunai');
@@ -121,6 +125,49 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
       toast.success(`Status pesanan diperbarui`);
     } catch (e) {
       toast.error('Gagal memperbarui status pesanan');
+    }
+  };
+
+  // Check if order is manual non-cash web order awaiting confirmation
+  const isManualWebOrder = (bill: Transaction) => {
+    return (
+      bill.status === 'belum lunas' &&
+      bill.remarks &&
+      bill.remarks.includes('Manual') &&
+      bill.remarks.includes('Web')
+    );
+  };
+
+  const handleConfirmManualOrder = async () => {
+    if (!billToConfirmManual) return;
+    try {
+      const pm = paymentMethods.find((m: any) => m.id === billToConfirmManual.paymentMethodId);
+      const txPayload = {
+        status: 'lunas',
+        payment_amount: billToConfirmManual.total,
+        payments: [{
+          method_id: billToConfirmManual.paymentMethodId || 0,
+          method_name: pm?.name || 'Manual',
+          amount: billToConfirmManual.total || 0,
+          date: new Date().toISOString()
+        }],
+        kitchen_status: getBillNeedsKitchen(billToConfirmManual) ? 'diproses' : (billToConfirmManual.remarks?.includes('Web') ? 'diproses' : null),
+        closed_at: new Date().toISOString(),
+      };
+      await dbUpdate('transactions', billToConfirmManual.id!, txPayload);
+      
+      sendPushToRole('customer', {
+        title: 'Pembayaran Dikonfirmasi! ✅',
+        body: `Pembayaran Anda (${billToConfirmManual.receiptNumber}) telah dikonfirmasi oleh admin.`,
+        url: '/?view=tracking',
+      }).catch(console.error);
+
+      toast.success('Pembayaran berhasil dikonfirmasi!');
+    } catch (e: any) {
+      toast.error('Gagal mengkonfirmasi pembayaran: ' + e.message);
+    } finally {
+      setConfirmManualOpen(false);
+      setBillToConfirmManual(null);
     }
   };
 
@@ -361,13 +408,24 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                           </Button>
                       )
                     ) : (
-                      <Button 
-                        className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
-                        onClick={() => setPayingBill(bill)}
-                      >
-                        Bayar
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </Button>
+                      // Bill belum lunas
+                      isManualWebOrder(bill) ? (
+                        <Button 
+                          className="flex-1 gap-2 bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all text-white"
+                          onClick={() => { setBillToConfirmManual(bill); setConfirmManualOpen(true); }}
+                        >
+                          Konfirmasi
+                          <CheckCircle2 className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all group-hover:shadow-primary/30"
+                          onClick={() => setPayingBill(bill)}
+                        >
+                          Bayar
+                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                        </Button>
+                      )
                     )}
                   </div>
                 )}
@@ -433,6 +491,31 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
               className="flex-1 rounded-xl h-11 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-md shadow-destructive/20"
             >
               Ya, Batalkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Manual Web Order Payment */}
+      <AlertDialog open={confirmManualOpen} onOpenChange={setConfirmManualOpen}>
+        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
+          <AlertDialogHeader>
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-2 mx-auto">
+              <CheckCircle2 className="w-6 h-6 text-amber-600" />
+            </div>
+            <AlertDialogTitle className="text-center text-xl font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan <strong>{billToConfirmManual?.receiptNumber}</strong>?
+              Tindakan ini akan menandai pesanan sebagai <strong>Lunas</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Belum</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmManualOrder} 
+              className="flex-1 rounded-xl h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
+            >
+              Ya, Konfirmasi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
