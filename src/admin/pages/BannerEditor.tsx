@@ -9,7 +9,7 @@ function BannerEditorContent() {
   const { cropBgOpen, setCropBgOpen, cropBgFile, handleBgCropSuccess } = useBannerEditor();
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground overflow-hidden font-sans">
       {/* TOP BAR / TOOLBAR */}
       <BannerEditorToolbar />
 

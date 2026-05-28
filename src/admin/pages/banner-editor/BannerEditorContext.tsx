@@ -284,7 +284,7 @@ interface BannerEditorContextType {
   magicWandTolerance: number; setMagicWandTolerance: any;
 
   // Canvas state
-  snapEnabled: boolean; setSnapEnabled: any;
+
   activeSnapX: number | null; setActiveSnapX: any;
   activeSnapY: number | null; setActiveSnapY: any;
   layers: any[]; setLayers: any;
@@ -385,7 +385,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
   const [magicWandTolerance, setMagicWandTolerance] = useState(32);
 
   // Canvas state
-  const [snapEnabled, setSnapEnabled] = useState(true);
+  const snapEnabled = true; // always on
   const [activeSnapX, setActiveSnapX] = useState<number | null>(null);
   const [activeSnapY, setActiveSnapY] = useState<number | null>(null);
   const [layers, setLayers] = useState<any[]>([]);
@@ -569,7 +569,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
 
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
-  }, [layers, snapEnabled]);
+  }, [layers]);
 
   const onResizePointerDown = useCallback((e: any, layerId: string) => {
     e.stopPropagation();
@@ -849,7 +849,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     bannerOverlayBorderRadius, setBannerOverlayBorderRadius,
     isMagicWandActive, setIsMagicWandActive,
     magicWandTolerance, setMagicWandTolerance,
-    snapEnabled, setSnapEnabled, activeSnapX, setActiveSnapX, activeSnapY, setActiveSnapY,
+    activeSnapX, setActiveSnapX, activeSnapY, setActiveSnapY,
     layers, setLayers, selectedId, setSelectedId, zoom, setZoom,
     bgFilter, setBgFilter, overlayFilter, setOverlayFilter,
     bgGradientOverlayEnabled, setBgGradientOverlayEnabled,

@@ -252,7 +252,7 @@ export default React.memo(function BannerEditorCanvas() {
 
   return (
     <div
-      className="flex-1 relative overflow-auto flex items-start md:items-center justify-center p-3 pt-4 md:p-10 bg-zinc-100 dark:bg-zinc-900 md:bg-zinc-50 md:dark:bg-[#09090b]"
+      className="flex-1 relative overflow-auto flex items-start md:items-center justify-center p-3 pt-4 md:p-10 bg-muted md:bg-secondary"
       style={{ paddingBottom: '72px' }}
       onPointerDown={() => ctx.setSelectedId(null)}
     >
@@ -289,7 +289,7 @@ export default React.memo(function BannerEditorCanvas() {
           }} />
         )}
         {ctx.bannerBgType === 'image' && !ctx.bannerImage && (
-          <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 pointer-events-none flex flex-col items-center justify-center text-zinc-400">
+          <div className="absolute inset-0 bg-muted pointer-events-none flex flex-col items-center justify-center text-muted-foreground">
             <ImageIcon className="w-12 h-12 mb-2 opacity-20" />
             <span className="text-sm font-bold opacity-50">Latar Belakang Kosong</span>
           </div>

@@ -210,7 +210,7 @@ const SidebarFormContent = React.memo(function SidebarFormContent() {
                     ctx.isMagicWandActive ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20" : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-400"
                   )}>
                   <Wand2Icon className="w-3.5 h-3.5" />
-                  Mode Hapus Latar
+                  Hapus Latar
                 </button>
               </div>
 
@@ -270,10 +270,10 @@ const SidebarFormContent = React.memo(function SidebarFormContent() {
 
 export const DesktopSidebar = React.memo(function DesktopSidebar() {
   return (
-    <div className="hidden md:flex w-[360px] shrink-0 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-hidden z-20">
-      <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
-        <span className="text-sm font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-blue-500" /> Editor Banner
+    <div className="hidden md:flex w-[360px] shrink-0 bg-card border-r border-border flex-col overflow-hidden z-20">
+      <div className="px-5 py-4 border-b border-border shrink-0">
+        <span className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" /> Editor Banner
         </span>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
@@ -296,27 +296,27 @@ export const MobileBottomSheet = React.memo(function MobileBottomSheet() {
         <div className="fixed inset-0 z-[58] bg-black/50 backdrop-blur-sm" onClick={() => setIsMobilePanelOpen(false)} />
       )}
       <div
-        className="fixed bottom-0 left-0 right-0 z-[59] flex flex-col bg-white dark:bg-zinc-950 rounded-t-2xl border-t border-zinc-200 dark:border-zinc-800 shadow-[0_-8px_32px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out will-change-transform"
+        className="fixed bottom-0 left-0 right-0 z-[59] flex flex-col bg-card rounded-t-2xl border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out will-change-transform"
         style={{ maxHeight: '80vh', transform: isMobilePanelOpen ? 'translateY(0)' : 'translateY(calc(100% - 60px))' }}
       >
         <button
           className="flex flex-col items-center gap-1 w-full pt-2.5 pb-2.5 px-4 shrink-0 touch-manipulation select-none"
           onClick={() => setIsMobilePanelOpen((v: boolean) => !v)}
         >
-          <div className="w-9 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 mb-1" />
+          <div className="w-9 h-1 rounded-full bg-muted-foreground/30 mb-1" />
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 text-zinc-800 dark:text-zinc-100">
-              <SlidersHorizontal className="w-4 h-4 text-blue-500 shrink-0" />
+            <div className="flex items-center gap-2 text-foreground">
+              <SlidersHorizontal className="w-4 h-4 text-primary shrink-0" />
               <span className="text-sm font-bold">{isMobilePanelOpen ? 'Tutup Editor' : 'Edit Banner'}</span>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={e => { e.stopPropagation(); handleSaveBanner(); }}
-                className="flex items-center gap-1.5 bg-blue-600 active:bg-blue-700 text-white text-xs font-bold px-3.5 h-7 rounded-full shadow-md">
+                className="flex items-center gap-1.5 bg-primary active:brightness-90 text-primary-foreground text-xs font-bold px-3.5 h-7 rounded-full shadow-md">
                 <Check className="w-3.5 h-3.5" />{editBanner ? 'Simpan' : 'Terbitkan'}
               </button>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                className={cn('text-zinc-400 transition-transform duration-300', isMobilePanelOpen ? 'rotate-180' : '')}>
+                className={cn('text-muted-foreground transition-transform duration-300', isMobilePanelOpen ? 'rotate-180' : '')}>
                 <polyline points="18 15 12 9 6 15" />
               </svg>
             </div>
