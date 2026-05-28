@@ -44,8 +44,12 @@ type Tab = 'toko' | 'pembayaran' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
 
 interface TabItem { id: Tab; label: string; icon: React.ReactNode }
 
-const PM_CAT_ICONS: Record<string, string> = {
-  tunai: '💵', transfer: '🏦', 'e-wallet': '📱', qris: '📲', lainnya: '•',
+const PM_CAT_ICONS: Record<string, React.ReactNode> = {
+  tunai: <img src="/ico/tunai.png" alt="tunai" className="w-5 h-5 object-contain inline-block" />, 
+  transfer: <img src="/ico/transfer.png" alt="transfer" className="w-5 h-5 object-contain inline-block" />, 
+  'e-wallet': <img src="/ico/ewallet.png" alt="e-wallet" className="w-5 h-5 object-contain inline-block" />, 
+  qris: <img src="/ico/qris.png" alt="qris" className="w-5 h-5 object-contain inline-block" />, 
+  lainnya: <img src="/ico/lainnya.png" alt="lainnya" className="w-5 h-5 object-contain inline-block" />,
 };
 
 const TABS: TabItem[] = [
@@ -1022,7 +1026,9 @@ export default function Pengaturan() {
                         : 'border-border text-muted-foreground hover:border-border/80'
                     )}
                   >
-                    {PM_CAT_ICONS[c]} {c}
+                    <span className="flex items-center justify-center gap-1.5">
+                      {PM_CAT_ICONS[c]} {c}
+                    </span>
                   </button>
                 ))}
               </div>

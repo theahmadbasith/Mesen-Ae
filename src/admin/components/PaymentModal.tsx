@@ -207,11 +207,11 @@ export default function PaymentModal({
 
   // ── Icons & colors ───────────────────────────────────────────
   const ICONS: Record<string, React.ReactNode> = {
-    tunai: <Banknote className="w-5 h-5" />,
-    transfer: <Building2 className="w-5 h-5" />,
-    'e-wallet': <Wallet className="w-5 h-5" />,
-    qris: <QrCode className="w-5 h-5" />,
-    lainnya: <LayoutGrid className="w-5 h-5" />,
+    tunai: <img src="/ico/tunai.png" alt="Tunai" className="w-5 h-5 object-contain" />,
+    transfer: <img src="/ico/transfer.png" alt="Transfer" className="w-5 h-5 object-contain" />,
+    'e-wallet': <img src="/ico/ewallet.png" alt="E-Wallet" className="w-5 h-5 object-contain" />,
+    qris: <img src="/ico/qris.png" alt="QRIS" className="w-5 h-5 object-contain" />,
+    lainnya: <img src="/ico/lainnya.png" alt="Lainnya" className="w-5 h-5 object-contain" />,
   };
   const COLORS: Record<string, string> = {
     tunai: 'text-green-600 bg-green-50 dark:bg-green-950/30',
