@@ -5,8 +5,7 @@ import { QRISInput } from "../components/qris-dinamis/QRISInput";
 import { QRISInfo } from "../components/qris-dinamis/QRISInfo";
 import { ConvertForm } from "../components/qris-dinamis/ConvertForm";
 import { QRISResult } from "../components/qris-dinamis/QRISResult";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function QrisDinamisMenu() {
   const [qrisString, setQrisString] = useState("");
@@ -58,17 +57,8 @@ export default function QrisDinamisMenu() {
   }, []);
 
   return (
-    <div className="pt-2 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+    <div className="pt-4 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       <Card className="shadow-sm border-border/50">
-        <CardHeader className="pb-4 border-b border-border/50 bg-muted/30">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <QrCode className="w-5 h-5 text-muted-foreground" />
-            Generator QRIS Dinamis
-          </CardTitle>
-          <CardDescription>
-            Ubah QRIS Statis Anda menjadi QRIS Dinamis dengan nominal dan biaya admin khusus.
-          </CardDescription>
-        </CardHeader>
         <CardContent className="pt-6 max-w-2xl mx-auto space-y-6 w-full">
           <QRISInput
             value={qrisString}

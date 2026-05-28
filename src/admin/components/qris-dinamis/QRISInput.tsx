@@ -3,7 +3,8 @@ import jsQR from "jsqr";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Scan, XCircle, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Upload, Scan, XCircle, X, AlertTriangle } from "lucide-react";
 
 interface Props {
   value: string;
@@ -20,6 +21,11 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
   const animationRef = useRef<number>(0);
   const [scanning, setScanning] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [alertModal, setAlertModal] = useState({ open: false, title: "", message: "" });
+
+  const showAlert = (title: string, message: string) => {
+    setAlertModal({ open: true, title, message });
+  };
 
   const decodeImageFile = useCallback(
     (file: File) => {
@@ -39,7 +45,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
             onChange(code.data);
           } else {
             onChange("");
-            alert("QR code not found in image. Please try another image.");
+            showAlert("Gagal Memindai", "Kode QR tidak ditemukan di dalam gambar. Silakan coba unggah gambar yang lebih jelas.");
           }
         };
         img.src = reader.result as string;
@@ -132,7 +138,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       };
       scan();
     } catch {
-      alert("Camera access denied or unavailable.");
+      showAlert("Akses Ditolak", "Kamera tidak dapat diakses atau diblokir oleh browser Anda.");
     }
   };
 
@@ -197,24 +203,30 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       )}
 
       {/* Action buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
         <Button
-          variant="outline"
+          variant="secondary"
+          size="lg"
           onClick={() => fileRef.current?.click()}
-          className="gap-2"
+          className="gap-2 h-12 w-full text-sm font-semibold rounded-xl bg-primary/10 text-primary hover:bg-primary/20 border-0"
         >
-          <Upload className="w-4 h-4" />
-          Upload Gambar
+          <Upload className="w-5 h-5" />
+          Upload Gambar QRIS
         </Button>
 
         <Button
           variant={scanning ? "destructive" : "secondary"}
+          size="lg"
           onClick={scanning ? stopCamera : startCamera}
-          className="gap-2"
+          className={`gap-2 h-12 w-full text-sm font-semibold rounded-xl border-0 ${
+            scanning ? "" : "bg-primary text-primary-foreground hover:bg-primary/90"
+          }`}
         >
-          <Scan className="w-4 h-4" />
-          {scanning ? "Stop Kamera" : "Scan Kamera"}
+          <Scan className="w-5 h-5" />
+          {scanning ? "Berhenti Memindai" : "Scan via Kamera"}
         </Button>
+
+
 
         <input
           ref={fileRef}
@@ -227,22 +239,53 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
       {/* Camera view */}
       {scanning && (
-        <div className="relative rounded-xl overflow-hidden border border-gray-300 dark:border-gray-700">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg mt-4 animate-in fade-in slide-in-from-top-4">
           <video
             ref={videoRef}
-            className="w-full"
+            className="w-full object-cover"
+            style={{ maxHeight: '60vh' }}
             playsInline
             muted
           />
           <canvas ref={canvasRef} className="hidden" />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-48 h-48 border-2 border-white/70 rounded-2xl" />
+          
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+            <div className="w-56 h-56 border-2 border-white rounded-3xl relative">
+              <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-xl" />
+              <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-xl" />
+              <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-xl" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-xl" />
+              <div className="w-full h-full border border-white/20 rounded-2xl animate-pulse" />
+            </div>
           </div>
-          <div className="absolute bottom-3 left-0 right-0 text-center text-sm text-white/80 drop-shadow">
-            Point camera at a QRIS code
+          
+          <div className="absolute bottom-4 left-0 right-0 text-center">
+            <span className="bg-black/60 backdrop-blur-md text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg">
+              Arahkan kamera ke kode QRIS
+            </span>
           </div>
         </div>
       )}
+
+      {/* Alert Modal */}
+      <Dialog open={alertModal.open} onOpenChange={(open) => setAlertModal(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md text-center flex flex-col items-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+            <AlertTriangle className="w-6 h-6 text-destructive" />
+          </div>
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg">{alertModal.title}</DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              {alertModal.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center w-full mt-4">
+            <Button type="button" onClick={() => setAlertModal(prev => ({ ...prev, open: false }))} className="w-full sm:w-auto min-w-[120px]">
+              Mengerti
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

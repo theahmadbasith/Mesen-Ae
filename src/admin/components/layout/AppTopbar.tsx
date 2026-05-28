@@ -161,6 +161,13 @@ export default function AppTopbar({ isFullscreen, onToggleFullscreen, onToggleMo
         icon: <QrCode className="w-5 h-5 text-primary" />
       };
     }
+    if (pathname.includes('/admin/qris-dinamis')) {
+      return {
+        title: 'Generator QRIS Dinamis',
+        description: 'Ubah QRIS Statis Anda menjadi QRIS Dinamis dengan nominal dan biaya admin khusus.',
+        icon: <QrCode className="w-5 h-5 text-primary" />
+      };
+    }
     if (pathname.includes('/admin/banner')) {
       return {
         title: 'Banner Promo',
