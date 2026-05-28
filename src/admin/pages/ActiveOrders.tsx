@@ -335,6 +335,22 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                     </div>
                   )}
 
+                  {/* ── Item List Ringkas ── */}
+                  {(() => {
+                    const items = allTxItems.filter((i: any) => String(i.transactionId) === String(bill.id));
+                    if (items.length === 0) return null;
+                    return (
+                      <div className="mt-2 bg-muted/40 border border-border/40 rounded-lg px-3 py-2.5 space-y-1">
+                        {items.map((item: any, idx: number) => (
+                          <div key={idx} className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs text-foreground font-medium truncate flex-1">{item.productName || item.product_name || '—'}</span>
+                            <span className="text-[11px] font-bold text-primary shrink-0">×{item.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   {bill.remarks && (
                     <div className="mt-3 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border/50 italic relative">
                       <span className="absolute -top-2 left-3 bg-card px-1 text-[10px] uppercase font-bold text-muted-foreground/70">Catatan</span>
