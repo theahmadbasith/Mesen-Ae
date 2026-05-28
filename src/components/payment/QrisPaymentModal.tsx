@@ -110,11 +110,13 @@ export function QrisPaymentModal({
       window.snap.pay(token, {
         onSuccess: () => {
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           setStatus('success');
           setTimeout(() => onSuccessRef.current(), 1200);
         },
         onPending: () => {
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           // Pending = mungkin sudah bayar tapi belum konfirmasi, tutup saja
           onCloseRef.current();
         },
