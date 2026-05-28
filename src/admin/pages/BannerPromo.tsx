@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Layout } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Layout, GripVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useDbQuery, dbUpdate, dbDelete } from '@/hooks/db-hooks';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // ── inline helpers ──────────────────────────────────────────────────────────
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
@@ -46,11 +49,208 @@ function hexToRgb(hex: string) {
   return `${parseInt(c.slice(0,2),16)||0}, ${parseInt(c.slice(2,4),16)||0}, ${parseInt(c.slice(4,6),16)||0}`;
 }
 
+// ── Sortable Banner Card ─────────────────────────────────────────────────────
+function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: any, onDelete: (id: string) => void, onToggle: (id: string, current: boolean) => void, onEdit: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: banner.id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  const b = banner;
+  const bgPreview = b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined;
+  const previewFilter = `brightness(${b.canvasBgFilter?.brightness || 100}%) contrast(${b.canvasBgFilter?.contrast || 100}%) saturate(${b.canvasBgFilter?.saturate || 100}%) blur(${b.canvasBgFilter?.blur || 0}px)`;
+  const headP = b.headingPos ?? { x: 10, y: 20, w: 40 };
+  const titleP = b.titlePos ?? { x: 10, y: 38, w: 60 };
+  const descP  = b.descPos  ?? { x: 10, y: 60, w: 60 };
+  const buttonP = b.buttonPos ?? { x: 10, y: 82 };
+  const overP  = b.overlayPos ?? { x: 80, y: 50 };
+
+  return (
+    <div ref={setNodeRef} style={style} className={cn("relative group", isDragging && "shadow-2xl scale-[1.02] ring-2 ring-primary rounded-3xl")}>
+      <Card className="overflow-hidden flex flex-col h-full border hover:border-primary/40 transition-colors">
+        
+        {/* ── Visual Preview ── */}
+        <div
+          className="aspect-[21/9] w-full relative bg-zinc-950 overflow-hidden shrink-0 border-b border-border"
+          style={{ background: bgPreview, containerType: 'inline-size' }}
+        >
+          {/* Drag Handle */}
+          <div 
+            className="absolute top-4 left-4 z-20 w-8 h-8 rounded-lg bg-black/40 backdrop-blur border border-white/20 flex items-center justify-center text-white/80 cursor-grab active:cursor-grabbing hover:bg-black/60 transition-colors"
+            {...attributes} 
+            {...listeners}
+          >
+            <GripVertical className="w-5 h-5" />
+          </div>
+
+          {/* Background image */}
+          {b.imageUrl && (
+            <div className="absolute inset-0 z-0">
+              <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" style={{ filter: previewFilter }} />
+              {b.bgGradientOverlay?.enabled ? (
+                <div className="absolute inset-0 z-[1]" style={{
+                  background: `linear-gradient(${b.bgGradientOverlay.angle ?? 90}deg, rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityLeft ?? 70) / 100}), rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityRight ?? 0) / 100}))`
+                }} />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent z-[1]" />
+              )}
+            </div>
+          )}
+
+          {/* Background gradient tanpa gambar: tampilkan gradien overlay jika ada */}
+          {!b.imageUrl && b.bgGradientOverlay?.enabled && (
+            <div className="absolute inset-0 z-[1]" style={{
+              background: `linear-gradient(${b.bgGradientOverlay.angle ?? 90}deg, rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityLeft ?? 70) / 100}), rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityRight ?? 0) / 100}))`
+            }} />
+          )}
+
+          {/* Overlay stiker */}
+          {b.overlayImageUrl && (
+            <div style={{ position: 'absolute', left: `${overP.x}%`, top: `${overP.y}%`, transform: 'translate(-50%, -50%)', zIndex: 5 }}>
+              <img src={b.overlayImageUrl} style={{ transform: `scaleX(${b.overlayFlipX ? -1 : 1}) rotate(${b.overlayRotate ?? 0}deg)`, width: `calc(${b.overlayScale ?? 1} * 20cqw)`, height: 'auto', borderRadius: `${b.overlayBorderRadius ?? 0}%` }} alt="" className="object-contain" />
+            </div>
+          )}
+
+          {/* Heading */}
+          {b.heading && (
+            <div style={{ position: 'absolute', left: `${headP.x}%`, top: `${headP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${headP.w ?? 40}%` }}>
+              <span
+                style={{
+                  backgroundColor: b.headingStyle === 'solid-white' ? '#FFFFFF' : b.headingStyle === 'solid-dark' ? '#09090b' : b.headingStyle === 'outline-white' ? 'transparent' : b.headingStyle === 'neon' ? 'rgba(34,211,238,0.15)' : b.headingStyle === 'retro' ? '#fbbf24' : 'rgba(255,255,255,0.2)',
+                  color: b.headingStyle === 'solid-white' ? '#0f172a' : b.headingStyle === 'solid-dark' ? '#ffffff' : b.headingStyle === 'neon' ? '#a5f3fc' : b.headingStyle === 'retro' ? '#09090b' : '#ffffff',
+                  border: b.headingStyle === 'outline-white' ? '0.2cqw solid #ffffff' : b.headingStyle === 'neon' ? '0.15cqw solid #22d3ee' : b.headingStyle === 'retro' ? '0.2cqw solid #09090b' : '0.1cqw solid rgba(255,255,255,0.1)',
+                  boxShadow: b.headingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' : b.headingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' : 'none',
+                  backdropFilter: (b.headingStyle === 'glass' || !b.headingStyle) ? 'blur(8px)' : undefined,
+                }}
+                className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded inline-block uppercase tracking-widest select-none"
+                dangerouslySetInnerHTML={{ __html: b.heading }}
+              />
+            </div>
+          )}
+
+          {/* Title */}
+          {b.title && (
+            <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${titleP.w ?? 60}%` }}>
+              <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 text-white m-0 select-none text-left drop-shadow" dangerouslySetInnerHTML={{ __html: b.title }} />
+            </div>
+          )}
+
+          {/* Description */}
+          {b.description && (
+            <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${descP.w ?? 60}%` }}>
+              <p className="text-[2.8cqw] text-slate-100 line-clamp-2 leading-[1.3] font-medium m-0 select-none text-left drop-shadow" dangerouslySetInnerHTML={{ __html: b.description }} />
+            </div>
+          )}
+
+          {/* Button */}
+          {(b.link || b.buttonText) && (
+            <div style={{ position: 'absolute', left: `${buttonP.x}%`, top: `${buttonP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }}>
+              <span
+                style={{
+                  backgroundColor: b.badgeStyle === 'solid' ? '#FFFFFF' : b.badgeStyle === 'outline' ? 'transparent' : b.badgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' : b.badgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' : b.badgeStyle === 'neon' ? '#06b6d4' : b.badgeStyle === 'retro' ? '#eab308' : '#FFFFFF',
+                  color: b.badgeStyle === 'solid' ? '#0F172A' : b.badgeStyle === 'outline' ? '#FFFFFF' : b.badgeStyle === 'glass' ? '#FFFFFF' : b.badgeStyle === 'soft-dark' ? '#FFFFFF' : b.badgeStyle === 'neon' ? '#ffffff' : b.badgeStyle === 'retro' ? '#09090b' : '#0F172A',
+                  border: b.badgeStyle === 'solid' ? 'none' : b.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' : b.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' : b.badgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' : b.badgeStyle === 'neon' ? 'none' : b.badgeStyle === 'retro' ? '0.25cqw solid #09090b' : 'none',
+                  boxShadow: b.badgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' : b.badgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' : 'none',
+                  backdropFilter: (b.badgeStyle === 'glass' || b.badgeStyle === 'soft-dark') ? 'blur(8px)' : undefined,
+                }}
+                className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow select-none inline-block"
+              >
+                {b.buttonText || 'Lihat Detail'}
+              </span>
+            </div>
+          )}
+
+          {/* Status badge */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Badge variant={b.isActive ? "success" : "default"} className="shadow-lg backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 pointer-events-none">
+              {b.isActive ? 'Ditampilkan' : 'Disembunyikan'}
+            </Badge>
+          </div>
+        </div>
+
+        {/* ── Info & Actions ── */}
+        <div className="p-5 flex flex-col flex-1 bg-card">
+          <h4 className="text-base font-black mb-1 line-clamp-1 text-foreground">{b.title || '(Tanpa Judul)'}</h4>
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">{b.description ? b.description.replace(/<[^>]*>/g, '') : 'Tidak ada deskripsi'}</p>
+
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Switch checked={!!b.isActive} onCheckedChange={() => onToggle(b.id, b.isActive)} />
+              <span className="text-xs font-bold text-muted-foreground">Tampil</span>
+            </div>
+            <div className="flex gap-2 relative z-10">
+              <Button variant="outline" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold border border-border hover:border-primary hover:text-primary"
+                onClick={() => onEdit(b.id)}>
+                <Edit2 className="w-3.5 h-3.5" /> Edit
+              </Button>
+              <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/40"
+                onClick={() => onDelete(b.id)}>
+                <Trash2 className="w-3.5 h-3.5" /> Hapus
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ── component ────────────────────────────────────────────────────────────────
 export default function BannerPromoList() {
-  const banners = (useDbQuery('banners') ?? []) as any[];
+  const dbBanners = (useDbQuery('banners') ?? []) as any[];
   const navigate = useNavigate();
   const [deleteBannerId, setDeleteBannerId] = useState<string | null>(null);
+  const [orderedBanners, setOrderedBanners] = useState<any[]>([]);
+
+  // Initialize sorted banners based on db query
+  useEffect(() => {
+    if (dbBanners.length > 0) {
+      // Sort by order field, fallback to creation time or id
+      const sorted = [...dbBanners].sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+        if (a.created_at && b.created_at) return b.created_at - a.created_at;
+        return a.id.localeCompare(b.id);
+      });
+      setOrderedBanners(sorted);
+    } else {
+      setOrderedBanners([]);
+    }
+  }, [dbBanners]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = orderedBanners.findIndex((item) => item.id === active.id);
+      const newIndex = orderedBanners.findIndex((item) => item.id === over.id);
+      
+      const newOrder = arrayMove(orderedBanners, oldIndex, newIndex);
+      setOrderedBanners(newOrder); // Optimistic UI update
+      
+      try {
+        const promises = newOrder.map((item, idx) => {
+          if (item.order !== idx) {
+            return dbUpdate('banners', item.id, { order: idx });
+          }
+          return Promise.resolve();
+        });
+        await Promise.all(promises);
+        toast.success('Urutan banner berhasil diperbarui');
+      } catch (err) {
+        toast.error('Gagal memperbarui urutan');
+        // Reset to original if failed
+        setOrderedBanners(dbBanners);
+      }
+    }
+  };
 
   const handleToggleActive = async (id: string, cur: boolean) => {
     try {
@@ -79,7 +279,7 @@ export default function BannerPromoList() {
       </div>
 
       {/* Content */}
-      {banners.length === 0 ? (
+      {orderedBanners.length === 0 ? (
         <div className="bg-card border-2 border-dashed border-border rounded-3xl p-16 flex flex-col items-center justify-center text-center">
           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
             <Layout className="w-12 h-12 text-muted-foreground" strokeWidth={1.5} />
@@ -89,135 +289,21 @@ export default function BannerPromoList() {
           <Button variant="primary" onClick={() => navigate('/admin/banner/edit/new')} className="rounded-full px-8 shadow-lg">Mulai Desain</Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {banners.map((b: any) => {
-            const bgPreview = b.bgType === 'solid' ? b.bgColor : b.bgType === 'gradient' ? b.bgGradient : undefined;
-            const previewFilter = `brightness(${b.canvasBgFilter?.brightness || 100}%) contrast(${b.canvasBgFilter?.contrast || 100}%) saturate(${b.canvasBgFilter?.saturate || 100}%) blur(${b.canvasBgFilter?.blur || 0}px)`;
-            const headP = b.headingPos ?? { x: 10, y: 20, w: 40 };
-            const titleP = b.titlePos ?? { x: 10, y: 38, w: 60 };
-            const descP  = b.descPos  ?? { x: 10, y: 60, w: 60 };
-            const buttonP = b.buttonPos ?? { x: 10, y: 82 };
-            const overP  = b.overlayPos ?? { x: 80, y: 50 };
-
-            return (
-              <Card key={b.id} className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border hover:border-primary/40">
-
-                {/* ── Visual Preview ── */}
-                <div
-                  className="aspect-[21/9] w-full relative bg-zinc-950 overflow-hidden shrink-0 border-b border-border"
-                  style={{ background: bgPreview, containerType: 'inline-size' }}
-                >
-                  {/* Background image */}
-                  {b.imageUrl && (
-                    <div className="absolute inset-0 z-0">
-                      <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" style={{ filter: previewFilter }} />
-                      {b.bgGradientOverlay?.enabled ? (
-                        <div className="absolute inset-0 z-[1]" style={{
-                          background: `linear-gradient(${b.bgGradientOverlay.angle ?? 90}deg, rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityLeft ?? 70) / 100}), rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityRight ?? 0) / 100}))`
-                        }} />
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent z-[1]" />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Background gradient tanpa gambar: tampilkan gradien overlay jika ada */}
-                  {!b.imageUrl && b.bgGradientOverlay?.enabled && (
-                    <div className="absolute inset-0 z-[1]" style={{
-                      background: `linear-gradient(${b.bgGradientOverlay.angle ?? 90}deg, rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityLeft ?? 70) / 100}), rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityRight ?? 0) / 100}))`
-                    }} />
-                  )}
-
-                  {/* Overlay stiker */}
-                  {b.overlayImageUrl && (
-                    <div style={{ position: 'absolute', left: `${overP.x}%`, top: `${overP.y}%`, transform: 'translate(-50%, -50%)', zIndex: 5 }}>
-                      <img src={b.overlayImageUrl} style={{ transform: `scaleX(${b.overlayFlipX ? -1 : 1}) rotate(${b.overlayRotate ?? 0}deg)`, width: `calc(${b.overlayScale ?? 1} * 20cqw)`, height: 'auto', borderRadius: `${b.overlayBorderRadius ?? 0}%` }} alt="" className="object-contain" />
-                    </div>
-                  )}
-
-                  {/* Heading */}
-                  {b.heading && (
-                    <div style={{ position: 'absolute', left: `${headP.x}%`, top: `${headP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${headP.w ?? 40}%` }}>
-                      <span
-                        style={{
-                          backgroundColor: b.headingStyle === 'solid-white' ? '#FFFFFF' : b.headingStyle === 'solid-dark' ? '#09090b' : b.headingStyle === 'outline-white' ? 'transparent' : b.headingStyle === 'neon' ? 'rgba(34,211,238,0.15)' : b.headingStyle === 'retro' ? '#fbbf24' : 'rgba(255,255,255,0.2)',
-                          color: b.headingStyle === 'solid-white' ? '#0f172a' : b.headingStyle === 'solid-dark' ? '#ffffff' : b.headingStyle === 'neon' ? '#a5f3fc' : b.headingStyle === 'retro' ? '#09090b' : '#ffffff',
-                          border: b.headingStyle === 'outline-white' ? '0.2cqw solid #ffffff' : b.headingStyle === 'neon' ? '0.15cqw solid #22d3ee' : b.headingStyle === 'retro' ? '0.2cqw solid #09090b' : '0.1cqw solid rgba(255,255,255,0.1)',
-                          boxShadow: b.headingStyle === 'neon' ? '0 0 12px rgba(34,211,238,0.4)' : b.headingStyle === 'retro' ? '0.25cqw 0.25cqw 0px #09090b' : 'none',
-                          backdropFilter: (b.headingStyle === 'glass' || !b.headingStyle) ? 'blur(8px)' : undefined,
-                        }}
-                        className="text-[2.2cqw] px-[1.5cqw] py-[0.5cqw] rounded inline-block uppercase tracking-widest select-none"
-                        dangerouslySetInnerHTML={{ __html: b.heading }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Title */}
-                  {b.title && (
-                    <div style={{ position: 'absolute', left: `${titleP.x}%`, top: `${titleP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${titleP.w ?? 60}%` }}>
-                      <h4 className="font-black text-[4.5cqw] leading-[1.15] line-clamp-2 text-white m-0 select-none text-left drop-shadow" dangerouslySetInnerHTML={{ __html: b.title }} />
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  {b.description && (
-                    <div style={{ position: 'absolute', left: `${descP.x}%`, top: `${descP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10, width: `${descP.w ?? 60}%` }}>
-                      <p className="text-[2.8cqw] text-slate-100 line-clamp-2 leading-[1.3] font-medium m-0 select-none text-left drop-shadow" dangerouslySetInnerHTML={{ __html: b.description }} />
-                    </div>
-                  )}
-
-                  {/* Button */}
-                  {(b.link || b.buttonText) && (
-                    <div style={{ position: 'absolute', left: `${buttonP.x}%`, top: `${buttonP.y}%`, transform: 'translate(0%, -50%)', zIndex: 10 }}>
-                      <span
-                        style={{
-                          backgroundColor: b.badgeStyle === 'solid' ? '#FFFFFF' : b.badgeStyle === 'outline' ? 'transparent' : b.badgeStyle === 'glass' ? 'rgba(255,255,255,0.2)' : b.badgeStyle === 'soft-dark' ? 'rgba(0,0,0,0.4)' : b.badgeStyle === 'neon' ? '#06b6d4' : b.badgeStyle === 'retro' ? '#eab308' : '#FFFFFF',
-                          color: b.badgeStyle === 'solid' ? '#0F172A' : b.badgeStyle === 'outline' ? '#FFFFFF' : b.badgeStyle === 'glass' ? '#FFFFFF' : b.badgeStyle === 'soft-dark' ? '#FFFFFF' : b.badgeStyle === 'neon' ? '#ffffff' : b.badgeStyle === 'retro' ? '#09090b' : '#0F172A',
-                          border: b.badgeStyle === 'solid' ? 'none' : b.badgeStyle === 'outline' ? '0.2cqw solid #FFFFFF' : b.badgeStyle === 'glass' ? '0.15cqw solid rgba(255,255,255,0.2)' : b.badgeStyle === 'soft-dark' ? '0.15cqw solid rgba(255,255,255,0.2)' : b.badgeStyle === 'neon' ? 'none' : b.badgeStyle === 'retro' ? '0.25cqw solid #09090b' : 'none',
-                          boxShadow: b.badgeStyle === 'neon' ? '0 0 15px rgba(6,182,212,0.6)' : b.badgeStyle === 'retro' ? '0.3cqw 0.3cqw 0px #09090b' : 'none',
-                          backdropFilter: (b.badgeStyle === 'glass' || b.badgeStyle === 'soft-dark') ? 'blur(8px)' : undefined,
-                        }}
-                        className="text-[2.4cqw] font-extrabold px-[2.5cqw] py-[0.8cqw] rounded-md shadow select-none inline-block"
-                      >
-                        {b.buttonText || 'Lihat Detail'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Status badge */}
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <Badge variant={b.isActive ? "success" : "default"} className="shadow-lg backdrop-blur-md bg-white/90 dark:bg-zinc-900/90">
-                      {b.isActive ? 'Ditampilkan' : 'Disembunyikan'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* ── Info & Actions ── */}
-                <div className="p-5 flex flex-col flex-1 bg-card">
-                  <h4 className="text-base font-black mb-1 line-clamp-1 text-foreground">{b.title || '(Tanpa Judul)'}</h4>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">{b.description ? b.description.replace(/<[^>]*>/g, '') : 'Tidak ada deskripsi'}</p>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex items-center gap-3">
-                      <Switch checked={!!b.isActive} onCheckedChange={() => handleToggleActive(b.id, b.isActive)} />
-                      <span className="text-xs font-bold text-muted-foreground">Tampil</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold border border-border hover:border-primary hover:text-primary"
-                        onClick={() => navigate('/admin/banner/edit/' + b.id)}>
-                        <Edit2 className="w-3.5 h-3.5" /> Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/40"
-                        onClick={() => setDeleteBannerId(b.id)}>
-                        <Trash2 className="w-3.5 h-3.5" /> Hapus
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedBanners.map(b => b.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {orderedBanners.map((b: any) => (
+                <SortableBannerCard 
+                  key={b.id} 
+                  banner={b} 
+                  onDelete={() => setDeleteBannerId(b.id)} 
+                  onToggle={(id, cur) => handleToggleActive(id, cur)}
+                  onEdit={(id) => navigate('/admin/banner/edit/' + id)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Delete dialog */}
