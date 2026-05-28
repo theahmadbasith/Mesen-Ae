@@ -5,7 +5,7 @@ import { QRISInput } from "../components/qris-dinamis/QRISInput";
 import { QRISInfo } from "../components/qris-dinamis/QRISInfo";
 import { ConvertForm } from "../components/qris-dinamis/ConvertForm";
 import { QRISResult } from "../components/qris-dinamis/QRISResult";
-import { Card, CardContent } from "@/components/ui/card";
+import { QrCode, Zap } from "lucide-react";
 
 export default function QrisDinamisMenu() {
   const [qrisString, setQrisString] = useState("");
@@ -31,7 +31,7 @@ export default function QrisDinamisMenu() {
       const data = parseQRIS(value.trim());
       setParsed(data);
     } catch {
-      setErrors(["Failed to parse QRIS data"]);
+      setErrors(["Gagal membaca data QRIS"]);
     }
   }, []);
 
@@ -43,7 +43,7 @@ export default function QrisDinamisMenu() {
         const converted = convertQRIS(qrisString.trim(), options);
         setResult(converted);
       } catch {
-        setErrors(["Failed to convert QRIS"]);
+        setErrors(["Gagal mengkonversi QRIS"]);
       }
     },
     [qrisString]
@@ -57,23 +57,63 @@ export default function QrisDinamisMenu() {
   }, []);
 
   return (
-    <div className="pt-4 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
-      <Card className="shadow-sm border-border/50">
-        <CardContent className="pt-6 max-w-2xl mx-auto space-y-6 w-full">
-          <QRISInput
-            value={qrisString}
-            onChange={handleQRISInput}
-            onReset={handleReset}
-            errors={errors}
-          />
+    <div className="pb-24 space-y-6 w-full animate-in fade-in duration-300">
+
+      {/* Header */}
+      <div className="flex items-center gap-3 pb-2 border-b border-border/50">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Zap className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-foreground">QRIS Dinamis</h1>
+          <p className="text-xs text-muted-foreground">Konversi QRIS statis menjadi QRIS dinamis dengan nominal tertentu</p>
+        </div>
+      </div>
+
+      {/* Main Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+        {/* Kolom Kiri — Input */}
+        <div className="xl:col-span-5 space-y-4">
+          <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-border/50 bg-muted/30">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-primary" />
+                Input String QRIS
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Paste string QRIS, scan kamera, atau upload gambar QR Code
+              </p>
+            </div>
+            <div className="p-5">
+              <QRISInput
+                value={qrisString}
+                onChange={handleQRISInput}
+                onReset={handleReset}
+                errors={errors}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Kolom Kanan — Info + Convert + Result */}
+        <div className="xl:col-span-7 space-y-4">
+          {!parsed && !result && (
+            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 flex flex-col items-center justify-center py-16 text-center px-6">
+              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <Zap className="w-7 h-7 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-medium text-foreground/60">Hasil akan muncul di sini</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                Masukkan string QRIS statis di kolom kiri untuk mulai mengkonversi
+              </p>
+            </div>
+          )}
 
           {parsed && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
               <QRISInfo data={parsed} />
-              <ConvertForm
-                parsed={parsed}
-                onConvert={handleConvert}
-              />
+              <ConvertForm parsed={parsed} onConvert={handleConvert} />
             </div>
           )}
 
@@ -82,8 +122,8 @@ export default function QrisDinamisMenu() {
               <QRISResult qrisString={result} />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

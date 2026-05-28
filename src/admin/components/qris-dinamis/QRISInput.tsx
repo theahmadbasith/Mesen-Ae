@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Upload, Scan, XCircle, X, AlertTriangle } from "lucide-react";
+import { Upload, Scan, X, AlertTriangle, XCircle } from "lucide-react";
 
 interface Props {
   value: string;
@@ -146,24 +146,37 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
     return () => stopCamera();
   }, [stopCamera]);
 
+  const hasError = errors.length > 0;
+  const hasValue = value.trim().length > 0;
+
   return (
     <div className="space-y-4">
+      {/* Textarea Area */}
       <div className="space-y-2">
-        <Label>String QRIS Asal</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">String QRIS</Label>
+          {hasValue && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Hapus
+            </button>
+          )}
+        </div>
         <div
-          className={`relative rounded-xl border-2 transition-colors ${
+          className={`relative rounded-xl border-2 transition-all duration-200 ${
             dragOver
-              ? "border-primary bg-primary/5"
-              : errors.length > 0
-                ? "border-destructive/50 focus-within:border-destructive"
-                : value
-                  ? "border-emerald-500/50 focus-within:border-emerald-500"
-                  : "border-border border-dashed focus-within:border-primary focus-within:border-solid"
+              ? "border-primary bg-primary/5 shadow-[0_0_0_4px_hsl(var(--primary)/0.1)]"
+              : hasError
+                ? "border-destructive/60 bg-destructive/[0.02] shadow-[0_0_0_3px_hsl(var(--destructive)/0.08)]"
+                : hasValue
+                  ? "border-emerald-500/60 bg-emerald-50/30 dark:bg-emerald-950/10 shadow-[0_0_0_3px_hsl(142_76%_36%/0.08)]"
+                  : "border-border hover:border-primary/40 bg-background"
           }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
         >
@@ -171,31 +184,52 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Paste string QRIS di sini, atau drag & drop gambar QR..."
-            rows={4}
-            className="w-full border-0 focus-visible:ring-0 resize-none bg-transparent font-mono text-sm"
+            rows={6}
+            className={`
+              w-full border-0 shadow-none
+              focus-visible:ring-0 focus-visible:outline-none
+              resize-none bg-transparent
+              font-mono text-sm leading-relaxed
+              placeholder:text-muted-foreground/50
+              pr-8
+            `}
           />
-
-          {value && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onReset}
-              className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          {dragOver && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-primary/5 pointer-events-none">
+              <div className="text-center">
+                <Upload className="w-8 h-8 text-primary mx-auto mb-2" />
+                <p className="text-sm font-medium text-primary">Lepaskan untuk upload</p>
+              </div>
+            </div>
           )}
         </div>
+
+        {/* Status indicator */}
+        {hasValue && !hasError && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+            String QRIS valid dan siap dikonversi
+          </p>
+        )}
+        {!hasValue && (
+          <p className="text-xs text-muted-foreground">
+            Mendukung paste teks, drag & drop gambar, dan paste gambar dari clipboard
+          </p>
+        )}
       </div>
 
       {/* Error messages */}
-      {errors.length > 0 && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
-          <ul className="text-sm text-destructive space-y-1 font-medium">
+      {hasError && (
+        <div className="rounded-xl bg-destructive/8 border border-destructive/25 p-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <p className="text-xs font-semibold text-destructive uppercase tracking-wider flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Ditemukan {errors.length} kesalahan
+          </p>
+          <ul className="space-y-1.5">
             {errors.map((err, i) => (
               <li key={i} className="flex items-start gap-2">
-                <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{err}</span>
+                <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
+                <span className="text-sm text-destructive/90 leading-snug">{err}</span>
               </li>
             ))}
           </ul>
@@ -203,30 +237,30 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       )}
 
       {/* Action buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+      <div className="grid grid-cols-2 gap-3">
         <Button
-          variant="secondary"
+          type="button"
+          variant="outline"
           size="lg"
           onClick={() => fileRef.current?.click()}
-          className="gap-2 h-12 w-full text-sm font-semibold rounded-xl bg-primary/10 text-primary hover:bg-primary/20 border-0"
+          className="gap-2 h-11 w-full text-sm font-semibold rounded-xl border-border/70 hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition-all"
         >
-          <Upload className="w-5 h-5" />
-          Upload Gambar QRIS
+          <Upload className="w-4 h-4" />
+          Upload Gambar
         </Button>
 
         <Button
-          variant={scanning ? "destructive" : "secondary"}
+          type="button"
+          variant={scanning ? "destructive" : "default"}
           size="lg"
           onClick={scanning ? stopCamera : startCamera}
-          className={`gap-2 h-12 w-full text-sm font-semibold rounded-xl border-0 ${
-            scanning ? "" : "bg-primary text-primary-foreground hover:bg-primary/90"
+          className={`gap-2 h-11 w-full text-sm font-semibold rounded-xl transition-all ${
+            scanning ? "" : ""
           }`}
         >
-          <Scan className="w-5 h-5" />
-          {scanning ? "Berhenti Memindai" : "Scan via Kamera"}
+          <Scan className="w-4 h-4" />
+          {scanning ? "Stop Kamera" : "Scan Kamera"}
         </Button>
-
-
 
         <input
           ref={fileRef}
@@ -239,16 +273,16 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
       {/* Camera view */}
       {scanning && (
-        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg mt-4 animate-in fade-in slide-in-from-top-4">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
           <video
             ref={videoRef}
             className="w-full object-cover"
-            style={{ maxHeight: '60vh' }}
+            style={{ maxHeight: "60vh" }}
             playsInline
             muted
           />
           <canvas ref={canvasRef} className="hidden" />
-          
+
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
             <div className="w-56 h-56 border-2 border-white rounded-3xl relative">
               <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-xl" />
@@ -258,7 +292,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
               <div className="w-full h-full border border-white/20 rounded-2xl animate-pulse" />
             </div>
           </div>
-          
+
           <div className="absolute bottom-4 left-0 right-0 text-center">
             <span className="bg-black/60 backdrop-blur-md text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg">
               Arahkan kamera ke kode QRIS
@@ -269,7 +303,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
       {/* Alert Modal */}
       <Dialog open={alertModal.open} onOpenChange={(open) => setAlertModal(prev => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-md text-center flex flex-col items-center">
+        <DialogContent className="sm:max-w-md text-center flex flex-col items-center rounded-2xl">
           <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
             <AlertTriangle className="w-6 h-6 text-destructive" />
           </div>
@@ -280,7 +314,11 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center w-full mt-4">
-            <Button type="button" onClick={() => setAlertModal(prev => ({ ...prev, open: false }))} className="w-full sm:w-auto min-w-[120px]">
+            <Button
+              type="button"
+              onClick={() => setAlertModal(prev => ({ ...prev, open: false }))}
+              className="w-full sm:w-auto min-w-[120px] rounded-xl"
+            >
               Mengerti
             </Button>
           </DialogFooter>

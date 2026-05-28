@@ -3,50 +3,50 @@ import { parseTLV } from "./parser";
 import type { ValidationResult } from "./types";
 
 /**
- * Validate a QRIS string for structural correctness.
+ * Validasi struktur QRIS string.
  */
 export function validateQRIS(qrisString: string): ValidationResult {
   const errors: string[] = [];
 
   if (!qrisString || qrisString.trim().length === 0) {
-    return { valid: false, errors: ["QRIS string is empty"] };
+    return { valid: false, errors: ["String QRIS tidak boleh kosong"] };
   }
 
   const str = qrisString.trim();
 
-  // Must start with payload format indicator "000201"
+  // Harus diawali dengan Payload Format Indicator "000201"
   if (!str.startsWith("000201")) {
     errors.push(
-      'QRIS must start with Payload Format Indicator "000201"'
+      'QRIS harus diawali dengan Payload Format Indicator "000201"'
     );
   }
 
-  // Minimum length check (header + CRC = at least 20 chars)
+  // Panjang minimum (header + CRC = minimal 20 karakter)
   if (str.length < 20) {
-    errors.push("QRIS string is too short");
+    errors.push("String QRIS terlalu pendek");
     return { valid: false, errors };
   }
 
-  // CRC validation
+  // Validasi CRC
   const dataWithoutCRC = str.substring(0, str.length - 4);
   const declaredCRC = str.substring(str.length - 4);
   const calculatedCRC = calculateCRC16(dataWithoutCRC);
 
   if (declaredCRC.toUpperCase() !== calculatedCRC) {
     errors.push(
-      `CRC mismatch: expected ${calculatedCRC}, got ${declaredCRC.toUpperCase()}`
+      `CRC tidak sesuai: diharapkan ${calculatedCRC}, ditemukan ${declaredCRC.toUpperCase()}`
     );
   }
 
-  // Try to parse TLV structure
+  // Coba parsing struktur TLV
   const elements = parseTLV(str);
 
   if (elements.length === 0) {
-    errors.push("Failed to parse any TLV elements");
+    errors.push("Gagal membaca elemen TLV dari string QRIS");
     return { valid: false, errors };
   }
 
-  // Check required tags
+  // Periksa tag yang wajib ada
   const tags = new Set(elements.map((e) => e.tag));
 
   const requiredTags = [
@@ -62,25 +62,25 @@ export function validateQRIS(qrisString: string): ValidationResult {
 
   for (const req of requiredTags) {
     if (!tags.has(req.tag)) {
-      errors.push(`Missing required tag ${req.tag} (${req.name})`);
+      errors.push(`Tag wajib tidak ditemukan: ${req.tag} (${req.name})`);
     }
   }
 
-  // Check Point of Initiation Method value
+  // Periksa nilai Point of Initiation Method
   const method = elements.find((e) => e.tag === "01");
   if (method && method.value !== "11" && method.value !== "12") {
     errors.push(
-      `Invalid Point of Initiation Method: "${method.value}" (must be "11" or "12")`
+      `Nilai Point of Initiation Method tidak valid: "${method.value}" (harus "11" atau "12")`
     );
   }
 
-  // Check at least one merchant account info exists (tags 26-51)
+  // Periksa minimal satu Merchant Account Info (tag 26-51)
   const hasMerchant = elements.some((e) => {
     const n = parseInt(e.tag, 10);
     return n >= 26 && n <= 51;
   });
   if (!hasMerchant) {
-    errors.push("No Merchant Account Information found (tags 26-51)");
+    errors.push("Tidak ditemukan informasi merchant (tag 26-51)");
   }
 
   return { valid: errors.length === 0, errors };
