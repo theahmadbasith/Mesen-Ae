@@ -189,11 +189,11 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         table_number: data.tableNumber || null,
         remarks: data.remarks || null,
         status: 'lunas',
-        // Ritel dari web: set 'diproses' agar tampil di ActiveOrders dan bisa di-manage
-        // Pesanan non-web dengan needsKitchen=false: null (tidak perlu tracking)
+        // Ritel dari web (termasuk split bill): set 'diproses' agar tampil di ActiveOrders dan bisa di-manage
+        // Pesanan kasir dengan needsKitchen=false (kitchenStatus=null): null (tidak perlu tracking)
         kitchen_status: getBillNeedsKitchen(bill)
           ? 'diproses'
-          : (bill.remarks === 'Pesanan dari Web' ? 'diproses' : null),
+          : (bill.kitchenStatus ? 'diproses' : null),
         closed_at: new Date().toISOString(),
       };
 
@@ -224,7 +224,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         status: 'lunas',
         kitchenStatus: getBillNeedsKitchen(bill)
           ? 'diproses'
-          : (bill.remarks === 'Pesanan dari Web' ? 'diproses' : null),
+          : (bill.kitchenStatus ? 'diproses' : null),
         customerName: data.customerName || bill.customerName || null,
         tableNumber: data.tableNumber || bill.tableNumber || null,
       };
