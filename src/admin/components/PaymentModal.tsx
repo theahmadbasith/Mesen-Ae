@@ -40,6 +40,7 @@ export interface PaymentModalProps {
     total: number;
     change: number;
     paymentMethodCategory?: string;
+    isMidtrans?: boolean;
   }) => void;
 }
 
@@ -200,7 +201,8 @@ export default function PaymentModal({
       taxAndService,
       total,
       change: finalChange,
-      paymentMethodCategory: currentMethod?.category
+      paymentMethodCategory: currentMethod?.category,
+      isMidtrans: isNonCash
     });
   }, [canCheckout, paymentMethodId, payments, isNonCash, total, paymentAmount, currentMethod, customerName, tableNumber, remarks, taxAndService, onCheckout]);
 
