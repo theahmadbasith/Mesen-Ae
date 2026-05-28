@@ -87,10 +87,8 @@ export default function AdminApp() {
   // Request notification permission on mount
   useEffect(() => {
     if (role && name) {
-      requestForToken('admin', name).then(token => {
-        if (token) {
-          console.log('Web push token updated successfully');
-        }
+      requestForToken('admin', name).then(() => {
+        // Token registered silently
       });
     }
   }, [role, name]);
