@@ -64,10 +64,16 @@ export default function PaymentModal({
 }: PaymentModalProps) {
   const [paymentMethodId, setPaymentMethodId] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
-  const [customerName, setCustomerName] = useState('');
-  const [tableNumber, setTableNumber] = useState('');
-  const [remarks, setRemarks] = useState('');
+  const [payments, setPayments] = useState<any[]>(() => {
+    let p = initialPayments || [];
+    if (typeof p === 'string') {
+      try { p = JSON.parse(p); } catch (e) { p = []; }
+    }
+    return Array.isArray(p) ? p : [];
+  });
+  const [customerName, setCustomerName] = useState(initialCustomerName);
+  const [tableNumber, setTableNumber] = useState(initialTableNumber);
+  const [remarks, setRemarks] = useState(initialRemarks);
 
   // ── Computed values ──────────────────────────────────────────
   const currentMethod = useMemo(
@@ -102,7 +108,13 @@ export default function PaymentModal({
     if (open) {
       const firstMethodId = paymentMethods?.[0]?.id?.toString() || '';
       setPaymentMethodId(firstMethodId);
-      setPayments(initialPayments);
+      
+      let p = initialPayments || [];
+      if (typeof p === 'string') {
+        try { p = JSON.parse(p); } catch (e) { p = []; }
+      }
+      setPayments(Array.isArray(p) ? p : []);
+      
       setCustomerName(initialCustomerName);
       setTableNumber(initialTableNumber);
       setRemarks(initialRemarks);
