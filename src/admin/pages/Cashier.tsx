@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useDbQuery, type Product, type Category, type Transaction, type TransactionItemRecord, type PaymentMethod, type StoreSettings, type Voucher } from '@/hooks/db-hooks';
+import { cldThumb } from '@/lib/cld';
 import { dbAdmin as db, dbDelete } from '@/lib/db';
 import { useLocation } from 'react-router-dom';
 
@@ -853,7 +854,7 @@ export default function Kasir() {
                             <CardContent className="p-0">
                               <div className="w-full aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
                                 {p.photo ? (
-                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                                  <img src={cldThumb(p.photo)} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 ) : (
                                   <PackageIcon className="w-8 h-8 text-muted-foreground/30" />
                                 )}
@@ -889,7 +890,7 @@ export default function Kasir() {
                             <CardContent className="p-0">
                               <div className="w-full aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
                                 {p.photo ? (
-                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                                  <img src={cldThumb(p.photo)} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 ) : (
                                   <PackageIcon className="w-8 h-8 text-muted-foreground/30" />
                                 )}
@@ -914,7 +915,7 @@ export default function Kasir() {
                     <CardContent className="p-0">
                       <div className="w-full aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
                         {p.photo ? (
-                          <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                          <img src={cldThumb(p.photo)} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <PackageIcon className="w-8 h-8 text-muted-foreground/30" />
                         )}

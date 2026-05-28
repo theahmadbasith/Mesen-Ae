@@ -1,4 +1,5 @@
 import { useDbQuery, dbInsert, dbUpdate, dbDelete, dbUploadFile, dbDeleteFile } from '@/hooks/db-hooks';
+import { cldThumb, cldFull } from '@/lib/cld';
 import { type Product, type Category } from '@/hooks/db-hooks';
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X, ImageIcon, ZoomIn, ScanBarcode, Loader2, Tag, Layers, QrCode } from 'lucide-react';
@@ -293,7 +294,7 @@ export default function Produk() {
                 >
                   {p.photo ? (
                     <>
-                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <img src={cldThumb(p.photo)} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
                         <ZoomIn className="w-5 h-5 text-white" />
                       </div>
@@ -542,7 +543,7 @@ export default function Produk() {
           <button className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors backdrop-blur-md border border-white/10" onClick={() => setLightboxSrc(null)}>
             <X className="w-6 h-6 text-white" />
           </button>
-          <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()} />
+          <img src={cldFull(lightboxSrc)} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()} />
         </div>,
         document.body
       )}

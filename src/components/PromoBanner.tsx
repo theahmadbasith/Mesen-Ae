@@ -2,6 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { type Banner } from '@/hooks/db-hooks';
 import { Gift } from 'lucide-react';
+import { cldBanner, cldUrl } from '@/lib/cld';
 
 interface PromoBannerProps {
   banner: Banner;
@@ -129,8 +130,10 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
       {(!banner.bgType || banner.bgType === 'image') && banner.imageUrl && !banner.imageUrl.startsWith('preset:') ? (
         <div className="absolute inset-0 z-0">
           <img
-            src={banner.imageUrl}
+            src={cldBanner(banner.imageUrl)}
             alt={banner.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover opacity-55"
             style={{ filter: bgFilterStyle }}
           />
@@ -186,7 +189,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
           }}
         >
           <img
-            src={banner.overlayImageUrl}
+            src={cldUrl(banner.overlayImageUrl, { q: 'auto', f: 'auto' })}
             style={{
               transform: `scaleX(${banner.overlayFlipX ? -1 : 1}) rotate(${banner.overlayRotate ?? 0}deg)`,
               width: `calc(${banner.overlayScale ?? 1} * 20cqw)`,
@@ -195,6 +198,7 @@ export default function PromoBanner({ banner, className, onAction }: PromoBanner
               borderRadius: `${overlayBorderRadius}%`,
             }}
             className="object-contain drop-shadow-2xl max-w-none"
+            decoding="async"
             alt="Overlay Banner"
           />
         </div>
