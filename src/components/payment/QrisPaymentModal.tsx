@@ -169,7 +169,7 @@ export function QrisPaymentModal({
               Pembayaran QRIS
             </DialogTitle>
             <DialogDescription className="text-white/80 text-sm mt-1">
-              Scan dengan GoPay · OVO · DANA · ShopeePay · m-Banking apapun
+              Scan dengan e-wallet dan mobile banking apapun
             </DialogDescription>
           </DialogHeader>
           <div className="mt-3 bg-white/20 rounded-xl p-3 text-center">

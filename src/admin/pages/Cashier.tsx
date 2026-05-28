@@ -1316,7 +1316,7 @@ export default function Kasir() {
           setTableNumber(data.tableNumber);
           setRemarks(data.remarks);
           
-          if (data.isMidtrans && data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
+          if (data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
             setCheckoutDataCache(data);
             setCheckoutOpen(false);
             setMidtransPaymentType(data.paymentMethodCategory as 'qris' | 'transfer' | 'e-wallet' | 'lainnya');

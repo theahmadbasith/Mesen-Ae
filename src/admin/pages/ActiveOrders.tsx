@@ -450,7 +450,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           paymentMethods={paymentMethods}
           isCheckingOut={isCheckingOut}
           onCheckout={(data) => {
-            if (data.isMidtrans && data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
+            if (data.paymentMethodCategory && ['qris', 'transfer', 'e-wallet', 'lainnya'].includes(data.paymentMethodCategory)) {
               // Simpan bill + data ke cache, tutup PaymentModal, buka Midtrans
               const billSnapshot = payingBill;
               setCheckoutDataCache({ bill: billSnapshot, data });
