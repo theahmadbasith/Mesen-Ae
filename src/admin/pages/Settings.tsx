@@ -969,7 +969,7 @@ export default function Pengaturan() {
 
       {/* ── Payment Method Dialog ── */}
       <Dialog open={pmDialog} onOpenChange={setPmDialog}>
-        <DialogContent className="max-w-sm rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{pmEditId ? 'Edit' : 'Tambah'} Metode Pembayaran</DialogTitle>
           </DialogHeader>
@@ -1033,35 +1033,44 @@ export default function Pengaturan() {
             )}
 
             {(pmCategory === 'transfer' || pmCategory === 'e-wallet') && pmProvider === 'manual' && (
-              <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Ikon Bank/E-Wallet</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['bca', 'bni', 'bri', 'dana', 'gopay', 'linkaja', 'mandiri', 'ovo', 'seabank', 'shopeepay'].map(ico => (
+              <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <Label className="text-xs">{pmCategory === 'transfer' ? 'Pilih Bank' : 'Pilih E-Wallet'}</Label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {(pmCategory === 'transfer' 
+                      ? ['bri', 'bca', 'bni', 'mandiri', 'seabank'] 
+                      : ['dana', 'gopay', 'ovo', 'shopeepay', 'linkaja']).map(ico => (
                       <button
                         key={ico}
-                        onClick={() => setPmIconName(ico)}
+                        onClick={() => {
+                          setPmIconName(ico);
+                          setPmBankName(ico.toUpperCase());
+                        }}
                         className={cn(
-                          'p-1.5 rounded-lg border transition-all',
-                          pmIconName === ico ? 'border-primary bg-primary/10 shadow-sm' : 'border-border opacity-60 hover:opacity-100 hover:border-border/80'
+                          'p-3 rounded-xl border-2 flex items-center justify-center transition-all bg-background',
+                          pmIconName === ico 
+                            ? 'border-primary bg-primary/5 shadow-md scale-[1.02]' 
+                            : 'border-border/60 hover:border-border hover:bg-muted/50'
                         )}
                         title={ico.toUpperCase()}
                       >
-                        <img src={`/ico/${ico}.png`} alt={ico} className="w-6 h-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        <img 
+                          src={`/ico/${ico}.png`} 
+                          alt={ico} 
+                          className="w-12 h-12 object-contain" 
+                          onError={(e) => e.currentTarget.style.display = 'none'} 
+                        />
                       </button>
                     ))}
                   </div>
                 </div>
+                
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Nama Bank / E-Wallet</Label>
-                  <Input value={pmBankName} onChange={e => setPmBankName(e.target.value)} placeholder="Contoh: Bank BCA / GoPay" />
+                  <Label className="text-xs">{pmCategory === 'transfer' ? 'No. Rekening' : 'No. HP (E-Wallet)'}</Label>
+                  <Input value={pmAccountNumber} onChange={e => setPmAccountNumber(e.target.value)} placeholder={pmCategory === 'transfer' ? "Contoh: 1234567890" : "Contoh: 081234567890"} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">No. Rekening / No. HP</Label>
-                  <Input value={pmAccountNumber} onChange={e => setPmAccountNumber(e.target.value)} placeholder="Contoh: 1234567890" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Nama Pemilik Rekening</Label>
+                  <Label className="text-xs">Nama Pemilik {pmCategory === 'transfer' ? 'Rekening' : 'Akun'}</Label>
                   <Input value={pmAccountName} onChange={e => setPmAccountName(e.target.value)} placeholder="Contoh: Budi Santoso" />
                 </div>
               </div>

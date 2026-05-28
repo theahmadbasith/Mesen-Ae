@@ -10,6 +10,7 @@ export interface PaymentMethod {
   id: number;
   name: string;
   category: string;
+  provider?: string;
 }
 
 export interface PaymentRecord {
@@ -72,12 +73,12 @@ export default function PaymentModal({
   );
 
   const isNonCash = useMemo(
-    () => !!(currentMethod && MIDTRANS_CATEGORIES.includes(currentMethod.category)),
+    () => !!(currentMethod && MIDTRANS_CATEGORIES.includes(currentMethod.category) && currentMethod.provider !== 'manual'),
     [currentMethod]
   );
 
   const taxAndService = useMemo(() => {
-    if (!currentMethod) return 0;
+    if (!currentMethod || currentMethod.provider === 'manual') return 0;
     if (currentMethod.category === 'qris')     return Math.round(baseTotal * 0.007);
     if (currentMethod.category === 'e-wallet') return Math.round(baseTotal * 0.02);
     if (currentMethod.category === 'transfer') return 4000;
@@ -265,7 +266,7 @@ export default function PaymentModal({
                         <span className={cn('text-xs font-bold block truncate', isSelected ? 'text-primary' : 'text-foreground')}>
                           {pm.name}
                         </span>
-                        {MIDTRANS_CATEGORIES.includes(pm.category) && (
+                        {MIDTRANS_CATEGORIES.includes(pm.category) && pm.provider !== 'manual' && (
                           <span className="text-[10px] text-muted-foreground">via Midtrans</span>
                         )}
                       </div>
