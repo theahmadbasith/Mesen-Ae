@@ -184,7 +184,7 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
         {/* ── Area Kertas Struk ── */}
         <div 
           ref={receiptRef} 
-          className="relative bg-card text-card-foreground p-5 rounded-md mx-auto shadow-sm flex-shrink-0" 
+          className="relative bg-white text-black p-5 rounded-md mx-auto shadow-sm flex-shrink-0" 
           style={{ width: '300px', fontFamily: "'Courier New', Courier, monospace" }}
         >
           {/* Header */}
@@ -195,33 +195,33 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
             </div>
           </div>
 
-          <div className="border-t-2 border-dashed border-border/50 my-3" />
+          <div className="border-t-2 border-dashed border-gray-300 my-3" />
 
           {/* Info */}
           <div className="text-xs space-y-1 font-bold">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Order</span>
+              <span className="text-gray-500">Order</span>
               <span>{transaction.receiptNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Waktu</span>
+              <span className="text-gray-500">Waktu</span>
               <span>{format(new Date(transaction.date), 'dd/MM/yy HH:mm')}</span>
             </div>
             {transaction.customerName && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Pemesan</span>
+                <span className="text-gray-500">Pemesan</span>
                 <span className="font-black uppercase truncate max-w-[130px]">{transaction.customerName}</span>
               </div>
             )}
-            <div className="flex justify-between items-center border border-border/60 p-2 rounded mt-2">
-              <span className="text-muted-foreground text-xs font-bold">MEJA</span>
+            <div className="flex justify-between items-center border border-gray-300 p-2 rounded mt-2">
+              <span className="text-gray-500 text-xs font-bold">MEJA</span>
               <span className="font-black text-xl">
                 {transaction.tableNumber ? transaction.tableNumber : <span className="text-base">Bawa Pulang</span>}
               </span>
             </div>
           </div>
 
-          <div className="border-t-2 border-dashed border-border/50 my-3" />
+          <div className="border-t-2 border-dashed border-gray-300 my-3" />
 
           {/* Items */}
           <div className="space-y-3 min-h-[100px]">
@@ -236,13 +236,13 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
                   </span>
                   
                   {item.selectedVariants && item.selectedVariants.length > 0 && (
-                    <div className="text-[11px] text-muted-foreground font-semibold mt-0.5">
+                    <div className="text-[11px] text-gray-500 font-semibold mt-0.5">
                       + {item.selectedVariants.map(v => v.optionName).join(', ')}
                     </div>
                   )}
                   
                   {item.notes && (
-                    <div className="text-[11px] italic text-muted-foreground mt-0.5">
+                    <div className="text-[11px] italic text-gray-500 mt-0.5">
                       📝 {item.notes}
                     </div>
                   )}
@@ -251,8 +251,8 @@ export default function KitchenReceiptModal({ open, onClose, transaction, items,
             ))}
           </div>
 
-          <div className="border-t-2 border-dashed border-border/50 mt-4 mb-2" />
-          <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+          <div className="border-t-2 border-dashed border-gray-300 mt-4 mb-2" />
+          <p className="text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
             -- SELESAI --
           </p>
         </div>

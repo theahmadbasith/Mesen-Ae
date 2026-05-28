@@ -31,7 +31,7 @@ function LabelCard({
   return (
     <div
       ref={labelRef}
-      className="bg-card text-card-foreground rounded-lg border-2 border-border mx-auto flex-shrink-0"
+      className="bg-white text-black rounded-lg border-2 border-gray-300 mx-auto flex-shrink-0"
       style={{
         width: '240px',
         fontFamily: "'Courier New', Courier, monospace",
@@ -39,7 +39,7 @@ function LabelCard({
       }}
     >
       {/* Header toko kecil */}
-      <div className="text-center border-b border-dashed border-border/50 pb-2 mb-2">
+      <div className="text-center border-b border-dashed border-gray-300 pb-2 mb-2">
         <p className="font-black text-[10px] uppercase tracking-widest">{storeSettings?.storeName || 'CAFE'}</p>
       </div>
 
@@ -52,25 +52,25 @@ function LabelCard({
       <div className="space-y-1 mb-2">
         {item.selectedVariants?.map((v, idx) => (
           <div key={idx} className="flex items-start gap-1">
-            <span className="text-[9px] font-bold text-muted-foreground uppercase shrink-0 mt-0.5">{v.groupName}:</span>
-            <span className="text-[11px] font-black text-foreground leading-tight">{v.optionName}</span>
+            <span className="text-[9px] font-bold text-gray-500 uppercase shrink-0 mt-0.5">{v.groupName}:</span>
+            <span className="text-[11px] font-black text-black leading-tight">{v.optionName}</span>
           </div>
         ))}
       </div>
 
       {/* Catatan */}
       {item.notes && (
-        <div className="bg-muted/50 rounded px-2 py-1 mb-2">
-          <p className="text-[10px] font-bold italic text-foreground">📝 {item.notes}</p>
+        <div className="bg-gray-100 rounded px-2 py-1 mb-2">
+          <p className="text-[10px] font-bold italic text-black">📝 {item.notes}</p>
         </div>
       )}
 
       {/* Info meja / qty */}
-      <div className="border-t border-dashed border-border/50 pt-2 flex justify-between items-center">
-        <span className="text-[9px] text-muted-foreground font-bold">
+      <div className="border-t border-dashed border-gray-300 pt-2 flex justify-between items-center">
+        <span className="text-[9px] text-gray-500 font-bold">
           {transaction.tableNumber ? `Meja ${transaction.tableNumber}` : 'Bawa Pulang'}
         </span>
-        <span className="font-black text-xs bg-foreground text-background px-2 py-0.5 rounded">
+        <span className="font-black text-xs bg-black text-white px-2 py-0.5 rounded">
           x{item.quantity}
         </span>
       </div>

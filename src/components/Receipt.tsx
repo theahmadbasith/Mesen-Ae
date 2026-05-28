@@ -206,14 +206,14 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         </DialogHeader>
 
         {/* Kertas Struk dengan Efek Visual */}
-        <div className="relative mx-auto bg-card text-card-foreground p-6 shadow-lg w-full max-w-[340px] mb-6 overflow-hidden flex-shrink-0" 
+        <div className="relative mx-auto bg-white text-black p-6 shadow-lg w-full max-w-[340px] mb-6 overflow-hidden flex-shrink-0" 
              style={{ 
                fontFamily: "'Courier New', Courier, monospace", 
                fontSize: '12px',
                clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), 98% 100%, 96% calc(100% - 6px), 94% 100%, 92% calc(100% - 6px), 90% 100%, 88% calc(100% - 6px), 86% 100%, 84% calc(100% - 6px), 82% 100%, 80% calc(100% - 6px), 78% 100%, 76% calc(100% - 6px), 74% 100%, 72% calc(100% - 6px), 70% 100%, 68% calc(100% - 6px), 66% 100%, 64% calc(100% - 6px), 62% 100%, 60% calc(100% - 6px), 58% 100%, 56% calc(100% - 6px), 54% 100%, 52% calc(100% - 6px), 50% 100%, 48% calc(100% - 6px), 46% 100%, 44% calc(100% - 6px), 42% 100%, 40% calc(100% - 6px), 38% 100%, 36% calc(100% - 6px), 34% 100%, 32% calc(100% - 6px), 30% 100%, 28% calc(100% - 6px), 26% 100%, 24% calc(100% - 6px), 22% 100%, 20% calc(100% - 6px), 18% 100%, 16% calc(100% - 6px), 14% 100%, 12% calc(100% - 6px), 10% 100%, 8% calc(100% - 6px), 6% 100%, 4% calc(100% - 6px), 2% 100%, 0 calc(100% - 6px))'
              }}>
           
-          <div ref={receiptRef} className="relative z-10 bg-card">
+          <div ref={receiptRef} className="relative z-10 bg-white">
 
 
             {/* Header Toko */}
@@ -239,7 +239,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             </div>
             {transaction.customerName && (
               <div className="flex justify-between text-[10px] mb-1 relative z-10">
-                <span className="text-slate-500">Pelanggan:</span>
+                <span className="text-gray-500">Pelanggan:</span>
                 <span className="font-semibold uppercase truncate max-w-[150px]">{transaction.customerName}</span>
               </div>
             )}
@@ -257,15 +257,15 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div key={i} className="mb-2.5">
                   <p className="text-[11px] font-bold uppercase">{pName}</p>
                   {variants && variants.length > 0 && (
-                    <p className="text-[9px] text-slate-500">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
+                    <p className="text-[9px] text-gray-500">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
                   )}
-                  {item.notes && <p className="text-[9px] text-slate-500 italic">  Catatan: {item.notes}</p>}
+                  {item.notes && <p className="text-[9px] text-gray-500 italic">  Catatan: {item.notes}</p>}
                   <div className="flex justify-between text-[10px] mt-0.5">
                     <span>{item.quantity} x {rp(item.price)}</span>
                     <span className="font-medium">{rp(item.subtotal)}</span>
                   </div>
                   {discAmt > 0 && (
-                    <div className="flex justify-between text-[10px] text-slate-500">
+                    <div className="flex justify-between text-[10px] text-gray-500">
                       <span>  Diskon</span>
                       <span>-{rp(discAmt)}</span>
                     </div>
@@ -279,17 +279,17 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             {/* Kalkulasi Total */}
             <div className="space-y-1 text-[11px] relative z-10">
               <div className="flex justify-between">
-                <span className="text-slate-600">Subtotal</span>
+                <span className="text-gray-600">Subtotal</span>
                 <span>{rp(transaction.subtotal)}</span>
               </div>
               {txDiscountAmount > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Diskon</span>
+                  <span className="text-gray-600">Diskon</span>
                   <span>-{rp(txDiscountAmount)}</span>
                 </div>
               )}
               
-              <div className="flex justify-between font-black text-[13px] border-t border-border/50 pt-1.5 mt-1.5">
+              <div className="flex justify-between font-black text-[13px] border-t border-gray-300 pt-1.5 mt-1.5">
                 <span>TOTAL</span>
                 <span>{rp(transaction.total)}</span>
               </div>
@@ -298,11 +298,11 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 const paymentsList = (transaction.payments || []) as any[];
                 if (paymentsList.length > 0) {
                   return (
-                    <div className="mt-2 pt-2 border-t border-slate-300">
-                      <span className="text-slate-600 mb-1 block">Rincian Pembayaran:</span>
+                    <div className="mt-2 pt-2 border-t border-gray-300">
+                      <span className="text-gray-600 mb-1 block">Rincian Pembayaran:</span>
                       {paymentsList.map((p, idx) => (
                         <div key={idx} className="flex justify-between pl-2 mb-0.5">
-                          <span className="text-slate-500 uppercase">{p.method_name || p.methodName || 'Pembayaran'}</span>
+                          <span className="text-gray-500 uppercase">{p.method_name || p.methodName || 'Pembayaran'}</span>
                           <span>{rp(p.amount)}</span>
                         </div>
                       ))}
@@ -311,7 +311,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 } else {
                   return (
                     <div className="flex justify-between mt-2">
-                      <span className="text-slate-600">Bayar</span>
+                      <span className="text-gray-600">Bayar</span>
                       <span>{rp(txPaymentAmount)}</span>
                     </div>
                   );
@@ -319,7 +319,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               })()}
               
               <div className="flex justify-between mt-1">
-                <span className="text-slate-600">Kembali</span>
+                <span className="text-gray-600">Kembali</span>
                 <span>{rp(transaction.change)}</span>
               </div>
             </div>
@@ -327,7 +327,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Footer */}
-            <div className="text-center text-[10px] text-slate-500 relative z-10 pt-1 pb-3">
+            <div className="text-center text-[10px] text-gray-500 relative z-10 pt-1 pb-3">
               <p className="font-medium">{storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
             </div>
           </div>
