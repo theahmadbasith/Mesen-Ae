@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDbQuery, dbInsert, dbUpdate, dbDelete } from '@/hooks/db-hooks';
 import { Category } from '@/types';
-import { Tag, Plus, Edit2, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { Tag, Plus, Edit2, Trash2, Loader2, ArrowLeft, GripVertical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,119 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { usePermissions } from '@/hooks/use-permissions';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableCategoryCard({ c, hasEditAccess, onEdit, onDelete }: { c: Category, hasEditAccess: boolean, onEdit: (c: Category) => void, onDelete: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.id! });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={cn("relative group", isDragging && "shadow-xl scale-[1.02] ring-2 ring-primary rounded-xl")}>
+      <Card
+        className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 bg-card overflow-hidden h-full"
+      >
+        <div className="p-5 flex items-start gap-4">
+          {hasEditAccess && (
+            <div 
+              className="mt-2 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing shrink-0"
+              {...attributes} 
+              {...listeners}
+            >
+              <GripVertical className="w-5 h-5" />
+            </div>
+          )}
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-inner border border-black/5 dark:border-white/5 transition-transform group-hover:scale-110 duration-300"
+            style={{ backgroundColor: c.color + '15', color: c.color }}
+          >
+            {c.icon}
+          </div>
+          <div className="flex-1 min-w-0 pt-1">
+            <p className="text-base font-bold text-foreground truncate">{c.name}</p>
+            <div className="mt-2">
+              {c.needsKitchen !== false ? (
+                <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-md text-[10px] font-bold border border-amber-500/20 uppercase tracking-wider">
+                  Dapur
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-md text-[10px] font-bold border border-slate-500/20 uppercase tracking-wider">
+                  Ritel
+                </span>
+              )}
+            </div>
+          </div>
+          {hasEditAccess && (
+          <div className="flex gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => onEdit(c)}>
+              <Edit2 className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="destructive" size="icon" className="h-8 w-8 rounded-lg" onClick={() => onDelete(c.id!)}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 export default function Categories() {
-  const categories = useDbQuery<Category>('categories');
+  const dbCategories = useDbQuery<Category>('categories') || [];
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    if (dbCategories.length > 0) {
+      const sorted = [...dbCategories].sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+        if (a.createdAt && b.createdAt) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return a.id!.localeCompare(b.id!);
+      });
+      setCategories(sorted);
+    } else {
+      setCategories([]);
+    }
+  }, [dbCategories]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex((item) => item.id === active.id);
+      const newIndex = categories.findIndex((item) => item.id === over.id);
+      
+      const newOrder = arrayMove(categories, oldIndex, newIndex);
+      setCategories(newOrder); // Optimistic UI update
+      
+      if (!hasEditAccess) return;
+
+      try {
+        const promises = newOrder.map((item, idx) => {
+          if (item.order !== idx) {
+            return dbUpdate('categories', item.id!, { order: idx });
+          }
+          return Promise.resolve();
+        });
+        await Promise.all(promises);
+        toast.success('Urutan kategori berhasil diperbarui');
+      } catch (err) {
+        toast.error('Gagal memperbarui urutan');
+        setCategories(dbCategories); // Revert
+      }
+    }
+  };
 
   /* ── Kategori State ── */
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -116,47 +226,21 @@ export default function Categories() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((c) => (
-            <Card
-              key={c.id}
-              className="group border border-border/50 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 bg-card overflow-hidden"
-            >
-              <div className="p-5 flex items-start gap-4">
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-inner border border-black/5 dark:border-white/5 transition-transform group-hover:scale-110 duration-300"
-                  style={{ backgroundColor: c.color + '15', color: c.color }}
-                >
-                  {c.icon}
-                </div>
-                <div className="flex-1 min-w-0 pt-1">
-                  <p className="text-base font-bold text-foreground truncate">{c.name}</p>
-                  <div className="mt-2">
-                    {c.needsKitchen !== false ? (
-                      <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-md text-[10px] font-bold border border-amber-500/20 uppercase tracking-wider">
-                        Dapur
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-md text-[10px] font-bold border border-slate-500/20 uppercase tracking-wider">
-                        Ritel
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {hasEditAccess && (
-                <div className="flex gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary hover:text-white" onClick={() => openEdit(c)}>
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="destructive" size="icon" className="h-8 w-8 rounded-lg" onClick={() => handleDelete(c.id!)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={categories.map(c => c.id!)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((c) => (
+                <SortableCategoryCard 
+                  key={c.id} 
+                  c={c} 
+                  hasEditAccess={hasEditAccess} 
+                  onEdit={openEdit} 
+                  onDelete={handleDelete} 
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Dialog Kategori */}
