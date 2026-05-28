@@ -243,6 +243,18 @@ export const Wand2Icon = (props: any) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
 );
 
+export interface OverlayData {
+  id: string;
+  imageUrl: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotate: number;
+  flipX: boolean;
+  borderRadius: number;
+  filter: { brightness: number; contrast: number; saturate: number; blur: number };
+}
+
 // ============================================================================
 // CONTEXT TYPE
 // ============================================================================
@@ -275,13 +287,8 @@ interface BannerEditorContextType {
   bannerTitle: string; setBannerTitle: any;
   bannerDescription: string; setBannerDescription: any;
   bannerButtonText: string; setBannerButtonText: any;
-  bannerOverlayImageUrl: any; setBannerOverlayImageUrl: any;
-  bannerOverlayFlipX: boolean; setBannerOverlayFlipX: any;
-  bannerOverlayRotate: number; setBannerOverlayRotate: any;
-  bannerOverlayScale: number; setBannerOverlayScale: any;
-  bannerOverlayBorderRadius: number; setBannerOverlayBorderRadius: any;
-  isMagicWandActive: boolean; setIsMagicWandActive: any;
-  magicWandTolerance: number; setMagicWandTolerance: any;
+  overlays: OverlayData[]; setOverlays: any;
+  activeOverlayId: string | null; setActiveOverlayId: any;
 
   // Canvas state
 
@@ -290,8 +297,8 @@ interface BannerEditorContextType {
   layers: any[]; setLayers: any;
   selectedId: string | null; setSelectedId: any;
   zoom: number; setZoom: any;
+  zoom: number; setZoom: any;
   bgFilter: any; setBgFilter: any;
-  overlayFilter: any; setOverlayFilter: any;
   bgGradientOverlayEnabled: boolean; setBgGradientOverlayEnabled: any;
   bgGradientOverlayColor: string; setBgGradientOverlayColor: any;
   bgGradientOverlayOpacityLeft: number; setBgGradientOverlayOpacityLeft: any;
@@ -324,6 +331,7 @@ interface BannerEditorContextType {
   handleBannerTypeChange: (type: string) => void;
   onLayerPointerDown: (e: any, id: string) => void;
   onResizePointerDown: (e: any, id: string) => void;
+  onOverlayPointerDown: (e: any, id: string) => void;
   handleBgImageSelect: (e: any) => void;
   handleBgCropSuccess: (croppedDataUrl: string) => Promise<void>;
   handleAddImageFile: (e: any) => void;
@@ -376,13 +384,9 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
   const [bannerTitle, setBannerTitle] = useState('Promo Berkah Idul Adha');
   const [bannerDescription, setBannerDescription] = useState('Nikmati Keberkahan Idul Adha Promo Diskon 75% Dengan Kode Voucher BASITH');
   const [bannerButtonText, setBannerButtonText] = useState('Lihat Detail');
-  const [bannerOverlayImageUrl, setBannerOverlayImageUrl] = useState<any>(null);
-  const [bannerOverlayFlipX, setBannerOverlayFlipX] = useState(false);
-  const [bannerOverlayRotate, setBannerOverlayRotate] = useState(0);
-  const [bannerOverlayScale, setBannerOverlayScale] = useState(1);
-  const [bannerOverlayBorderRadius, setBannerOverlayBorderRadius] = useState(0);
-  const [isMagicWandActive, setIsMagicWandActive] = useState(false);
-  const [magicWandTolerance, setMagicWandTolerance] = useState(32);
+  
+  const [overlays, setOverlays] = useState<OverlayData[]>([]);
+  const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
 
   // Canvas state
   const snapEnabled = true; // always on
@@ -392,7 +396,6 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
   const [bgFilter, setBgFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
-  const [overlayFilter, setOverlayFilter] = useState({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
 
   // Background Gradient Overlay
   const [bgGradientOverlayEnabled, setBgGradientOverlayEnabled] = useState(false);
@@ -426,17 +429,15 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     link: bannerLink, type: bannerType, productId: bannerProductId,
     bgType: bannerBgType, bgColor: bannerBgColor,
     gradientLeft: bannerGradientLeft, gradientRight: bannerGradientRight, gradientAngle: bannerGradientAngle,
-    image: bannerImage, overlayImageUrl: bannerOverlayImageUrl,
-    overlayFlipX: bannerOverlayFlipX, overlayRotate: bannerOverlayRotate,
-    overlayScale: bannerOverlayScale, overlayBorderRadius: bannerOverlayBorderRadius,
-    bgFilter, overlayFilter,
+    image: bannerImage, overlays,
+    bgFilter,
     bgGradientOverlay: {
       enabled: bgGradientOverlayEnabled, color: bgGradientOverlayColor,
       opacityLeft: bgGradientOverlayOpacityLeft, opacityRight: bgGradientOverlayOpacityRight,
       angle: bgGradientOverlayAngle
     },
     layers
-  }), [bannerHeading, bannerHeadingStyle, bannerTitle, bannerDescription, bannerButtonText, bannerBadgeStyle, bannerLink, bannerType, bannerProductId, bannerBgType, bannerBgColor, bannerGradientLeft, bannerGradientRight, bannerGradientAngle, bannerImage, bannerOverlayImageUrl, bannerOverlayFlipX, bannerOverlayRotate, bannerOverlayScale, bannerOverlayBorderRadius, bgFilter, overlayFilter, bgGradientOverlayEnabled, bgGradientOverlayColor, bgGradientOverlayOpacityLeft, bgGradientOverlayOpacityRight, bgGradientOverlayAngle, layers]);
+  }), [bannerHeading, bannerHeadingStyle, bannerTitle, bannerDescription, bannerButtonText, bannerBadgeStyle, bannerLink, bannerType, bannerProductId, bannerBgType, bannerBgColor, bannerGradientLeft, bannerGradientRight, bannerGradientAngle, bannerImage, overlays, bgFilter, bgGradientOverlayEnabled, bgGradientOverlayColor, bgGradientOverlayOpacityLeft, bgGradientOverlayOpacityRight, bgGradientOverlayAngle, layers]);
 
   const restoreSnapshot = useCallback((snap: any) => {
     if (!snap) return;
@@ -447,10 +448,9 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     setBannerProductId(snap.productId); setBannerBgType(snap.bgType);
     setBannerBgColor(snap.bgColor); setBannerGradientLeft(snap.gradientLeft);
     setBannerGradientRight(snap.gradientRight); setBannerGradientAngle(snap.gradientAngle);
-    setBannerImage(snap.image); setBannerOverlayImageUrl(snap.overlayImageUrl);
-    setBannerOverlayFlipX(snap.overlayFlipX); setBannerOverlayRotate(snap.overlayRotate);
-    setBannerOverlayScale(snap.overlayScale); setBannerOverlayBorderRadius(snap.overlayBorderRadius ?? 0);
-    setBgFilter(snap.bgFilter); setOverlayFilter(snap.overlayFilter);
+    setBannerImage(snap.image);
+    setOverlays(snap.overlays || []);
+    setBgFilter(snap.bgFilter);
     if (snap.bgGradientOverlay) {
       setBgGradientOverlayEnabled(snap.bgGradientOverlay.enabled);
       setBgGradientOverlayColor(snap.bgGradientOverlay.color);
@@ -504,22 +504,30 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
   // --- Product / Image Handlers ---
   const handleProductSelect = useCallback((prodId: string) => {
     setBannerProductId(prodId);
-    if (!prodId) { setBannerOverlayImageUrl(null); return; }
+    if (!prodId) return;
     const prod = products?.find((p: any) => String(p.id) === String(prodId));
-    if (prod) {
-      if (prod.photo) {
-        setBannerOverlayImageUrl(prod.photo);
-        toast.success(`Gambar produk "${prod.name}" berhasil dijadikan overlay!`);
-      } else {
-        toast.warning(`Produk "${prod.name}" tidak memiliki foto.`);
-        setBannerOverlayImageUrl(null);
-      }
+    if (prod && prod.photo) {
+      setOverlays((prev: OverlayData[]) => {
+        if (prev.length >= 3) {
+          toast.warning('Maksimal 3 overlay');
+          return prev;
+        }
+        toast.success(`Gambar produk "${prod.name}" berhasil ditambahkan!`);
+        return [...prev, {
+          id: `overlay_${Date.now()}`,
+          imageUrl: prod.photo,
+          x: 80, y: 50, scale: 1, rotate: 0, flipX: false, borderRadius: 0,
+          filter: { brightness: 100, contrast: 100, saturate: 100, blur: 0 }
+        }];
+      });
+    } else if (prod) {
+      toast.warning(`Produk "${prod.name}" tidak memiliki foto.`);
     }
   }, [products]);
 
   const handleBannerTypeChange = useCallback((type: string) => {
     setBannerType(type);
-    if (type !== 'menu') { setBannerOverlayImageUrl(null); setBannerProductId(''); }
+    if (type !== 'menu') { setBannerProductId(''); }
   }, []);
 
   // --- Drag / Resize ---
@@ -595,6 +603,56 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     window.addEventListener('pointerup', onUp);
   }, [layers, pushHistory]);
 
+  const onOverlayPointerDown = useCallback((e: any, id: string) => {
+    e.stopPropagation();
+    const overlay = overlays.find((o: any) => o.id === id);
+    if (!overlay) return;
+    setActiveOverlayId(id);
+    setSelectedId(null);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    dragState.current = { id, startX: e.clientX, startY: e.clientY, origX: overlay.x, origY: overlay.y };
+
+    const onMove = (me: any) => {
+      if (!dragState.current) return;
+      if (me.cancelable) me.preventDefault();
+      const dx = (me.clientX - dragState.current.startX) / rect.width * 100;
+      const dy = (me.clientY - dragState.current.startY) / rect.height * 100;
+      let nx = dragState.current.origX + dx;
+      let ny = dragState.current.origY + dy;
+      let snappedX: number | null = null;
+      let snappedY: number | null = null;
+      if (snapEnabled) {
+        const snapPoints = [8, 50, 92];
+        const threshold = 1.6;
+        for (const pt of snapPoints) {
+          if (Math.abs(nx - pt) < threshold) { nx = pt; snappedX = pt; }
+          if (Math.abs(ny - pt) < threshold) { ny = pt; snappedY = pt; }
+        }
+      }
+      if (nx < 0) nx = 0; if (nx > 100) nx = 100;
+      if (ny < 0) ny = 0; if (ny > 100) ny = 100;
+      nx = Math.round(nx * 10) / 10;
+      ny = Math.round(ny * 10) / 10;
+      setActiveSnapX(snappedX);
+      setActiveSnapY(snappedY);
+      setOverlays((prev: OverlayData[]) => prev.map(o => o.id === id ? { ...o, x: nx, y: ny } : o));
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      dragState.current = null;
+      setActiveSnapX(null);
+      setActiveSnapY(null);
+      pushHistory();
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+  }, [overlays, pushHistory, snapEnabled]);
+
   // --- File Handlers ---
   const handleBgImageSelect = useCallback((e: any) => {
     const file = e.target.files?.[0];
@@ -626,14 +684,27 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     const reader = new FileReader();
     reader.onload = async ev => {
       const dataUrl = ev.target?.result as string;
-      setBannerOverlayImageUrl(dataUrl);
+      setOverlays((prev: OverlayData[]) => {
+        if (prev.length >= 3) {
+          toast.warning('Maksimal 3 overlay');
+          return prev;
+        }
+        return [...prev, {
+          id: `overlay_${Date.now()}`,
+          imageUrl: dataUrl,
+          x: 80, y: 50, scale: 1, rotate: 0, flipX: false, borderRadius: 0,
+          filter: { brightness: 100, contrast: 100, saturate: 100, blur: 0 }
+        }];
+      });
       toast.success("Gambar stiker overlay berhasil ditambahkan!");
       try {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
         const compressedDataUrl = await compressImage(blob, 0.5);
         const url = await dbUploadFile('banners', `overlay_${Date.now()}`, compressedDataUrl);
-        if (url) setBannerOverlayImageUrl(url);
+        if (url) {
+          setOverlays((prev: OverlayData[]) => prev.map((o, i) => i === prev.length - 1 ? { ...o, imageUrl: url } : o));
+        }
       } catch (err) {
         console.error("Overlay upload error", err);
       }
@@ -685,13 +756,29 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
       const titleP = banner.titlePos ?? { x: 10, y: 38, w: 60 };
       const descP = banner.descPos ?? { x: 10, y: 60, w: 60 };
       const buttonP = banner.buttonPos ?? { x: 10, y: 82 };
-      const overP = banner.overlayPos ?? { x: 80, y: 50 };
+      
+      let loadedOverlays = banner.overlays || [];
+      if (loadedOverlays.length === 0 && banner.overlayImageUrl) {
+        loadedOverlays = [{
+          id: 'overlay-legacy',
+          imageUrl: banner.overlayImageUrl,
+          x: banner.overlayPos?.x ?? 80,
+          y: banner.overlayPos?.y ?? 50,
+          scale: banner.overlayScale ?? 1,
+          rotate: banner.overlayRotate ?? 0,
+          flipX: banner.overlayFlipX ?? false,
+          borderRadius: banner.overlayBorderRadius ?? 0,
+          filter: banner.canvasOverlayFilter ?? { brightness: 100, contrast: 100, saturate: 100, blur: 0 }
+        }];
+      }
+      setOverlays(loadedOverlays);
+      setActiveOverlayId(null);
+
       const loadedLayers = [
         { id: 'heading-box', role: 'heading-box', x: headingP.x, y: headingP.y, w: headingP.w ?? 40, zIndex: 10, visible: true },
         { id: 'title-box', role: 'title-box', x: titleP.x, y: titleP.y, w: titleP.w ?? 60, zIndex: 10, visible: true },
         { id: 'desc-box', role: 'desc-box', x: descP.x, y: descP.y, w: descP.w ?? 60, zIndex: 10, visible: true },
-        { id: 'button-box', role: 'button-box', x: buttonP.x, y: buttonP.y, zIndex: 10, visible: true },
-        { id: 'overlay-image', role: 'overlay-image', x: overP.x, y: overP.y, zIndex: 5, visible: true }
+        { id: 'button-box', role: 'button-box', x: buttonP.x, y: buttonP.y, zIndex: 10, visible: true }
       ];
       setLayers(loadedLayers);
       const initialSnapshot = {
@@ -702,10 +789,9 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
         productId: banner.productId ? String(banner.productId) : '',
         bgType: banner.bgType || 'gradient', bgColor: banner.bgColor || '#1E293B',
         gradientLeft: gradientLeftVal, gradientRight: gradientRightVal, gradientAngle: gradientAngleVal,
-        image: banner.imageUrl || null, overlayImageUrl: banner.overlayImageUrl || null,
-        overlayFlipX: banner.overlayFlipX || false, overlayRotate: banner.overlayRotate || 0,
-        overlayScale: banner.overlayScale ?? 1,
-        bgFilter: bgFilterVal, overlayFilter: overlayFilterVal,
+        image: banner.imageUrl || null, 
+        overlays: loadedOverlays,
+        bgFilter: bgFilterVal,
         bgGradientOverlay: overlayGradient, layers: loadedLayers
       };
       setHistory([initialSnapshot]); setHistoryIndex(0);
@@ -716,21 +802,19 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
       setBannerGradientRight('#60efff'); setBannerGradientAngle(135);
       setBannerImage(null);
       setBgFilter({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
-      setOverlayFilter({ brightness: 100, contrast: 100, saturate: 100, blur: 0 });
       setBgGradientOverlayEnabled(false); setBgGradientOverlayColor('#000000');
       setBgGradientOverlayOpacityLeft(70); setBgGradientOverlayOpacityRight(0);
       setBgGradientOverlayAngle(90);
       setBannerHeading('SPESIAL PENAWARAN'); setBannerTitle('Promo Berkah Idul Adha');
       setBannerDescription('Nikmati Keberkahan Idul Adha Promo Diskon 75% Dengan Kode Voucher BASITH');
       setBannerButtonText('Lihat Detail'); setBannerBadgeStyle('solid'); setBannerHeadingStyle('glass');
-      setBannerOverlayImageUrl(null); setBannerOverlayFlipX(false);
-      setBannerOverlayRotate(0); setBannerOverlayScale(1); setBannerOverlayBorderRadius(0);
+      setOverlays([]); setActiveOverlayId(null);
+      
       const defaultLayers = [
         { id: 'heading-box', role: 'heading-box', x: 10, y: 20, w: 40, zIndex: 10, visible: true },
         { id: 'title-box', role: 'title-box', x: 10, y: 38, w: 60, zIndex: 10, visible: true },
         { id: 'desc-box', role: 'desc-box', x: 10, y: 60, w: 60, zIndex: 10, visible: true },
-        { id: 'button-box', role: 'button-box', x: 10, y: 82, zIndex: 10, visible: true },
-        { id: 'overlay-image', role: 'overlay-image', x: 80, y: 50, zIndex: 5, visible: true }
+        { id: 'button-box', role: 'button-box', x: 10, y: 82, zIndex: 10, visible: true }
       ];
       setLayers(defaultLayers);
       const initialSnapshot = {
@@ -740,9 +824,8 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
         buttonText: 'Lihat Detail', badgeStyle: 'solid', link: '', type: 'custom', productId: '',
         bgType: 'gradient', bgColor: '#1E293B',
         gradientLeft: '#0061ff', gradientRight: '#60efff', gradientAngle: 135,
-        image: null, overlayImageUrl: null, overlayFlipX: false, overlayRotate: 0, overlayScale: 1,
+        image: null, overlays: [],
         bgFilter: { brightness: 100, contrast: 100, saturate: 100, blur: 0 },
-        overlayFilter: { brightness: 100, contrast: 100, saturate: 100, blur: 0 },
         bgGradientOverlay: { enabled: false, color: '#000000', opacityLeft: 70, opacityRight: 0, angle: 90 },
         layers: defaultLayers
       };
@@ -776,19 +859,10 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
         const url = await dbUploadFile('banners', `bg_${Date.now()}`, compressedDataUrl);
         if (url) finalBannerImage = url;
       }
-      let finalOverlayImage = bannerOverlayImageUrl;
-      if (bannerOverlayImageUrl && bannerOverlayImageUrl.startsWith('data:image')) {
-        const res = await fetch(bannerOverlayImageUrl);
-        const blob = await res.blob();
-        const compressedDataUrl = await compressImage(blob, 0.5);
-        const url = await dbUploadFile('banners', `overlay_${Date.now()}`, compressedDataUrl);
-        if (url) finalOverlayImage = url;
-      }
       const headL = layers.find((l: any) => l.role === 'heading-box') || { x: 10, y: 20 };
       const titleL = layers.find((l: any) => l.role === 'title-box') || { x: 10, y: 38 };
       const descL = layers.find((l: any) => l.role === 'desc-box') || { x: 10, y: 60 };
       const buttonL = layers.find((l: any) => l.role === 'button-box') || { x: 10, y: 82 };
-      const overL = layers.find((l: any) => l.role === 'overlay-image') || { x: 80, y: 50 };
       const bannerData = {
         type: bannerType, heading: bannerHeading.trim(), title: bannerTitle.trim(),
         description: bannerDescription.trim(), voucherId: null,
@@ -798,7 +872,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
         bgType: bannerBgType, bgColor: bannerBgType === 'solid' ? bannerBgColor : null,
         bgGradient: bannerBgType === 'gradient' ? `linear-gradient(${bannerGradientAngle}deg, ${bannerGradientLeft}, ${bannerGradientRight})` : null,
         badgeStyle: bannerBadgeStyle, headingStyle: bannerHeadingStyle,
-        canvasLayers: [], canvasBgFilter: bgFilter, canvasOverlayFilter: overlayFilter,
+        canvasLayers: [], canvasBgFilter: bgFilter,
         bgGradientOverlay: {
           enabled: bgGradientOverlayEnabled, color: bgGradientOverlayColor,
           opacityLeft: bgGradientOverlayOpacityLeft, opacityRight: bgGradientOverlayOpacityRight,
@@ -809,10 +883,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
         titlePos: { x: Math.round(titleL.x), y: Math.round(titleL.y), w: Math.round(titleL.w ?? 60) },
         descPos: { x: Math.round(descL.x), y: Math.round(descL.y), w: Math.round(descL.w ?? 60) },
         buttonPos: { x: Math.round(buttonL.x), y: Math.round(buttonL.y) },
-        overlayPos: { x: Math.round(overL.x), y: Math.round(overL.y) },
-        overlayImageUrl: finalOverlayImage, overlayFlipX: bannerOverlayFlipX,
-        overlayRotate: bannerOverlayRotate, overlayScale: bannerOverlayScale,
-        overlayBorderRadius: bannerOverlayBorderRadius
+        overlays
       };
       if (editBanner) {
         await dbUpdate('banners', editBanner.id, bannerData);
@@ -826,7 +897,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
       console.error(err);
       toast.error('Gagal menyimpan banner', { id: loadingToastId });
     }
-  }, [bannerTitle, bannerImage, bannerOverlayImageUrl, layers, bannerType, bannerHeading, bannerDescription, bannerButtonText, bannerProductId, bannerLink, bannerIsActive, bannerBgType, bannerBgColor, bannerGradientAngle, bannerGradientLeft, bannerGradientRight, bannerBadgeStyle, bannerHeadingStyle, bgFilter, overlayFilter, bgGradientOverlayEnabled, bgGradientOverlayColor, bgGradientOverlayOpacityLeft, bgGradientOverlayOpacityRight, bgGradientOverlayAngle, editBanner, bannerOverlayFlipX, bannerOverlayRotate, bannerOverlayScale, bannerOverlayBorderRadius, navigate]);
+  }, [bannerTitle, bannerImage, overlays, layers, bannerType, bannerHeading, bannerDescription, bannerButtonText, bannerProductId, bannerLink, bannerIsActive, bannerBgType, bannerBgColor, bannerGradientAngle, bannerGradientLeft, bannerGradientRight, bannerBadgeStyle, bannerHeadingStyle, bgFilter, bgGradientOverlayEnabled, bgGradientOverlayColor, bgGradientOverlayOpacityLeft, bgGradientOverlayOpacityRight, bgGradientOverlayAngle, editBanner, navigate]);
 
   // --- Computed ---
   const canvasBg = bannerBgType === 'solid' ? bannerBgColor : bannerBgType === 'gradient' ? `linear-gradient(${bannerGradientAngle}deg, ${bannerGradientLeft}, ${bannerGradientRight})` : undefined;
@@ -842,16 +913,10 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     bannerBadgeStyle, setBannerBadgeStyle, bannerHeadingStyle, setBannerHeadingStyle,
     bannerHeading, setBannerHeading, bannerTitle, setBannerTitle,
     bannerDescription, setBannerDescription, bannerButtonText, setBannerButtonText,
-    bannerOverlayImageUrl, setBannerOverlayImageUrl,
-    bannerOverlayFlipX, setBannerOverlayFlipX,
-    bannerOverlayRotate, setBannerOverlayRotate,
-    bannerOverlayScale, setBannerOverlayScale,
-    bannerOverlayBorderRadius, setBannerOverlayBorderRadius,
-    isMagicWandActive, setIsMagicWandActive,
-    magicWandTolerance, setMagicWandTolerance,
+    overlays, setOverlays, activeOverlayId, setActiveOverlayId,
     activeSnapX, setActiveSnapX, activeSnapY, setActiveSnapY,
     layers, setLayers, selectedId, setSelectedId, zoom, setZoom,
-    bgFilter, setBgFilter, overlayFilter, setOverlayFilter,
+    bgFilter, setBgFilter,
     bgGradientOverlayEnabled, setBgGradientOverlayEnabled,
     bgGradientOverlayColor, setBgGradientOverlayColor,
     bgGradientOverlayOpacityLeft, setBgGradientOverlayOpacityLeft,

@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { Image as ImageIcon, FlipHorizontal, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useBannerEditor, cn, floodFillRemoveBackground, RotateCcwIcon, RotateCwIcon
+  useBannerEditor, cn, RotateCcwIcon, RotateCwIcon, OverlayData
 } from './BannerEditorContext';
 
 // ============================================================================
@@ -113,45 +113,7 @@ export default React.memo(function BannerEditorCanvas() {
       );
     }
 
-    if (layer.role === 'overlay-image') {
-      if (!ctx.bannerOverlayImageUrl) return null;
-      elementNode = (
-        <img
-          src={ctx.bannerOverlayImageUrl}
-          draggable={false}
-          style={{
-            transform: `scaleX(${ctx.bannerOverlayFlipX ? -1 : 1}) rotate(${ctx.bannerOverlayRotate ?? 0}deg)`,
-            width: `calc(${ctx.bannerOverlayScale ?? 1} * 20cqw)`,
-            height: 'auto',
-            borderRadius: `${ctx.bannerOverlayBorderRadius ?? 0}%`,
-            filter: `brightness(${ctx.overlayFilter.brightness}%) contrast(${ctx.overlayFilter.contrast}%) saturate(${ctx.overlayFilter.saturate ?? 100}%) blur(${ctx.overlayFilter.blur}px)`
-          }}
-          className={cn("object-contain drop-shadow-2xl max-w-none select-none pointer-events-auto", ctx.isMagicWandActive ? 'cursor-crosshair' : '')}
-          alt="Overlay Banner"
-          onPointerDown={async (e) => {
-            if (!ctx.isMagicWandActive || !ctx.bannerOverlayImageUrl) return;
-            e.stopPropagation();
-            e.preventDefault();
-            const imgEl = e.currentTarget;
-            const nativeEvent = e.nativeEvent;
-            const x = nativeEvent.offsetX;
-            const y = nativeEvent.offsetY;
-            const startX = Math.round((x / imgEl.offsetWidth) * imgEl.naturalWidth);
-            const startY = Math.round((y / imgEl.offsetHeight) * imgEl.naturalHeight);
-            toast.loading('Menghapus area...', { id: 'magicWand' });
-            try {
-              const newImg = await floodFillRemoveBackground(ctx.bannerOverlayImageUrl, startX, startY, ctx.magicWandTolerance);
-              ctx.setBannerOverlayImageUrl(newImg);
-              ctx.pushHistory({ ...ctx.getSnapshot(), overlayImageUrl: newImg });
-              toast.success('Latar berhasil dihapus!', { id: 'magicWand' });
-            } catch (err) {
-              console.error(err);
-              toast.error('Gagal menghapus latar belakang', { id: 'magicWand' });
-            }
-          }}
-        />
-      );
-    }
+
 
     const isTextLayer = layer.role === 'heading-box' || layer.role === 'title-box' || layer.role === 'desc-box';
     const layerWidth = isTextLayer ? `${layer.w ?? 55}%` : undefined;
@@ -163,32 +125,7 @@ export default React.memo(function BannerEditorCanvas() {
         className="relative pointer-events-auto touch-none"
         onPointerDown={e => ctx.onLayerPointerDown(e, layer.id)}
       >
-        {/* Floating Action Toolbar on Selected Overlay */}
-        {isSelected && layer.role === 'overlay-image' && (
-          <div 
-            className="absolute top-[-54px] left-1/2 -translate-x-1/2 bg-slate-950/85 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl px-2 py-1 flex items-center gap-1.5 shadow-xl z-50 pointer-events-auto text-white scale-90 sm:scale-100 transition-all origin-bottom select-none animate-in fade-in zoom-in-95 duration-200"
-            onPointerDown={e => e.stopPropagation()}
-          >
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setBannerOverlayScale((s: number) => { const n = Math.max(0.1, s - 0.05); ctx.pushHistory({ ...ctx.getSnapshot(), overlayScale: n }); return n; }); }}
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">-</button>
-            <span className="text-[10px] font-mono px-1 min-w-[34px] text-center text-zinc-200">{Math.round(ctx.bannerOverlayScale * 100)}%</span>
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setBannerOverlayScale((s: number) => { const n = Math.min(3, s + 0.05); ctx.pushHistory({ ...ctx.getSnapshot(), overlayScale: n }); return n; }); }}
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">+</button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setBannerOverlayRotate((r: number) => { const n = r - 15; ctx.pushHistory({ ...ctx.getSnapshot(), overlayRotate: n }); return n; }); }} title="Putar Kiri"
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCcwIcon className="w-3.5 h-3.5" /></button>
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setBannerOverlayRotate((r: number) => { const n = r + 15; ctx.pushHistory({ ...ctx.getSnapshot(), overlayRotate: n }); return n; }); }} title="Putar Kanan"
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCwIcon className="w-3.5 h-3.5" /></button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onClick={(ev) => { ev.stopPropagation(); const f = !ctx.bannerOverlayFlipX; ctx.setBannerOverlayFlipX(f); ctx.pushHistory({ ...ctx.getSnapshot(), overlayFlipX: f }); }}
-              className={cn("w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors", ctx.bannerOverlayFlipX && "text-blue-400 bg-white/5")}>
-              <FlipHorizontal className="w-3.5 h-3.5" /></button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setBannerOverlayImageUrl(null); ctx.setSelectedId(null); ctx.pushHistory({ ...ctx.getSnapshot(), overlayImageUrl: null }); }}
-              className="w-7 h-7 text-red-400 hover:bg-red-500/10 rounded-lg flex items-center justify-center transition-colors">
-              <Trash className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
+
 
         {/* Bounding Box & Drag Resize Handles */}
         {isSelected && (
@@ -208,17 +145,8 @@ export default React.memo(function BannerEditorCanvas() {
                     e.currentTarget.setPointerCapture(e.pointerId);
                     e.stopPropagation();
                     const startClientX = e.clientX;
-                    const initialScale = layer.role === 'overlay-image' ? ctx.bannerOverlayScale : 1;
-                    const onMove = (moveEvent: any) => {
-                      const deltaX = moveEvent.clientX - startClientX;
-                      let delta = 0;
                       if (corner === 'se' || corner === 'ne') delta = deltaX;
                       if (corner === 'sw' || corner === 'nw') delta = -deltaX;
-                      const containerWidth = ctx.canvasRef.current?.offsetWidth || 800;
-                      const scaleDelta = (delta / containerWidth) * 5;
-                      const newScale = Math.max(0.1, Math.min(3, initialScale + scaleDelta));
-                      if (layer.role === 'overlay-image') ctx.setBannerOverlayScale(newScale);
-                    };
                     const onUp = (upEvent: any) => {
                       upEvent.currentTarget.releasePointerCapture(upEvent.pointerId);
                       upEvent.currentTarget.removeEventListener('pointermove', onMove);
@@ -246,6 +174,119 @@ export default React.memo(function BannerEditorCanvas() {
         )}
 
         {elementNode}
+      </div>
+    );
+  }, [ctx]);
+
+  const renderOverlayLayer = useCallback((overlay: OverlayData, index: number) => {
+    const isSelected = ctx.activeOverlayId === overlay.id;
+    
+    // Z-index calculation: overlays sit below texts (zIndex: 10), so we use 5 + index.
+    const baseZIndex = 5 + index;
+
+    return (
+      <div
+        key={overlay.id}
+        className="absolute pointer-events-auto touch-none"
+        style={{
+          left: `${overlay.x}%`,
+          top: `${overlay.y}%`,
+          transform: 'translate(-50%, -50%)',
+          zIndex: isSelected ? 20 : baseZIndex, // bring to front when editing
+          width: `calc(${overlay.scale} * 20cqw)`,
+          cursor: 'grab',
+        }}
+        onPointerDown={e => ctx.onOverlayPointerDown(e, overlay.id)}
+      >
+        {/* Floating Action Toolbar on Selected Overlay */}
+        {isSelected && (
+          <div 
+            className="absolute top-[-54px] left-1/2 -translate-x-1/2 bg-slate-950/85 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl px-2 py-1 flex items-center gap-1.5 shadow-xl z-50 pointer-events-auto text-white scale-90 sm:scale-100 transition-all origin-bottom select-none animate-in fade-in zoom-in-95 duration-200"
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, scale: Math.max(0.1, o.scale - 0.05) } : o)); setTimeout(() => ctx.pushHistory(), 50); }}
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">-</button>
+            <span className="text-[10px] font-mono px-1 min-w-[34px] text-center text-zinc-200">{Math.round(overlay.scale * 100)}%</span>
+            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, scale: Math.min(5, o.scale + 0.05) } : o)); setTimeout(() => ctx.pushHistory(), 50); }}
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">+</button>
+            <div className="w-[1px] h-4 bg-white/10" />
+            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, rotate: o.rotate - 15 } : o)); setTimeout(() => ctx.pushHistory(), 50); }} title="Putar Kiri"
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCcwIcon className="w-3.5 h-3.5" /></button>
+            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, rotate: o.rotate + 15 } : o)); setTimeout(() => ctx.pushHistory(), 50); }} title="Putar Kanan"
+              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCwIcon className="w-3.5 h-3.5" /></button>
+            <div className="w-[1px] h-4 bg-white/10" />
+            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, flipX: !o.flipX } : o)); setTimeout(() => ctx.pushHistory(), 50); }}
+              className={cn("w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors", overlay.flipX && "text-blue-400 bg-white/5")}>
+              <FlipHorizontal className="w-3.5 h-3.5" /></button>
+            <div className="w-[1px] h-4 bg-white/10" />
+            <button onClick={(ev) => { 
+                ev.stopPropagation(); 
+                ctx.setOverlays((prev: any[]) => prev.filter(o => o.id !== overlay.id)); 
+                ctx.setActiveOverlayId(null); 
+                setTimeout(() => ctx.pushHistory(), 50); 
+              }}
+              className="w-7 h-7 text-red-400 hover:bg-red-500/10 rounded-lg flex items-center justify-center transition-colors">
+              <Trash className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
+
+        {/* Bounding Box & Drag Resize Handles for Overlay */}
+        {isSelected && (
+          <div className="absolute inset-[-6px] border-[1.5px] border-[#2563eb] rounded-md pointer-events-none z-20">
+            {(['nw', 'ne', 'sw', 'se'] as const).map((corner) => {
+              const posClasses: Record<string, string> = {
+                nw: '-top-[4.5px] -left-[4.5px] cursor-nwse-resize',
+                ne: '-top-[4.5px] -right-[4.5px] cursor-nesw-resize',
+                sw: '-bottom-[4.5px] -left-[4.5px] cursor-nesw-resize',
+                se: '-bottom-[4.5px] -right-[4.5px] cursor-nwse-resize'
+              };
+              return (
+                <div 
+                  key={corner}
+                  className={cn("absolute w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full pointer-events-auto", posClasses[corner])}
+                  onPointerDown={e => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    e.stopPropagation();
+                    const startClientX = e.clientX;
+                    const initialScale = overlay.scale;
+                    const onMove = (moveEvent: any) => {
+                      const deltaX = moveEvent.clientX - startClientX;
+                      let delta = 0;
+                      if (corner === 'se' || corner === 'ne') delta = deltaX;
+                      if (corner === 'sw' || corner === 'nw') delta = -deltaX;
+                      const containerWidth = ctx.canvasRef.current?.offsetWidth || 800;
+                      const scaleDelta = (delta / containerWidth) * 5;
+                      const newScale = Math.max(0.1, Math.min(5, initialScale + scaleDelta));
+                      ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, scale: newScale } : o));
+                    };
+                    const onUp = (upEvent: any) => {
+                      upEvent.currentTarget.releasePointerCapture(upEvent.pointerId);
+                      upEvent.currentTarget.removeEventListener('pointermove', onMove);
+                      upEvent.currentTarget.removeEventListener('pointerup', onUp);
+                      setTimeout(() => ctx.pushHistory(), 50);
+                    };
+                    e.currentTarget.addEventListener('pointermove', onMove);
+                    e.currentTarget.addEventListener('pointerup', onUp);
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        <img
+          src={overlay.imageUrl}
+          draggable={false}
+          style={{
+            transform: `scaleX(${overlay.flipX ? -1 : 1}) rotate(${overlay.rotate}deg)`,
+            width: '100%',
+            height: 'auto',
+            borderRadius: `${overlay.borderRadius}%`,
+            filter: `brightness(${overlay.filter.brightness}%) contrast(${overlay.filter.contrast}%) saturate(${overlay.filter.saturate}%) blur(${overlay.filter.blur}px)`
+          }}
+          className="object-contain drop-shadow-2xl select-none"
+          alt="Overlay Banner"
+        />
       </div>
     );
   }, [ctx]);
@@ -302,6 +343,9 @@ export default React.memo(function BannerEditorCanvas() {
         {ctx.activeSnapY !== null && (
           <div className="absolute left-0 right-0 h-[1.5px] pointer-events-none z-30 shadow-[0_0_8px_currentColor]" style={{ top: `${ctx.activeSnapY}%`, color: ctx.activeSnapY === 50 ? '#22d3ee' : '#f43f5e', backgroundColor: 'currentColor' }} />
         )}
+
+        {/* Canvas overlays */}
+        {ctx.overlays.map((overlay: OverlayData, idx: number) => renderOverlayLayer(overlay, idx))}
 
         {/* Canvas layers */}
         {ctx.layers.map(renderCanvasLayer)}

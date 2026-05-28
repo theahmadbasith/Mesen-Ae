@@ -2,8 +2,9 @@ import React from 'react';
 import { Image as ImageIcon, Sparkles, FlipHorizontal, Type, Palette, Layout, SlidersHorizontal, Check, Trash } from 'lucide-react';
 import {
   useBannerEditor, cn, Button, Input, Label, Switch, PanelSection,
-  ColorPicker, SliderRow, RichTextEditor, Wand2Icon
+  ColorPicker, SliderRow, RichTextEditor, Wand2Icon, OverlayData
 } from './BannerEditorContext';
+import MagicWandModal from './MagicWandModal';
 
 // ============================================================================
 // SIDEBAR FORM CONTENT (shared between desktop sidebar and mobile bottom sheet)
@@ -11,9 +12,23 @@ import {
 
 const SidebarFormContent = React.memo(function SidebarFormContent() {
   const ctx = useBannerEditor();
+  const [magicWandId, setMagicWandId] = React.useState<string | null>(null);
+
+  const handleSaveMagicWand = (newBase64: string) => {
+    ctx.setOverlays((prev: OverlayData[]) => prev.map(o => o.id === magicWandId ? { ...o, imageUrl: newBase64 } : o));
+    setTimeout(() => ctx.pushHistory(), 50);
+  };
+
+  const magicWandUrl = ctx.overlays.find((o: OverlayData) => o.id === magicWandId)?.imageUrl || null;
 
   return (
     <div className="space-y-6">
+      <MagicWandModal 
+        open={!!magicWandId} 
+        onOpenChange={(open) => { if (!open) setMagicWandId(null); }}
+        imageUrl={magicWandUrl}
+        onSave={handleSaveMagicWand}
+      />
       
       {/* 1. KONTEN TEKS & LINK */}
       <PanelSection title="Konten Teks & Tautan" icon={Type} defaultOpen={true}>
@@ -201,60 +216,76 @@ const SidebarFormContent = React.memo(function SidebarFormContent() {
             </div>
           )}
 
-          {ctx.bannerOverlayImageUrl && (
-            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transformasi Stiker</p>
-                <button onClick={() => ctx.setIsMagicWandActive((v: boolean) => !v)}
-                  className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border",
-                    ctx.isMagicWandActive ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20" : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-400"
-                  )}>
-                  <Wand2Icon className="w-3.5 h-3.5" />
-                  Hapus Latar
-                </button>
-              </div>
+          {ctx.overlays.length > 0 && (
+            <div className="space-y-3">
+              {ctx.overlays.map((overlay: OverlayData, idx: number) => (
+                <div key={overlay.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Overlay {idx + 1}</p>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => setMagicWandId(overlay.id)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-400"
+                        title="Hapus Latar dengan Magic Wand">
+                        <Wand2Icon className="w-3.5 h-3.5" />
+                        Hapus Latar
+                      </button>
+                      <button onClick={() => {
+                        if (idx > 0) {
+                          const newArr = [...ctx.overlays];
+                          [newArr[idx-1], newArr[idx]] = [newArr[idx], newArr[idx-1]];
+                          ctx.setOverlays(newArr);
+                          setTimeout(() => ctx.pushHistory(), 50);
+                        }
+                      }} className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-md flex items-center justify-center hover:bg-zinc-200" disabled={idx === 0} title="Maju (Bring Forward)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                      </button>
+                      <button onClick={() => {
+                        if (idx < ctx.overlays.length - 1) {
+                          const newArr = [...ctx.overlays];
+                          [newArr[idx], newArr[idx+1]] = [newArr[idx+1], newArr[idx]];
+                          ctx.setOverlays(newArr);
+                          setTimeout(() => ctx.pushHistory(), 50);
+                        }
+                      }} className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-md flex items-center justify-center hover:bg-zinc-200" disabled={idx === ctx.overlays.length - 1} title="Mundur (Send Backward)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <SliderRow label="Skala (Lebar)" value={Math.round(overlay.scale * 100)} min={10} max={500} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, scale: v / 100 } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                  <SliderRow label="Rotasi" value={overlay.rotate} min={-180} max={180} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, rotate: v } : o))} onPointerUp={() => ctx.pushHistory()} unit="°" />
+                  
+                  <div className="flex gap-2">
+                    <button onClick={() => {
+                      ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, flipX: !o.flipX } : o));
+                      ctx.pushHistory();
+                    }}
+                      className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2 text-xs', overlay.flipX ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
+                      <FlipHorizontal className="w-4 h-4" /> Balik Horisontal
+                    </button>
+                  </div>
 
-              {ctx.isMagicWandActive && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/40 rounded-xl space-y-3 mb-4 animate-in fade-in slide-in-from-top-2">
-                  <p className="text-xs text-blue-800 dark:text-blue-300 font-medium">Klik pada area warna di gambar stiker (kanvas preview) untuk menghapusnya.</p>
-                  <SliderRow label="Toleransi Kesamaan Warna" value={ctx.magicWandTolerance} min={1} max={100} defaultValue={32} onChange={ctx.setMagicWandTolerance} />
+                  <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
+                    <SliderRow label="Kecerahan" value={overlay.filter.brightness} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, brightness: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                    <SliderRow label="Kontras" value={overlay.filter.contrast} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, contrast: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                    <SliderRow label="Saturasi" value={overlay.filter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, saturate: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                    <SliderRow label="Blur" value={overlay.filter.blur} min={0} max={20} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, blur: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="px" />
+                  </div>
+
+                  <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <SliderRow label="Sudut Bulat" value={overlay.borderRadius} min={0} max={50} step={1} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, borderRadius: v } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                  </div>
+
+                  <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => {
+                    ctx.setOverlays((prev: any) => prev.filter((o: any) => o.id !== overlay.id));
+                    if (ctx.activeOverlayId === overlay.id) ctx.setActiveOverlayId(null);
+                    setTimeout(() => ctx.pushHistory(), 50);
+                  }}>
+                    <Trash className="w-4 h-4 mr-2" /> Hapus Stiker Ini
+                  </Button>
                 </div>
-              )}
-              
-              <SliderRow label="Skala (Lebar)" value={Math.round(ctx.bannerOverlayScale * 100)} min={10} max={300} defaultValue={100} onChange={(v: number) => ctx.setBannerOverlayScale(v / 100)} onPointerUp={() => ctx.pushHistory()} unit="%" />
-              <SliderRow label="Rotasi" value={ctx.bannerOverlayRotate} min={-180} max={180} defaultValue={0} onChange={ctx.setBannerOverlayRotate} onPointerUp={() => ctx.pushHistory()} unit="°" />
-              
-              <div className="flex gap-2">
-                <button onClick={() => {
-                  const flip = !ctx.bannerOverlayFlipX;
-                  ctx.setBannerOverlayFlipX(flip);
-                  ctx.pushHistory({ ...ctx.getSnapshot(), overlayFlipX: flip });
-                }}
-                  className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2 text-xs', ctx.bannerOverlayFlipX ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
-                  <FlipHorizontal className="w-4 h-4" /> Balik Horisontal
-                </button>
-              </div>
-
-              <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
-                <SliderRow label="Kecerahan" value={ctx.overlayFilter.brightness} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlayFilter((f: any) => ({ ...f, brightness: v }))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                <SliderRow label="Kontras" value={ctx.overlayFilter.contrast} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlayFilter((f: any) => ({ ...f, contrast: v }))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                <SliderRow label="Saturasi" value={ctx.overlayFilter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlayFilter((f: any) => ({ ...f, saturate: v }))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                <SliderRow label="Blur" value={ctx.overlayFilter.blur} min={0} max={20} defaultValue={0} onChange={(v: number) => ctx.setOverlayFilter((f: any) => ({ ...f, blur: v }))} onPointerUp={() => ctx.pushHistory()} unit="px" />
-              </div>
-
-              <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                <SliderRow label="Sudut Bulat" value={ctx.bannerOverlayBorderRadius} min={0} max={50} step={1} defaultValue={0} onChange={(v: number) => ctx.setBannerOverlayBorderRadius(v)} onPointerUp={() => ctx.pushHistory()} unit="%" />
-              </div>
-
-              <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => {
-                ctx.setBannerOverlayImageUrl(null);
-                ctx.setBannerProductId('');
-                ctx.setSelectedId(null);
-                ctx.pushHistory({ ...ctx.getSnapshot(), overlayImageUrl: null, productId: '' });
-              }}>
-                <Trash className="w-4 h-4 mr-2" /> Hapus Stiker Overlay
-              </Button>
+              ))}
             </div>
           )}
         </div>

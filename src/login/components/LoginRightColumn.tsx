@@ -40,7 +40,7 @@ export default function LoginRightColumn({
             <img
               src={storeSettings?.logo || "/icon-192.png"}
               alt={storeSettings?.storeName || "MesenAe"}
-              className="w-full h-full object-contain drop-shadow-lg"
+              className="w-full h-full object-cover drop-shadow-lg rounded-2xl"
               onError={(e) => {
                 const target = e.currentTarget;
                 target.style.display = 'none';
