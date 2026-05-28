@@ -16,6 +16,9 @@ import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
 import { Link, useSearchParams } from 'react-router-dom';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -166,6 +169,34 @@ export default function Pengaturan() {
   const storeSettings   = useDbQuery<StoreSettings>('storeSettings')?.[0];
   const paymentMethods  = useDbQuery<PaymentMethod>('paymentMethods');
   const users           = useDbQuery<User>('users');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const sortedPaymentMethods = [...(paymentMethods || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = sortedPaymentMethods.findIndex(item => item.id!.toString() === active.id);
+      const newIndex = sortedPaymentMethods.findIndex(item => item.id!.toString() === over.id);
+      
+      const newOrder = arrayMove(sortedPaymentMethods, oldIndex, newIndex);
+      
+      // Update sortOrder for all items in parallel
+      const updates = newOrder.map((pm, index) => {
+        return dbUpdate('paymentMethods', pm.id!, { sortOrder: index });
+      });
+      
+      try {
+        await Promise.all(updates);
+      } catch (err: any) {
+        toast.error('Gagal menyimpan urutan: ' + err.message);
+      }
+    }
+  };
 
   const { canEdit } = usePermissions();
   const hasEditAccess = canEdit('settings');
@@ -578,28 +609,28 @@ export default function Pengaturan() {
               </SettingCard>
             ) : (
               <SettingCard>
-                {paymentMethods.map((pm, i) => (
-                  <div
-                    key={pm.id}
-                    className={cn('flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors', i < paymentMethods.length - 1 && 'border-b border-border/50')}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={sortedPaymentMethods.map(pm => pm.id!.toString())}
+                    strategy={verticalListSortingStrategy}
                   >
-                    <span className="text-base w-6 text-center">{PM_CAT_ICONS[pm.category] ?? '•'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{pm.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{pm.category}</p>
-                    </div>
-                    {hasEditAccess && (
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openPmEdit(pm)}>
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => deletePm(pm.id!)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                    )}
-                  </div>
-                ))}
+                    {sortedPaymentMethods.map((pm, i) => (
+                      <SortablePaymentMethodItem
+                        key={pm.id}
+                        id={pm.id!.toString()}
+                        pm={pm}
+                        isLast={i === sortedPaymentMethods.length - 1}
+                        hasEditAccess={hasEditAccess}
+                        onEdit={() => openPmEdit(pm)}
+                        onDelete={() => deletePm(pm.id!)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </SettingCard>
             )}
           </Section>
@@ -1261,6 +1292,46 @@ export default function Pengaturan() {
           <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()} />
         </div>,
         document.body
+      )}
+    </div>
+  );
+}
+
+function SortablePaymentMethodItem({ id, pm, isLast, hasEditAccess, onEdit, onDelete }: { id: string, pm: PaymentMethod, isLast: boolean, hasEditAccess: boolean, onEdit: () => void, onDelete: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    position: 'relative' as any,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn('flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors bg-card', !isLast && 'border-b border-border/50', isDragging && 'shadow-lg border border-primary/20 opacity-90 rounded-lg')}
+    >
+      {hasEditAccess && (
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground mr-1 touch-none">
+          <GripVertical className="w-4 h-4" />
+        </div>
+      )}
+      <span className="text-base w-6 text-center">{PM_CAT_ICONS[pm.category] ?? '•'}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">{pm.name}</p>
+        <p className="text-xs text-muted-foreground capitalize">{pm.category}</p>
+      </div>
+      {hasEditAccess && (
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onEdit}>
+          <Edit2 className="w-3.5 h-3.5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={onDelete}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
       )}
     </div>
   );

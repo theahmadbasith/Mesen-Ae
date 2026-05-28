@@ -11,6 +11,7 @@ export interface PaymentMethod {
   name: string;
   category: string;
   provider?: string;
+  sortOrder?: number;
 }
 
 export interface PaymentRecord {
@@ -245,7 +246,7 @@ export default function PaymentModal({
             <div className="space-y-2">
               <p className="text-sm font-semibold">Metode Pembayaran</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {paymentMethods?.map(pm => {
+                {[...(paymentMethods || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map(pm => {
                   const isSelected = paymentMethodId === pm.id!.toString();
                   return (
                     <button
