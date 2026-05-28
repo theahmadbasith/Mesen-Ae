@@ -12,6 +12,7 @@ export interface PaymentMethod {
   category: string;
   provider?: string;
   sortOrder?: number;
+  iconName?: string;
 }
 
 export interface PaymentRecord {
@@ -260,8 +261,12 @@ export default function PaymentModal({
                           : 'border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50'
                       )}
                     >
-                      <span className={cn('p-1.5 rounded-lg shrink-0', isSelected ? COLORS[pm.category] || 'text-primary bg-primary/10' : 'text-muted-foreground bg-muted')}>
-                        {ICONS[pm.category] ?? <CreditCard className="w-5 h-5" />}
+                      <span className={cn('p-1.5 rounded-lg shrink-0 flex items-center justify-center', isSelected ? COLORS[pm.category] || 'text-primary bg-primary/10' : 'text-muted-foreground bg-muted')}>
+                        {pm.provider === 'manual' && pm.iconName ? (
+                          <img src={`/ico/${pm.iconName}.png`} alt={pm.iconName} className="w-5 h-5 object-contain" />
+                        ) : (
+                          ICONS[pm.category] ?? <CreditCard className="w-5 h-5" />
+                        )}
                       </span>
                       <div className="min-w-0">
                         <span className={cn('text-xs font-bold block truncate', isSelected ? 'text-primary' : 'text-foreground')}>

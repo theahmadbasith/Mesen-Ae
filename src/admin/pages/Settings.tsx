@@ -1330,7 +1330,13 @@ function SortablePaymentMethodItem({ id, pm, isLast, hasEditAccess, onEdit, onDe
           <GripVertical className="w-4 h-4" />
         </div>
       )}
-      <span className="text-base w-6 text-center">{PM_CAT_ICONS[pm.category] ?? '•'}</span>
+      <span className="text-base w-6 flex items-center justify-center">
+        {pm.provider === 'manual' && pm.iconName ? (
+          <img src={`/ico/${pm.iconName}.png`} alt={pm.iconName} className="w-5 h-5 object-contain inline-block" />
+        ) : (
+          PM_CAT_ICONS[pm.category] ?? '•'
+        )}
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">{pm.name}</p>
         <p className="text-xs text-muted-foreground capitalize">{pm.category}</p>
