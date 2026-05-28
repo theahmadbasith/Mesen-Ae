@@ -1,4 +1,5 @@
 import type { QRISData } from "../../../lib/qris-dinamis/types";
+import { Info } from "lucide-react";
 
 interface Props {
   data: QRISData;
@@ -30,43 +31,41 @@ export function QRISInfo({ data }: Props) {
   const issuer = merchantInfo?.globallyUniqueId ?? "-";
 
   return (
-    <div className="rounded-xl border bg-white dark:bg-gray-900 overflow-hidden">
-      <div className="px-4 py-3 border-b bg-gray-50 dark:bg-gray-900/50">
+    <div className="rounded-xl border border-border/50 bg-background overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-border/50 bg-muted/30">
         <h2 className="text-sm font-semibold flex items-center gap-2">
-          <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-          </svg>
-          QRIS Information
+          <Info className="w-4 h-4 text-primary" />
+          Informasi QRIS
         </h2>
       </div>
-      <div className="divide-y">
+      <div className="divide-y divide-border/50">
         <InfoRow label="Merchant" value={data.merchantName} />
-        <InfoRow label="City" value={data.merchantCity} />
-        <InfoRow label="Postal Code" value={data.postalCode} />
+        <InfoRow label="Kota" value={data.merchantCity} />
+        <InfoRow label="Kode Pos" value={data.postalCode} />
         <InfoRow label="Issuer" value={issuer} />
         <InfoRow
-          label="Method"
+          label="Tipe"
           value={
             <span
-              className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+              className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
                 data.method === "static"
-                  ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                  : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                  : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
               }`}
             >
-              {data.method === "static" ? "Static" : "Dynamic"}
+              {data.method === "static" ? "Statis" : "Dinamis"}
             </span>
           }
         />
         <InfoRow
-          label="Category"
+          label="Kategori"
           value={MCC_MAP[data.merchantCategoryCode] ?? data.merchantCategoryCode}
         />
         <InfoRow
-          label="Currency"
+          label="Mata Uang"
           value={CURRENCY_MAP[data.currency] ?? data.currency}
         />
-        {data.amount && <InfoRow label="Amount" value={`Rp ${Number(data.amount).toLocaleString("id-ID")}`} />}
+        {data.amount && <InfoRow label="Nominal" value={`Rp ${Number(data.amount).toLocaleString("id-ID")}`} />}
       </div>
     </div>
   );
@@ -74,8 +73,8 @@ export function QRISInfo({ data }: Props) {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="px-4 py-2.5 flex items-center justify-between gap-4">
-      <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
+    <div className="px-5 py-3 flex items-center justify-between gap-4">
+      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
       <span className="text-sm font-medium text-right truncate">{value}</span>
     </div>
   );

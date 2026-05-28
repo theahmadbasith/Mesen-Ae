@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
 import { parseQRIS, convertQRIS, validateQRIS } from "../../lib/qris-dinamis/index";
 import type { QRISData, ConvertOptions } from "../../lib/qris-dinamis/types";
-import { Header } from "../components/qris-dinamis/Header";
 import { QRISInput } from "../components/qris-dinamis/QRISInput";
 import { QRISInfo } from "../components/qris-dinamis/QRISInfo";
 import { ConvertForm } from "../components/qris-dinamis/ConvertForm";
 import { QRISResult } from "../components/qris-dinamis/QRISResult";
-import { Footer } from "../components/qris-dinamis/Footer";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { QrCode } from "lucide-react";
 
 export default function QrisDinamisMenu() {
   const [qrisString, setQrisString] = useState("");
@@ -58,31 +58,42 @@ export default function QrisDinamisMenu() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className="pt-2 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
+      <Card className="shadow-sm border-border/50">
+        <CardHeader className="pb-4 border-b border-border/50 bg-muted/30">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <QrCode className="w-5 h-5 text-muted-foreground" />
+            Generator QRIS Dinamis
+          </CardTitle>
+          <CardDescription>
+            Ubah QRIS Statis Anda menjadi QRIS Dinamis dengan nominal dan biaya admin khusus.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 max-w-2xl mx-auto space-y-6 w-full">
+          <QRISInput
+            value={qrisString}
+            onChange={handleQRISInput}
+            onReset={handleReset}
+            errors={errors}
+          />
 
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-8 space-y-6">
-        <QRISInput
-          value={qrisString}
-          onChange={handleQRISInput}
-          onReset={handleReset}
-          errors={errors}
-        />
+          {parsed && (
+            <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+              <QRISInfo data={parsed} />
+              <ConvertForm
+                parsed={parsed}
+                onConvert={handleConvert}
+              />
+            </div>
+          )}
 
-        {parsed && (
-          <>
-            <QRISInfo data={parsed} />
-            <ConvertForm
-              parsed={parsed}
-              onConvert={handleConvert}
-            />
-          </>
-        )}
-
-        {result && <QRISResult qrisString={result} />}
-      </main>
-
-      <Footer />
+          {result && (
+            <div className="animate-in slide-in-from-bottom-4 duration-500">
+              <QRISResult qrisString={result} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
