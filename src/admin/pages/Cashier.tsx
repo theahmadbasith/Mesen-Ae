@@ -115,7 +115,13 @@ export default function Kasir() {
   const realtimeVouchers = useDbQuery<Voucher>('vouchers') || [];
 
   const products = realtimeProducts;
-  const categories = realtimeCategories;
+  const categories = useMemo(() => {
+    return [...realtimeCategories].sort((a, b) => {
+      if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+      if (a.createdAt && b.createdAt) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return String(a.id).localeCompare(String(b.id));
+    });
+  }, [realtimeCategories]);
   const paymentMethods = realtimePaymentMethods;
   const storeSettings = realtimeStoreSettings[0];
   const allBills = realtimeTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
