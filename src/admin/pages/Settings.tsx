@@ -1214,28 +1214,34 @@ export default function Pengaturan() {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <span className="text-[10px] font-medium text-muted-foreground">Lihat</span>
                           <Switch 
-                            checked={userPermissions[key].view}
+                            checked={userPermissions[key]?.view || false}
                             onCheckedChange={(v) => {
                               setUserPermissions(prev => ({
                                 ...prev,
-                                [key]: { ...prev[key], view: v, edit: v ? prev[key].edit : false }
+                                [key]: { 
+                                  view: v, 
+                                  edit: v ? (prev[key]?.edit || false) : false 
+                                }
                               }));
                             }}
                             className="scale-75 origin-right"
                           />
                         </label>
-                        <label className={cn("flex items-center gap-2", !userPermissions[key].view ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
+                        <label className={cn("flex items-center gap-2", !(userPermissions[key]?.view) ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
                           <span className="text-[10px] font-medium text-muted-foreground">Kelola</span>
                           <Switch 
-                            checked={userPermissions[key].edit}
+                            checked={userPermissions[key]?.edit || false}
                             onCheckedChange={(v) => {
                               setUserPermissions(prev => ({
                                 ...prev,
-                                [key]: { ...prev[key], edit: v }
+                                [key]: { 
+                                  view: prev[key]?.view || false, 
+                                  edit: v 
+                                }
                               }));
                             }}
                             className="scale-75 origin-right"
-                            disabled={!userPermissions[key].view}
+                            disabled={!(userPermissions[key]?.view)}
                           />
                         </label>
                       </div>
