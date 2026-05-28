@@ -77,11 +77,8 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
       const isUnpaid = t.status === 'belum lunas';
       // Pesanan dapur yang lunas tapi belum selesai diantar
       const isPaidButCooking = t.status === 'lunas' && t.kitchenStatus && !['diantarkan', 'selesai'].includes(t.kitchenStatus);
-      // Pesanan ritel dari web yang lunas tapi belum ditangani admin
-      // (kitchenStatus null = dari kasir, 'pending' = dari Midtrans lama)
-      const isPaidRetailWeb = t.status === 'lunas' && t.remarks === 'Pesanan dari Web' && (!t.kitchenStatus || t.kitchenStatus === 'pending');
 
-      return isUnpaid || isPaidButCooking || isPaidRetailWeb;
+      return isUnpaid || isPaidButCooking;
     }
   ).sort((a, b) => new Date(a.date || a.created_at || 0).getTime() - new Date(b.date || b.created_at || 0).getTime());
 
@@ -363,7 +360,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                     )}
                     {bill.status === 'lunas' ? (
                       !getBillNeedsKitchen(bill) ? (
-                        bill.remarks === 'Pesanan dari Web' ? (
+                        bill.kitchenStatus ? (
                           <div className="flex gap-2 w-full">
                             {(!bill.kitchenStatus || bill.kitchenStatus === 'pending' || bill.kitchenStatus === 'diproses') ? (
                               <Button 
