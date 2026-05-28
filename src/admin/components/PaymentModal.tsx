@@ -338,7 +338,7 @@ export default function PaymentModal({
                   <div key={idx} className="flex justify-between items-center text-sm px-3 py-2 bg-muted/30 rounded-xl border border-border">
                     <div>
                       <p className="font-semibold text-xs">{p.methodName}</p>
-                      <p className="text-[10px] text-muted-foreground">{p.date.toLocaleTimeString()}</p>
+                      <p className="text-[10px] text-muted-foreground">{p.date ? new Date(p.date).toLocaleTimeString() : ''}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-sm">{rp(p.amount)}</p>
