@@ -28,6 +28,7 @@ const StockReport = lazy(() => import("./pages/StockReport"));
 const ActiveOrders = lazy(() => import("./pages/ActiveOrders"));
 const Kitchen = lazy(() => import("./pages/Kitchen"));
 const QrCodeMenu = lazy(() => import("./pages/QrCodeMenu"));
+const QrisDinamisMenu = lazy(() => import("./pages/QrisDinamisMenu"));
 const Vouchers = lazy(() => import("./pages/Vouchers"));
 const BannerPromo = lazy(() => import("./pages/BannerPromo"));
 const BannerEditor = lazy(() => import("./pages/BannerEditor"));
@@ -199,6 +200,13 @@ export default function AdminApp() {
           <ProtectedModuleRoute moduleName="marketing">
             <Suspense fallback={<PageSkeleton />}>
               <QrCodeMenu />
+            </Suspense>
+          </ProtectedModuleRoute>
+        } />
+        <Route path="qris-dinamis" element={
+          <ProtectedModuleRoute moduleName="marketing">
+            <Suspense fallback={<PageSkeleton />}>
+              <QrisDinamisMenu />
             </Suspense>
           </ProtectedModuleRoute>
         } />

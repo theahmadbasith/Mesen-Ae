@@ -16,6 +16,7 @@ import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
 import { Link, useSearchParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -314,9 +315,15 @@ export default function Pengaturan() {
   const [pmCategory, setPmCategory] = useState('tunai');
   const [pmEditId,   setPmEditId]   = useState<number | null>(null);
   const [isSavingPm, setIsSavingPm] = useState(false);
+  const [pmProvider, setPmProvider] = useState<'midtrans' | 'manual'>('manual');
+  const [pmQrisString, setPmQrisString] = useState('');
+  const [pmBankName, setPmBankName] = useState('');
+  const [pmAccountNumber, setPmAccountNumber] = useState('');
+  const [pmAccountName, setPmAccountName] = useState('');
+  const [pmIconName, setPmIconName] = useState('');
 
-  const openPmAdd  = () => { setPmEditId(null); setPmName(''); setPmCategory('tunai'); setPmDialog(true); };
-  const openPmEdit = (pm: PaymentMethod) => { setPmEditId(pm.id!); setPmName(pm.name); setPmCategory(pm.category); setPmDialog(true); };
+  const openPmAdd  = () => { setPmEditId(null); setPmName(''); setPmCategory('tunai'); setPmProvider('manual'); setPmQrisString(''); setPmBankName(''); setPmAccountNumber(''); setPmAccountName(''); setPmIconName(''); setPmDialog(true); };
+  const openPmEdit = (pm: PaymentMethod) => { setPmEditId(pm.id!); setPmName(pm.name); setPmCategory(pm.category); setPmProvider((pm.provider as 'midtrans' | 'manual') || 'midtrans'); setPmQrisString(pm.qrisString || ''); setPmBankName(pm.bankName || ''); setPmAccountNumber(pm.accountNumber || ''); setPmAccountName(pm.accountName || ''); setPmIconName(pm.iconName || ''); setPmDialog(true); };
   const savePm = async () => {
     if (!hasEditAccess) {
       toast.error('Akses ditolak. Anda tidak memiliki izin untuk mengedit pengaturan.');
@@ -325,8 +332,19 @@ export default function Pengaturan() {
     if (!pmName.trim()) return;
     setIsSavingPm(true);
     try {
-      if (pmEditId) await dbUpdate('paymentMethods', pmEditId, { name: pmName.trim(), category: pmCategory });
-      else await dbInsert('paymentMethods', { name: pmName.trim(), category: pmCategory, isDefault: false, createdAt: new Date().toISOString() });
+      const isManualTransferOrEwallet = (pmCategory === 'transfer' || pmCategory === 'e-wallet') && pmProvider === 'manual';
+      const updates = { 
+        name: pmName.trim(), 
+        category: pmCategory,
+        provider: pmCategory === 'qris' || pmCategory === 'transfer' || pmCategory === 'e-wallet' ? pmProvider : undefined,
+        qrisString: pmCategory === 'qris' && pmProvider === 'manual' ? pmQrisString : undefined,
+        bankName: isManualTransferOrEwallet ? pmBankName : undefined,
+        accountNumber: isManualTransferOrEwallet ? pmAccountNumber : undefined,
+        accountName: isManualTransferOrEwallet ? pmAccountName : undefined,
+        iconName: isManualTransferOrEwallet ? pmIconName : undefined,
+      };
+      if (pmEditId) await dbUpdate('paymentMethods', pmEditId, updates);
+      else await dbInsert('paymentMethods', { ...updates, isDefault: false, createdAt: new Date().toISOString() });
       setPmDialog(false); toast.success('Metode pembayaran disimpan');
     } catch (error: any) {
       toast.error('Gagal menyimpan metode pembayaran: ' + (error.message || error));
@@ -979,6 +997,75 @@ export default function Pengaturan() {
                 ))}
               </div>
             </div>
+
+            {(pmCategory === 'qris' || pmCategory === 'transfer' || pmCategory === 'e-wallet') && (
+              <div className="space-y-1.5 pt-2 border-t border-border/50">
+                <Label className="text-xs">Sistem Pemrosesan</Label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPmProvider('midtrans')}
+                    className={cn(
+                      'flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                      pmProvider === 'midtrans' ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-border/80'
+                    )}
+                  >
+                    Midtrans (Online)
+                  </button>
+                  <button
+                    onClick={() => setPmProvider('manual')}
+                    className={cn(
+                      'flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                      pmProvider === 'manual' ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-border/80'
+                    )}
+                  >
+                    Manual (Bebas Biaya)
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {pmCategory === 'qris' && pmProvider === 'manual' && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">QRIS String Statis Dasar</Label>
+                <Input value={pmQrisString} onChange={e => setPmQrisString(e.target.value)} placeholder="000201010211..." className="font-mono text-[10px]" />
+                <p className="text-[10px] text-muted-foreground leading-snug">Sistem akan otomatis mengubah string statis ini menjadi QRIS dinamis di kasir berdasarkan nominal transaksi.</p>
+              </div>
+            )}
+
+            {(pmCategory === 'transfer' || pmCategory === 'e-wallet') && pmProvider === 'manual' && (
+              <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Ikon Bank/E-Wallet</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {['bca', 'bni', 'bri', 'dana', 'gopay', 'linkaja', 'mandiri', 'ovo', 'seabank', 'shopeepay'].map(ico => (
+                      <button
+                        key={ico}
+                        onClick={() => setPmIconName(ico)}
+                        className={cn(
+                          'p-1.5 rounded-lg border transition-all',
+                          pmIconName === ico ? 'border-primary bg-primary/10 shadow-sm' : 'border-border opacity-60 hover:opacity-100 hover:border-border/80'
+                        )}
+                        title={ico.toUpperCase()}
+                      >
+                        <img src={`/ico/${ico}.png`} alt={ico} className="w-6 h-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nama Bank / E-Wallet</Label>
+                  <Input value={pmBankName} onChange={e => setPmBankName(e.target.value)} placeholder="Contoh: Bank BCA / GoPay" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">No. Rekening / No. HP</Label>
+                  <Input value={pmAccountNumber} onChange={e => setPmAccountNumber(e.target.value)} placeholder="Contoh: 1234567890" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nama Pemilik Rekening</Label>
+                  <Input value={pmAccountName} onChange={e => setPmAccountName(e.target.value)} placeholder="Contoh: Budi Santoso" />
+                </div>
+              </div>
+            )}
             <Button className="w-full" onClick={savePm} disabled={!pmName.trim() || isSavingPm}>
               {isSavingPm ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan'}
             </Button>
@@ -1156,13 +1243,16 @@ export default function Pengaturan() {
         }}
         disableCompression={true}
       />
-      <Dialog open={!!lightboxSrc} onOpenChange={(open) => !open && setLightboxSrc(null)}>
-        <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 flex justify-center items-center">
-          {lightboxSrc && (
-            <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Photo Lightbox */}
+      {lightboxSrc && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in duration-200" onClick={() => setLightboxSrc(null)}>
+          <button className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors backdrop-blur-md border border-white/10" onClick={() => setLightboxSrc(null)}>
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <img src={lightboxSrc} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()} />
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

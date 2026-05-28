@@ -6,14 +6,16 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, RefreshCw, ChevronLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, RefreshCw, ChevronLeft, Landmark } from 'lucide-react';
 import { MidtransService } from '@/services/midtransService';
+import { PaymentMethod } from '@/hooks/db-hooks';
 
 interface BankTransferModalProps {
   isOpen: boolean;
   amount: number;
   customerName?: string;
   orderId?: string;
+  paymentMethod?: PaymentMethod | null;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -43,6 +45,7 @@ export function BankTransferModal({
   isOpen,
   amount,
   customerName,
+  paymentMethod,
   onSuccess,
   onClose,
 }: BankTransferModalProps) {
@@ -50,16 +53,28 @@ export function BankTransferModal({
   const [selectedBank, setSelectedBank] = useState<BankOption | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const isManual = paymentMethod?.provider === 'manual';
+
   useEffect(() => {
     if (isOpen) {
-      setStep('select');
-      setSelectedBank(null);
-      setErrorMsg(null);
-      MidtransService.loadSnapScript().catch((e) => console.warn('Snap script:', e));
+      if (isManual) {
+        setStep('select'); // for manual we just display details on select step
+      } else {
+        setStep('select');
+        setSelectedBank(null);
+        setErrorMsg(null);
+        MidtransService.loadSnapScript().catch((e) => console.warn('Snap script:', e));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isManual]);
 
   const handleBankSelect = useCallback(async (bank: BankOption) => {
+    if ((window as any).midtransSnapActive) {
+      console.warn('Midtrans Snap active. Ignoring.');
+      return;
+    }
+    (window as any).midtransSnapActive = true;
+    
     setSelectedBank(bank);
     setStep('loading');
     setErrorMsg(null);
@@ -84,21 +99,30 @@ export function BankTransferModal({
       // @ts-expect-error - window.snap injected globally
       window.snap.pay(token, {
         onSuccess: () => {
+          (window as any).midtransSnapActive = false;
           setStep('success');
           setTimeout(() => onSuccess(), 1200);
         },
-        onPending: () => setStep('select'),
+        onPending: () => {
+          (window as any).midtransSnapActive = false;
+          setStep('select');
+        },
         onError: (result: any) => {
+          (window as any).midtransSnapActive = false;
           console.error('Snap Bank Transfer Error:', result);
           setStep('error');
           setErrorMsg('Pembayaran gagal. Silakan pilih bank lain atau coba lagi.');
         },
-        onClose: () => setStep('select'),
+        onClose: () => {
+          (window as any).midtransSnapActive = false;
+          setStep('select');
+        },
       });
 
       // Set kembali ke select agar jika user tutup Snap, bisa pilih lagi
-      setStep('select');
+      // Jangan set state di sini secara asinkron karena onClose akan menangani
     } catch (err: any) {
+      (window as any).midtransSnapActive = false;
       console.error('Bank Transfer Error:', err);
       setStep('error');
       setErrorMsg(err.message || `Gagal memulai transfer via ${bank.name}`);
@@ -137,7 +161,36 @@ export function BankTransferModal({
 
         {/* Body */}
         <div className="p-5 overflow-y-auto max-h-[60vh] custom-scrollbar-hide">
-          {step === 'select' && (
+          {step === 'select' && isManual && paymentMethod && (
+            <div className="animate-in fade-in zoom-in duration-300">
+              <p className="text-sm text-muted-foreground mb-4 font-medium text-center">Silakan transfer ke rekening berikut:</p>
+              
+              <div className="bg-muted/30 rounded-xl p-4 border border-border mb-4 flex flex-col items-center text-center gap-2">
+                {paymentMethod.iconName ? (
+                  <img src={`/ico/${paymentMethod.iconName}.png`} alt={paymentMethod.bankName} className="h-10 object-contain mb-2" />
+                ) : (
+                  <Landmark className="w-10 h-10 text-primary mb-2 opacity-80" />
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{paymentMethod.bankName}</p>
+                  <p className="text-xl font-bold tracking-widest text-foreground mt-1">{paymentMethod.accountNumber}</p>
+                  <p className="text-sm font-medium text-muted-foreground mt-1">a.n {paymentMethod.accountName}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={handleClose}>Batalkan</Button>
+                <Button className="flex-1 font-bold" onClick={() => {
+                  setStep('success');
+                  setTimeout(() => onSuccess(), 1200);
+                }}>
+                  Konfirmasi Pembayaran
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === 'select' && !isManual && (
             <>
               <p className="text-sm text-muted-foreground mb-3 font-medium">Pilih bank tujuan:</p>
               <div className="grid grid-cols-4 gap-2">

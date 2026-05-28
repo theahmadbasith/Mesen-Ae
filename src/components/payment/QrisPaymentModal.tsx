@@ -20,14 +20,18 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, RefreshCw, QrCode } from 'lucide-react';
 import { MidtransService } from '@/services/midtransService';
+import { PaymentMethod } from '@/hooks/db-hooks';
+import { QRCodeSVG } from 'qrcode.react';
+import { convertQRIS } from '@/lib/qris-dinamis';
 
 interface QrisPaymentModalProps {
   isOpen: boolean;
   amount: number;
   customerName?: string;
   orderId?: string;
+  paymentMethod?: PaymentMethod | null;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -39,6 +43,7 @@ export function QrisPaymentModal({
   amount,
   customerName,
   orderId,
+  paymentMethod,
   onSuccess,
   onClose,
 }: QrisPaymentModalProps) {
@@ -52,10 +57,33 @@ export function QrisPaymentModal({
   useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
+  const [qrisData, setQrisData] = useState<string | null>(null);
+
   const openSnap = useCallback(async () => {
     setStatus('loading');
     setErrorMsg(null);
     setSnapActive(false);
+
+    const isManual = paymentMethod?.provider === 'manual' && paymentMethod?.qrisString;
+    if (isManual) {
+      try {
+        const dynamicQRIS = convertQRIS(paymentMethod.qrisString!, { amount });
+        setQrisData(dynamicQRIS);
+        setStatus('success'); // Show manual QR code
+      } catch (err: any) {
+        setStatus('error');
+        setErrorMsg('Gagal membuat QRIS dinamis: ' + err.message);
+      }
+      return;
+    }
+
+    // Midtrans: Proteksi double tap / double snap di mobile
+    if ((window as any).midtransSnapActive) {
+      console.warn('Midtrans Snap is already active. Ignoring request.');
+      onCloseRef.current();
+      return;
+    }
+    (window as any).midtransSnapActive = true;
 
     try {
       await MidtransService.loadSnapScript();
@@ -98,6 +126,7 @@ export function QrisPaymentModal({
         },
         onClose: () => {
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           // User menutup Snap popup → kembali ke status awal
           onCloseRef.current();
         },
@@ -105,10 +134,11 @@ export function QrisPaymentModal({
     } catch (err: any) {
       console.error('[QRIS] Error:', err);
       setSnapActive(false);
+      (window as any).midtransSnapActive = false;
       setStatus('error');
       setErrorMsg(err.message || 'Gagal memproses pembayaran. Coba lagi.');
     }
-  }, [amount, customerName, orderId]);
+  }, [amount, customerName, orderId, paymentMethod]);
 
   useEffect(() => {
     if (isOpen) {
@@ -121,6 +151,8 @@ export function QrisPaymentModal({
     setStatus('loading');
     onClose();
   };
+
+  const isManual = paymentMethod?.provider === 'manual' && paymentMethod?.qrisString;
 
   // Saat Snap aktif: Dialog kita DITUTUP agar tidak memblokir Snap
   // Saat status lain: Dialog kita tampil normal
@@ -157,14 +189,30 @@ export function QrisPaymentModal({
             </div>
           )}
 
-          {/* Sukses */}
+          {/* Sukses (Midtrans atau Manual) */}
           {status === 'success' && (
-            <div className="flex flex-col items-center py-6 gap-3">
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10 text-green-500" />
-              </div>
-              <p className="text-base font-bold text-green-600 dark:text-green-400">Pembayaran Berhasil!</p>
-              <p className="text-xs text-muted-foreground">Transaksi sedang disimpan…</p>
+            <div className="flex flex-col items-center py-4 gap-3 w-full">
+              {isManual && qrisData ? (
+                <div className="flex flex-col items-center gap-4 w-full animate-in fade-in zoom-in duration-300">
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border">
+                    <QRCodeSVG value={qrisData} size={200} level="M" includeMargin={false} />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Minta pelanggan scan QRIS ini dan pastikan nominal tagihan sesuai.
+                  </p>
+                  <Button className="w-full font-bold h-12" onClick={() => onSuccessRef.current()}>
+                    Konfirmasi Pembayaran
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-2 gap-3">
+                  <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                  </div>
+                  <p className="text-base font-bold text-green-600 dark:text-green-400">Pembayaran Berhasil!</p>
+                  <p className="text-xs text-muted-foreground">Transaksi sedang disimpan…</p>
+                </div>
+              )}
             </div>
           )}
 

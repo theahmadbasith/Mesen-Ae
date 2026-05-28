@@ -11,6 +11,8 @@ import { BankTransferModal } from '@/components/payment/BankTransferModal';
 import { EWalletModal } from '@/components/payment/EWalletModal';
 import { OtherPaymentModal } from '@/components/payment/OtherPaymentModal';
 
+import { PaymentMethod } from '@/hooks/db-hooks';
+
 export type MidtransPaymentType = 'qris' | 'transfer' | 'e-wallet' | 'lainnya';
 
 export interface MidtransPaymentModalProps {
@@ -19,6 +21,7 @@ export interface MidtransPaymentModalProps {
   amount: number;
   customerName?: string;
   orderId?: string;
+  paymentMethod?: PaymentMethod | null;
   onSuccess: () => void;
   onPending: () => void;
   onError: (error?: any) => void;
@@ -31,12 +34,13 @@ export function MidtransPaymentModal({
   amount,
   customerName,
   orderId,
+  paymentMethod,
   onSuccess,
   onClose,
 }: MidtransPaymentModalProps) {
   if (!isOpen || !paymentType) return null;
 
-  const sharedProps = { isOpen, amount, customerName, orderId, onSuccess, onClose } as any;
+  const sharedProps = { isOpen, amount, customerName, orderId, paymentMethod, onSuccess, onClose } as any;
 
   if (paymentType === 'qris') return <QrisPaymentModal     {...sharedProps} />;
   if (paymentType === 'transfer') return <BankTransferModal    {...sharedProps} />;

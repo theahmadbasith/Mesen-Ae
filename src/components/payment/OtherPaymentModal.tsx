@@ -14,12 +14,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, RefreshCw, LayoutGrid } from 'lucide-react';
 import { MidtransService } from '@/services/midtransService';
+import { PaymentMethod } from '@/hooks/db-hooks';
 
 interface OtherPaymentModalProps {
   isOpen: boolean;
   amount: number;
   customerName?: string;
   orderId?: string;
+  paymentMethod?: PaymentMethod | null;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -30,6 +32,7 @@ export function OtherPaymentModal({
   isOpen,
   amount,
   customerName,
+  paymentMethod,
   onSuccess,
   onClose,
 }: OtherPaymentModalProps) {
@@ -45,6 +48,13 @@ export function OtherPaymentModal({
     setStatus('loading');
     setErrorMsg(null);
     setSnapActive(false);
+
+    if ((window as any).midtransSnapActive) {
+      console.warn('Midtrans Snap active. Ignoring.');
+      onCloseRef.current();
+      return;
+    }
+    (window as any).midtransSnapActive = true;
 
     try {
       await MidtransService.loadSnapScript();
@@ -71,25 +81,30 @@ export function OtherPaymentModal({
       window.snap.pay(token, {
         onSuccess: () => {
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           setStatus('success');
           setTimeout(() => onSuccessRef.current(), 1200);
         },
         onPending: () => {
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           onCloseRef.current();
         },
         onError: (result: any) => {
           console.error('[Other Payment Snap Error]', result);
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           setStatus('error');
           setErrorMsg('Pembayaran gagal. Silakan coba lagi.');
         },
         onClose: () => {
           setSnapActive(false);
+          (window as any).midtransSnapActive = false;
           onCloseRef.current();
         },
       });
     } catch (err: any) {
+      (window as any).midtransSnapActive = false;
       console.error('[Other Payment] Error:', err);
       setSnapActive(false);
       setStatus('error');

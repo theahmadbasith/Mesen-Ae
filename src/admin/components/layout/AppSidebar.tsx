@@ -382,6 +382,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                   <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                     {[
                       { to: "/admin/qr-code", label: "QR Code Meja", icon: QrCode },
+                      { to: "/admin/qris-dinamis", label: "QRIS Dinamis", icon: QrCode },
                       { to: "/admin/banner", label: "Banner Promo", icon: ImageIcon },
                       { to: "/admin/vouchers", label: "Kode Voucher", icon: Ticket },
                       { to: "/admin/barcode", label: "Cetak Barcode", icon: Barcode },

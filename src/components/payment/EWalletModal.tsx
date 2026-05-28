@@ -7,8 +7,9 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, RefreshCw, ChevronLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, RefreshCw, ChevronLeft, Wallet } from 'lucide-react';
 import { MidtransService } from '@/services/midtransService';
+import { PaymentMethod } from '@/hooks/db-hooks';
 
 // ==========================================
 // Tipe Data & Interfaces (TypeScript)
@@ -19,6 +20,7 @@ interface EWalletModalProps {
   amount: number;
   customerName?: string;
   orderId?: string;
+  paymentMethod?: PaymentMethod | null;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -107,6 +109,7 @@ export function EWalletModal({
   isOpen,
   amount,
   customerName,
+  paymentMethod,
   onSuccess,
   onClose,
 }: EWalletModalProps): JSX.Element {
@@ -121,19 +124,31 @@ export function EWalletModal({
   useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
+  const isManual = paymentMethod?.provider === 'manual';
+
   useEffect(() => {
     if (isOpen) {
-      setStep('select');
-      setSelectedWallet(null);
-      setErrorMsg(null);
-      MidtransService.loadSnapScript().catch((e) =>
-        console.warn('Snap script load error:', e)
-      );
+      if (isManual) {
+        setStep('select');
+      } else {
+        setStep('select');
+        setSelectedWallet(null);
+        setErrorMsg(null);
+        MidtransService.loadSnapScript().catch((e) =>
+          console.warn('Snap script load error:', e)
+        );
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isManual]);
 
   const handleWalletSelect = useCallback(
     async (wallet: WalletOption) => {
+      if ((window as any).midtransSnapActive) {
+        console.warn('Midtrans Snap active. Ignoring.');
+        return;
+      }
+      (window as any).midtransSnapActive = true;
+
       setSelectedWallet(wallet);
       setStep('loading');
       setErrorMsg(null);
@@ -168,25 +183,30 @@ export function EWalletModal({
         window.snap.pay(token, {
           onSuccess: () => {
             setSnapActive(false);
+            (window as any).midtransSnapActive = false;
             setStep('success');
             setTimeout(() => onSuccessRef.current(), 1200);
           },
           onPending: () => {
             setSnapActive(false);
+            (window as any).midtransSnapActive = false;
             setStep('select');
           },
           onError: (result: any) => {
             console.error(`Snap ${wallet.name} Error:`, result);
             setSnapActive(false);
+            (window as any).midtransSnapActive = false;
             setStep('error');
             setErrorMsg(`Pembayaran via ${wallet.name} gagal ditolak sistem. Silakan coba lagi.`);
           },
           onClose: () => {
             setSnapActive(false);
+            (window as any).midtransSnapActive = false;
             setStep('select');
           },
         });
       } catch (err: any) {
+        (window as any).midtransSnapActive = false;
         console.error('E-Wallet Error:', err);
         setStep('error');
         setErrorMsg(err.message || `Gagal memproses transaksi menggunakan ${wallet.name}`);
@@ -247,7 +267,36 @@ export function EWalletModal({
         <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar-hide">
           
           {/* STEP 1: PILIH WALLET */}
-          {step === 'select' && (
+          {step === 'select' && isManual && paymentMethod && (
+            <div className="animate-in fade-in zoom-in duration-300">
+              <p className="text-sm text-slate-500 mb-4 font-medium text-center">Silakan transfer E-Wallet ke nomor berikut:</p>
+              
+              <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 mb-4 flex flex-col items-center text-center gap-2 shadow-inner">
+                {paymentMethod.iconName ? (
+                  <img src={`/ico/${paymentMethod.iconName}.png`} alt={paymentMethod.bankName} className="h-12 object-contain mb-2 drop-shadow-sm" />
+                ) : (
+                  <Wallet className="w-12 h-12 text-indigo-500 mb-2 opacity-80 drop-shadow-sm" />
+                )}
+                <div>
+                  <p className="text-xs text-indigo-500 font-bold uppercase tracking-widest">{paymentMethod.bankName}</p>
+                  <p className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100 mt-1">{paymentMethod.accountNumber}</p>
+                  <p className="text-sm font-semibold text-slate-500 mt-1">a.n {paymentMethod.accountName}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={handleClose}>Batalkan</Button>
+                <Button className="flex-1 font-bold rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white" onClick={() => {
+                  setStep('success');
+                  setTimeout(() => onSuccessRef.current(), 1200);
+                }}>
+                  Konfirmasi Pembayaran
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === 'select' && !isManual && (
             <>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold mb-3 uppercase tracking-wider">
                 Metode Tersedia
