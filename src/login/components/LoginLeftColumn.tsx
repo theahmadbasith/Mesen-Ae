@@ -21,7 +21,7 @@ export default function LoginLeftColumn() {
           <img
             src={storeSettings?.logo || "/icon-192.png"}
             alt={storeSettings?.storeName || "MesenAe"}
-            className="w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110"
+            className="w-full h-full object-cover drop-shadow-2xl transition-transform duration-500 group-hover:scale-110 rounded-2xl"
             onError={(e) => {
               const target = e.currentTarget;
               target.style.display = 'none';
