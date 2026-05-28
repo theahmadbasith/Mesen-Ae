@@ -40,6 +40,7 @@ export interface PaymentModalProps {
     remarks: string;
     taxAndService: number;
     total: number;
+    amountToPay: number; // Added so parent knows exactly how much to charge
     change: number;
     paymentMethodCategory?: string;
   }) => void;
@@ -176,9 +177,9 @@ export default function PaymentModal({
     }
 
     const finalPayments = [...payments];
-    // Untuk non-cash: amount = total (Midtrans yang handle pembayaran sebenarnya)
+    // Untuk non-cash: amount = remainingToPay (Midtrans yang handle pembayaran sebenarnya)
     // Untuk tunai: pakai paymentAmount yang diinput user
-    const amountToAdd = isNonCash ? total : paymentAmount;
+    const amountToAdd = isNonCash ? remainingToPay : paymentAmount;
 
     if (amountToAdd > 0 && currentMethod) {
       finalPayments.push({
@@ -201,6 +202,7 @@ export default function PaymentModal({
       remarks: remarks.trim(),
       taxAndService,
       total,
+      amountToPay: isNonCash ? remainingToPay : total,
       change: finalChange,
       paymentMethodCategory: currentMethod?.category
     });

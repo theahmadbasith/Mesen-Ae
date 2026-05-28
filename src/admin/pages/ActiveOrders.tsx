@@ -550,7 +550,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         <MidtransPaymentModal
           isOpen={!!midtransPaymentType}
           paymentType={midtransPaymentType}
-          amount={checkoutDataCache.data.total}
+          amount={checkoutDataCache.data.amountToPay}
           customerName={checkoutDataCache.data.customerName}
           orderId={`TX-${checkoutDataCache.bill?.id ?? Date.now()}-${Date.now()}`}
           paymentMethod={paymentMethods?.find((m: any) => m.id === checkoutDataCache.data.primaryMethodId)}
