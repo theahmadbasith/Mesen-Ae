@@ -19,6 +19,7 @@ export interface UserPermissions {
   stockIn: ModulePermission;
   stockOut: ModulePermission;
   marketing: ModulePermission;
+  tools: ModulePermission;
   reports: ModulePermission;
   settings: ModulePermission;
 }
@@ -35,6 +36,7 @@ export const DEFAULT_USER_PERMISSIONS: UserPermissions = {
   stockIn: { view: false, edit: false },
   stockOut: { view: false, edit: false },
   marketing: { view: false, edit: false },
+  tools: { view: false, edit: false },
   reports: { view: false, edit: false },
   settings: { view: false, edit: false },
 };

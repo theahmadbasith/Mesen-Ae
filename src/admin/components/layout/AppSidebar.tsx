@@ -25,7 +25,8 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   TrendingUp,
-  Clock
+  Clock,
+  LayoutGrid
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDbQuery } from '@/hooks/db-hooks';
@@ -50,7 +51,12 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
   });
   
   const [isPromoOpen, setIsPromoOpen] = useState(() => {
-    const paths = ["/admin/qr-code", "/admin/banner", "/admin/vouchers", "/admin/barcode"];
+    const paths = ["/admin/qr-code", "/admin/banner", "/admin/vouchers"];
+    return paths.some(p => location.pathname.startsWith(p));
+  });
+
+  const [isToolsOpen, setIsToolsOpen] = useState(() => {
+    const paths = ["/admin/qris-dinamis", "/admin/barcode"];
     return paths.some(p => location.pathname.startsWith(p));
   });
 
@@ -79,9 +85,13 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
     if (ordersPaths.some(p => location.pathname.startsWith(p))) {
       setIsOrdersOpen(true);
     }
-    const promoPaths = ["/admin/qr-code", "/admin/banner", "/admin/vouchers", "/admin/barcode"];
+    const promoPaths = ["/admin/qr-code", "/admin/banner", "/admin/vouchers"];
     if (promoPaths.some(p => location.pathname.startsWith(p))) {
       setIsPromoOpen(true);
+    }
+    const toolsPaths = ["/admin/qris-dinamis", "/admin/barcode"];
+    if (toolsPaths.some(p => location.pathname.startsWith(p))) {
+      setIsToolsOpen(true);
     }
     const reportsPaths = ["/admin/reports", "/admin/stock-report"];
     if (reportsPaths.some(p => location.pathname.startsWith(p))) {
@@ -281,7 +291,7 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
         {canView('history') && <NavItem to="/admin/history" icon={History} label="Riwayat Transaksi" />}
         
         {/* Grup 2: Manajemen */}
-        {(canView('products') || canView('categories') || canView('suppliers') || canView('stockIn') || canView('stockOut') || canView('marketing') || canView('reports') || canView('settings')) && (
+        {(canView('products') || canView('categories') || canView('suppliers') || canView('stockIn') || canView('stockOut') || canView('marketing') || canView('tools') || canView('reports') || canView('settings')) && (
           <>
             <NavGroupLabel>Manajemen</NavGroupLabel>
             
@@ -382,9 +392,67 @@ export default function AppSidebar({ isMobile = false }: AppSidebarProps) {
                   <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
                     {[
                       { to: "/admin/qr-code", label: "QR Code Meja", icon: QrCode },
-                      { to: "/admin/qris-dinamis", label: "QRIS Dinamis", icon: QrCode },
                       { to: "/admin/banner", label: "Banner Promo", icon: ImageIcon },
                       { to: "/admin/vouchers", label: "Kode Voucher", icon: Ticket },
+                    ].map((item) => (
+                      <NavLink 
+                        key={item.to} 
+                        to={item.to} 
+                        title={isCollapsed ? item.label : undefined}
+                        className={({isActive}) => cn(
+                          "flex items-center transition-colors outline-none", 
+                          isCollapsed 
+                            ? "justify-center p-2 rounded-lg hover:bg-white/10" 
+                            : "gap-2 py-2 px-3 rounded-lg text-xs font-semibold",
+                          isActive 
+                            ? (isCollapsed ? "text-white bg-primary shadow-sm" : "text-white font-bold bg-primary/20") 
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <item.icon className={cn(isCollapsed ? "w-4 h-4" : "w-3.5 h-3.5")} />
+                        {!isCollapsed && <span>{item.label}</span>}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
+
+            {/* Menu Dropdown Alat Lainnya */}
+            {canView('tools') && (
+            <div className="mb-0.5">
+              <button
+                onClick={() => {
+                  setIsToolsOpen(!isToolsOpen);
+                }}
+                title={isCollapsed ? "Alat Lainnya" : undefined}
+                className={cn(
+                  "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium outline-none group", 
+                  isCollapsed ? "justify-center" : "gap-3",
+                  isToolsOpen ? (isCollapsed ? "bg-white/5 text-white" : "bg-white/5 text-white font-bold") : "text-slate-400 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <LayoutGrid className="w-5 h-5 shrink-0 group-hover:text-white transition-colors" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1 text-left truncate">Alat Lainnya</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 shrink-0 transition-transform duration-300", 
+                      isToolsOpen ? "rotate-180 text-white" : "text-slate-500"
+                    )} />
+                  </>
+                )}
+              </button>
+              
+              <div className={cn(
+                "grid transition-all duration-300 ease-in-out",
+                isToolsOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+              )}>
+                <div className="overflow-hidden">
+                  <div className={cn("space-y-1 py-1", isCollapsed ? "mx-auto flex flex-col items-center px-2" : "ml-5 border-l border-white/10 pl-3")}>
+                    {[
+                      { to: "/admin/qris-dinamis", label: "QRIS Dinamis", icon: QrCode },
                       { to: "/admin/barcode", label: "Cetak Barcode", icon: Barcode },
                     ].map((item) => (
                       <NavLink 

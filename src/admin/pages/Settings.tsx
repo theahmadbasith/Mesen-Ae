@@ -1205,6 +1205,7 @@ export default function Pengaturan() {
                     dashboard: 'Dashboard', cashier: 'Kasir (POS)', activeOrders: 'Pesanan Aktif', kitchen: 'Dapur',
                     history: 'Riwayat Transaksi', products: 'Daftar Produk', categories: 'Kategori', suppliers: 'Supplier',
                     stockIn: 'Stok Masuk', stockOut: 'Stok Keluar', marketing: 'Marketing (QR, Banner, dll)',
+                    tools: 'Alat Lainnya (QRIS Dinamis, Cetak Barcode)',
                     reports: 'Laporan', settings: 'Pengaturan Sistem'
                   }) as [keyof UserPermissions, string][]).map(([key, label]) => (
                     <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl border border-border bg-muted/20">

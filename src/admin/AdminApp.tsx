@@ -176,7 +176,7 @@ export default function AdminApp() {
           </ProtectedModuleRoute>
         } />
         <Route path="barcode" element={
-          <ProtectedModuleRoute moduleName="marketing">
+          <ProtectedModuleRoute moduleName="tools">
             <Suspense fallback={<PageSkeleton />}>
               <BarcodePrint />
             </Suspense>
@@ -204,7 +204,7 @@ export default function AdminApp() {
           </ProtectedModuleRoute>
         } />
         <Route path="qris-dinamis" element={
-          <ProtectedModuleRoute moduleName="marketing">
+          <ProtectedModuleRoute moduleName="tools">
             <Suspense fallback={<PageSkeleton />}>
               <QrisDinamisMenu />
             </Suspense>
