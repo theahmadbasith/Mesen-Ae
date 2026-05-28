@@ -149,6 +149,10 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
       lines.push('--------------------------------\n');
       lines.push(`Subtotal:  ${rp(transaction.subtotal)}\n`);
+      const txTaxAmount = transaction.tax_and_service || transaction.taxAndService || 0;
+      if (txTaxAmount > 0) {
+        lines.push(`Biaya Admin: ${rp(txTaxAmount)}\n`);
+      }
       if (txDiscountAmount > 0) {
         lines.push(`Diskon:   -${rp(txDiscountAmount)}\n`);
       }
@@ -299,6 +303,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <span className="text-gray-600">Subtotal</span>
                 <span>{rp(transaction.subtotal)}</span>
               </div>
+              {((transaction.tax_and_service || transaction.taxAndService) > 0) && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Biaya Admin</span>
+                  <span>{rp(transaction.tax_and_service || transaction.taxAndService)}</span>
+                </div>
+              )}
               {txDiscountAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Diskon</span>
