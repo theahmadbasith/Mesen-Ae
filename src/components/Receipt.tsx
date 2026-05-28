@@ -23,6 +23,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const [printing, setPrinting] = useState<boolean>(false);
 
   if (!transaction) return null;
+  const safeItems = Array.isArray(items) ? items : [];
 
   const isPaidTx = transaction.status === 'lunas' || transaction.status === 'completed';
 
@@ -131,10 +132,16 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push('--------------------------------\n');
 
       lines.push('\x1B\x61\x00'); // Left align
-      for (const item of items) {
+      for (const item of safeItems) {
         lines.push(`${item.productName}\n`);
-        if (item.selectedVariants && item.selectedVariants.length > 0) {
-          lines.push(`  + ${item.selectedVariants.map(v => v.optionName).join(', ')}\n`);
+        let safeVariants = item.selectedVariants || item.selected_variants || [];
+        if (typeof safeVariants === 'string') {
+          try { safeVariants = JSON.parse(safeVariants); } catch (e) { safeVariants = []; }
+        }
+        if (!Array.isArray(safeVariants)) safeVariants = [];
+
+        if (safeVariants.length > 0) {
+          lines.push(`  + ${safeVariants.map((v: any) => v.optionName || v.option_name).join(', ')}\n`);
         }
         if (item.notes) lines.push(`  Catatan: ${item.notes}\n`);
         lines.push(`  ${item.quantity} x ${rp(item.price)}  ${rp(item.subtotal)}\n`);
@@ -150,7 +157,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push(`TOTAL:     ${rp(transaction.total)}\n`);
       lines.push('\x1B\x45\x00'); // Bold OFF
       
-      const paymentsList = (transaction.payments || []) as any[];
+      let paymentsList = transaction.payments || [];
+      if (typeof paymentsList === 'string') {
+        try { paymentsList = JSON.parse(paymentsList); } catch (e) { paymentsList = []; }
+      }
+      if (!Array.isArray(paymentsList)) paymentsList = [];
+
       if (paymentsList.length > 0) {
         lines.push('--------------------------------\n');
         lines.push('Rincian Pembayaran:\n');
@@ -248,15 +260,20 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
             {/* Daftar Item */}
             <div className="relative z-10 min-h-[80px]">
-              {items.map((item: any, i: number) => {
+              {safeItems.map((item: any, i: number) => {
                 const pName = item.productName || item.product_name || 'Produk';
-                const variants = item.selectedVariants || item.selected_variants || [];
+                let variants = item.selectedVariants || item.selected_variants || [];
+                if (typeof variants === 'string') {
+                  try { variants = JSON.parse(variants); } catch (e) { variants = []; }
+                }
+                if (!Array.isArray(variants)) variants = [];
+
                 const discAmt = item.discountAmount || item.discount_amount || 0;
                 
                 return (
                 <div key={i} className="mb-2.5">
                   <p className="text-[11px] font-bold uppercase">{pName}</p>
-                  {variants && variants.length > 0 && (
+                  {variants.length > 0 && (
                     <p className="text-[9px] text-gray-500">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
                   )}
                   {item.notes && <p className="text-[9px] text-gray-500 italic">  Catatan: {item.notes}</p>}
@@ -295,7 +312,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               </div>
               
               {(() => {
-                const paymentsList = (transaction.payments || []) as any[];
+                let paymentsList = transaction.payments || [];
+                if (typeof paymentsList === 'string') {
+                  try { paymentsList = JSON.parse(paymentsList); } catch (e) { paymentsList = []; }
+                }
+                if (!Array.isArray(paymentsList)) paymentsList = [];
+
                 if (paymentsList.length > 0) {
                   return (
                     <div className="mt-2 pt-2 border-t border-gray-300">
