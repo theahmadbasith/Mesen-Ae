@@ -8,6 +8,7 @@ import PhotoCropModal from '@/admin/components/PhotoCropModal';
 import ProductVariantEditor from '@/admin/components/ProductVariantEditor';
 import { ProductVariantGroup } from '@/hooks/db-hooks';
 import { Card, CardContent } from '@/components/ui/card';
+import { ProductsSkeleton } from '@/admin/components/SkeletonLoaders';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
