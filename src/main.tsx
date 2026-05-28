@@ -15,6 +15,10 @@ if (savedTheme === 'dark') {
   }
 }
 
+window.addEventListener('vite:preloadError', () => {
+  window.location.reload();
+});
+
 // Mount app immediately
 createRoot(document.getElementById("root")!).render(<App />);
 
