@@ -1523,7 +1523,7 @@ export default function Kasir() {
         paymentType={midtransPaymentType}
         amount={total}
         customerName={customerName}
-        paymentMethod={paymentMethods?.find(m => m.id!.toString() === paymentMethodId)}
+        paymentMethod={paymentMethods?.find(m => m.id!.toString() === (checkoutDataCache?.primaryMethodId?.toString() || paymentMethodId))}
         onSuccess={() => {
           setMidtransPaymentType(null);
           processCheckoutToDb(checkoutDataCache || undefined);

@@ -470,6 +470,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           amount={checkoutDataCache.data.total}
           customerName={checkoutDataCache.data.customerName}
           orderId={`TX-${checkoutDataCache.bill?.id ?? Date.now()}-${Date.now()}`}
+          paymentMethod={paymentMethods?.find((m: any) => m.id === checkoutDataCache.data.primaryMethodId)}
           onSuccess={() => {
             const { bill, data } = checkoutDataCache;
             setMidtransPaymentType(null);
