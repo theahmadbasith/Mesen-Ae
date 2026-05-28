@@ -735,8 +735,6 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
       setBannerImage(banner.imageUrl || null);
       const bgFilterVal = banner.canvasBgFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
       setBgFilter(bgFilterVal);
-      const overlayFilterVal = banner.canvasOverlayFilter || { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
-      setOverlayFilter(overlayFilterVal);
       const overlayGradient = banner.bgGradientOverlay || { enabled: false, color: '#000000', opacityLeft: 70, opacityRight: 0, angle: 90 };
       setBgGradientOverlayEnabled(overlayGradient.enabled || false);
       setBgGradientOverlayColor(overlayGradient.color || '#000000');
@@ -746,11 +744,6 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
       setBannerHeading(banner.heading || ''); setBannerTitle(banner.title || '');
       setBannerDescription(banner.description || ''); setBannerButtonText(banner.buttonText || '');
       setBannerBadgeStyle(banner.badgeStyle || 'solid'); setBannerHeadingStyle(banner.headingStyle || 'glass');
-      setBannerOverlayImageUrl(banner.overlayImageUrl || null);
-      setBannerOverlayFlipX(banner.overlayFlipX || false);
-      setBannerOverlayRotate(banner.overlayRotate || 0);
-      setBannerOverlayScale(banner.overlayScale ?? 1);
-      setBannerOverlayBorderRadius(banner.overlayBorderRadius ?? 0);
 
       const headingP = banner.headingPos ?? { x: 10, y: 20, w: 40 };
       const titleP = banner.titlePos ?? { x: 10, y: 38, w: 60 };
