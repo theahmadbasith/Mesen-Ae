@@ -8,7 +8,6 @@ import { QRISResult } from "../components/qris-dinamis/QRISResult";
 import { QrCode } from "lucide-react";
 
 
-
 export default function QrisDinamisMenu() {
   const [qrisString, setQrisString] = useState("");
   const [parsed, setParsed] = useState<QRISData | null>(null);
@@ -92,7 +91,7 @@ export default function QrisDinamisMenu() {
           {!parsed && !result && (
             <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 flex flex-col items-center justify-center py-16 text-center px-6">
               <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                <Zap className="w-7 h-7 text-muted-foreground/40" />
+                <QrCode className="w-7 h-7 text-muted-foreground/40" />
               </div>
               <p className="text-sm font-medium text-foreground/60">Hasil akan muncul di sini</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
