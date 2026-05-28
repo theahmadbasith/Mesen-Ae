@@ -44,6 +44,10 @@ type Tab = 'toko' | 'pembayaran' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
 
 interface TabItem { id: Tab; label: string; icon: React.ReactNode }
 
+const PM_CAT_ICONS: Record<string, string> = {
+  tunai: '💵', transfer: '🏦', 'e-wallet': '📱', qris: '📲', lainnya: '•',
+};
+
 const TABS: TabItem[] = [
   { id: 'toko',       label: 'Info Toko',    icon: <Store className="w-4 h-4" /> },
   { id: 'pembayaran', label: 'Pembayaran',   icon: <CreditCard className="w-4 h-4" /> },
@@ -475,11 +479,6 @@ export default function Pengaturan() {
 
 
 
-
-  /* ── PM category display map ── */
-  const PM_CAT_ICONS: Record<string, string> = {
-    tunai: '💵', transfer: '🏦', 'e-wallet': '📱', qris: '📲', lainnya: '•',
-  };
 
   /* ═══════════════════════════════════════════════════════════════════════════
      RENDER
