@@ -193,6 +193,77 @@ function RichTextEditor({ value, onChange, placeholder, minHeight = '36px' }) {
 }
 
 // ============================================================================
+// UTILS / ALGORITHMS
+// ============================================================================
+
+const floodFillRemoveBackground = async (
+  imageUrl: string,
+  startX: number,
+  startY: number,
+  tolerance: number
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return reject('No canvas context');
+      
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      const getPixelIdx = (x: number, y: number) => (y * width + x) * 4;
+      const startIdx = getPixelIdx(startX, startY);
+      const targetR = data[startIdx];
+      const targetG = data[startIdx + 1];
+      const targetB = data[startIdx + 2];
+      const targetA = data[startIdx + 3];
+      
+      if (targetA === 0) return resolve(imageUrl); // Already transparent
+      
+      const visited = new Uint8Array(width * height);
+      const queue = [[startX, startY]];
+      
+      const colorMatch = (r: number, g: number, b: number, a: number) => {
+        if (a === 0) return false;
+        return Math.abs(r - targetR) <= tolerance && Math.abs(g - targetG) <= tolerance && Math.abs(b - targetB) <= tolerance;
+      };
+      
+      let head = 0;
+      while (head < queue.length) {
+        const [x, y] = queue[head++];
+        if (x < 0 || x >= width || y < 0 || y >= height) continue;
+        
+        const linearIdx = y * width + x;
+        if (visited[linearIdx]) continue;
+        visited[linearIdx] = 1;
+        
+        const pIdx = linearIdx * 4;
+        if (colorMatch(data[pIdx], data[pIdx + 1], data[pIdx + 2], data[pIdx + 3])) {
+          data[pIdx + 3] = 0; // set alpha to 0
+          queue.push([x + 1, y]);
+          queue.push([x - 1, y]);
+          queue.push([x, y + 1]);
+          queue.push([x, y - 1]);
+        }
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject('Gagal memuat gambar (CORS/URL tidak valid)');
+    img.src = imageUrl;
+  });
+};
+
+// ============================================================================
 // 4. MAIN COMPONENT
 // ============================================================================
 
@@ -237,6 +308,9 @@ export default function BannerEditor() {
   const [bannerOverlayRotate, setBannerOverlayRotate] = useState(0);
   const [bannerOverlayScale, setBannerOverlayScale] = useState(1);
   const [bannerOverlayBorderRadius, setBannerOverlayBorderRadius] = useState(0);
+
+  const [isMagicWandActive, setIsMagicWandActive] = useState(false);
+  const [magicWandTolerance, setMagicWandTolerance] = useState(32);
 
   // Canvas Grid & Magnet Snap
   const [showGrid, setShowGrid] = useState(false);
@@ -1004,8 +1078,34 @@ export default function BannerEditor() {
             borderRadius: `${bannerOverlayBorderRadius ?? 0}%`,
             filter: `brightness(${overlayFilter.brightness}%) contrast(${overlayFilter.contrast}%) saturate(${overlayFilter.saturate ?? 100}%) blur(${overlayFilter.blur}px)`
           }}
-          className="object-contain drop-shadow-2xl max-w-none select-none"
+          className={cn("object-contain drop-shadow-2xl max-w-none select-none pointer-events-auto", isMagicWandActive ? 'cursor-crosshair' : '')}
           alt="Overlay Banner"
+          onPointerDown={async (e) => {
+            if (!isMagicWandActive || !bannerOverlayImageUrl) return;
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const imgEl = e.currentTarget;
+            const nativeEvent = e.nativeEvent;
+            
+            // Get click coordinates relative to the image
+            // Using offset width/height gives us un-rotated coordinate system!
+            const x = nativeEvent.offsetX;
+            const y = nativeEvent.offsetY;
+            const startX = Math.round((x / imgEl.offsetWidth) * imgEl.naturalWidth);
+            const startY = Math.round((y / imgEl.offsetHeight) * imgEl.naturalHeight);
+
+            toast.loading('Menghapus area...', { id: 'magicWand' });
+            try {
+              const newImg = await floodFillRemoveBackground(bannerOverlayImageUrl, startX, startY, magicWandTolerance);
+              setBannerOverlayImageUrl(newImg);
+              pushHistory({ ...getSnapshot(), overlayImageUrl: newImg });
+              toast.success('Latar berhasil dihapus!', { id: 'magicWand' });
+            } catch (err) {
+              console.error(err);
+              toast.error('Gagal menghapus latar belakang', { id: 'magicWand' });
+            }
+          }}
         />
       );
     }
@@ -1047,13 +1147,52 @@ export default function BannerEditor() {
           </div>
         )}
 
-        {/* Bounding Box */}
+        {/* Bounding Box & Drag Resize Handles */}
         {isSelected && (
           <div className="absolute inset-[-6px] border-[1.5px] border-[#2563eb] rounded-md pointer-events-none z-20">
-            <div className="absolute -top-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
-            <div className="absolute -top-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
-            <div className="absolute -bottom-[4.5px] -left-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
-            <div className="absolute -bottom-[4.5px] -right-[4.5px] w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full" />
+            {['nw', 'ne', 'sw', 'se'].map((corner) => {
+              const posClasses = {
+                nw: '-top-[4.5px] -left-[4.5px] cursor-nwse-resize',
+                ne: '-top-[4.5px] -right-[4.5px] cursor-nesw-resize',
+                sw: '-bottom-[4.5px] -left-[4.5px] cursor-nesw-resize',
+                se: '-bottom-[4.5px] -right-[4.5px] cursor-nwse-resize'
+              };
+              return (
+                <div 
+                  key={corner}
+                  className={cn("absolute w-2.5 h-2.5 bg-white border border-[#2563eb] rounded-full pointer-events-auto", posClasses[corner])}
+                  onPointerDown={e => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    e.stopPropagation();
+                    const startX = e.clientX;
+                    const initialScale = layer.role === 'overlay-image' ? bannerOverlayScale : 1;
+                    
+                    const onMove = (moveEvent: any) => {
+                      const deltaX = moveEvent.clientX - startX;
+                      let delta = 0;
+                      if (corner === 'se' || corner === 'ne') delta = deltaX;
+                      if (corner === 'sw' || corner === 'nw') delta = -deltaX;
+                      
+                      const containerWidth = canvasRef.current?.offsetWidth || 800;
+                      const scaleDelta = (delta / containerWidth) * 5; // Adjust sensitivity
+                      const newScale = Math.max(0.1, Math.min(3, initialScale + scaleDelta));
+                      if (layer.role === 'overlay-image') setBannerOverlayScale(newScale);
+                    };
+                    
+                    const onUp = (upEvent: any) => {
+                      upEvent.currentTarget.releasePointerCapture(upEvent.pointerId);
+                      upEvent.currentTarget.removeEventListener('pointermove', onMove);
+                      upEvent.currentTarget.removeEventListener('pointerup', onUp);
+                      // Wait 50ms to let state settle before capturing history
+                      setTimeout(() => pushHistory(), 50);
+                    };
+                    
+                    e.currentTarget.addEventListener('pointermove', onMove);
+                    e.currentTarget.addEventListener('pointerup', onUp);
+                  }}
+                />
+              );
+            })}
           </div>
         )}
 
@@ -1340,7 +1479,23 @@ export default function BannerEditor() {
 
           {bannerOverlayImageUrl && (
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transformasi Stiker</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transformasi Stiker</p>
+                <button onClick={() => setIsMagicWandActive(v => !v)}
+                  className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border",
+                    isMagicWandActive ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20" : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-400"
+                  )}>
+                  <Wand2Icon className="w-3.5 h-3.5" />
+                  Mode Hapus Latar
+                </button>
+              </div>
+
+              {isMagicWandActive && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/40 rounded-xl space-y-3 mb-4 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-xs text-blue-800 dark:text-blue-300 font-medium">Klik pada area warna di gambar stiker (kanvas preview) untuk menghapusnya.</p>
+                  <SliderRow label="Toleransi Kesamaan Warna" value={magicWandTolerance} min={1} max={100} defaultValue={32} onChange={setMagicWandTolerance} />
+                </div>
+              )}
               
               <SliderRow label="Skala (Lebar)" value={Math.round(bannerOverlayScale * 100)} min={10} max={300} defaultValue={100} onChange={v => setBannerOverlayScale(v / 100)} onPointerUp={() => pushHistory()} unit="%" />
               <SliderRow label="Rotasi" value={bannerOverlayRotate} min={-180} max={180} defaultValue={0} onChange={setBannerOverlayRotate} onPointerUp={() => pushHistory()} unit="°" />
