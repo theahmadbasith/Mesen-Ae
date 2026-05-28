@@ -140,27 +140,6 @@ export default function PaymentModal({
     setPaymentAmount(remainingToPay);
   }, [remainingToPay]);
 
-  const handleSplitBill = useCallback((n: number) => {
-    setUserEdited(true);
-    setPaymentAmount(Math.ceil(remainingToPay / n));
-  }, [remainingToPay]);
-
-  const handleResetAmount = useCallback(() => {
-    setUserEdited(false);
-    setPaymentAmount(remainingToPay);
-  }, [remainingToPay]);
-
-  const handleAddCicilan = useCallback(() => {
-    if (!currentMethod) { toast.error('Pilih metode pembayaran'); return; }
-    if (paymentAmount <= 0) { toast.error('Masukkan jumlah'); return; }
-    if (paymentAmount > remainingToPay) { toast.error('Jumlah melebihi sisa tagihan'); return; }
-    if (payments.length >= 3) { toast.error('Maksimal 4 split bill (3 cicilan + 1 pelunasan)'); return; }
-    if (paymentAmount > remainingToPay) { toast.error('Jumlah melebihi sisa tagihan'); return; }
-    setPayments(prev => [...prev, { methodId: currentMethod.id, methodName: currentMethod.name, amount: paymentAmount, date: new Date() }]);
-    setPaymentMethodId('');
-    setPaymentAmount(0);
-    setUserEdited(false);
-  }, [currentMethod, paymentAmount, remainingToPay]);
 
   const handleRemoveCicilan = useCallback((idx: number) => {
     setPayments(prev => prev.filter((_, i) => i !== idx));
@@ -336,46 +315,13 @@ export default function PaymentModal({
                   </button>
                 </div>
 
-                {/* Split Bill */}
-                <div className="border-t border-border pt-3">
-                  <p className="text-[11px] font-bold text-muted-foreground mb-2 uppercase tracking-wide">Split Bill</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[2, 3, 4].map(n => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => handleSplitBill(n)}
-                        className="h-9 rounded-lg border border-amber-400/40 bg-amber-400/5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-400/10 active:scale-95 transition-all"
-                      >
-                        ÷ {n} orang
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={handleResetAmount}
-                      className="h-9 rounded-lg border border-border bg-muted/50 text-xs font-semibold text-muted-foreground hover:text-destructive hover:border-destructive/40 active:scale-95 transition-all"
-                    >
-                      Reset
-                    </button>
-                  </div>
                 </div>
-
-                {/* Tambah Cicilan */}
-                <button
-                  type="button"
-                  onClick={handleAddCicilan}
-                  disabled={!paymentMethodId || paymentAmount <= 0 || paymentAmount > remainingToPay || payments.length >= 3}
-                  className="w-full h-9 rounded-lg border border-blue-400/40 bg-blue-50 dark:bg-blue-900/20 text-xs font-bold text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-40 active:scale-95 transition-all"
-                >
-                  {payments.length >= 3 ? "Maksimal Split Bill Tercapai" : "+ Tambah Cicilan (Split Payment)"}
-                </button>
-              </div>
             )}
 
             {/* Daftar Cicilan */}
             {payments.length > 0 && (
               <div className="space-y-2 border-t border-border pt-3">
-                <p className="text-xs font-bold text-muted-foreground uppercase">Riwayat Cicilan</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase">Riwayat Pembayaran</p>
                 {payments.map((p, idx) => (
                   <div key={idx} className="flex justify-between items-center text-sm px-3 py-2 bg-muted/30 rounded-xl border border-border">
                     <div>
