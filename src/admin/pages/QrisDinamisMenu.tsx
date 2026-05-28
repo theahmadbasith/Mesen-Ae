@@ -5,7 +5,9 @@ import { QRISInput } from "../components/qris-dinamis/QRISInput";
 import { QRISInfo } from "../components/qris-dinamis/QRISInfo";
 import { ConvertForm } from "../components/qris-dinamis/ConvertForm";
 import { QRISResult } from "../components/qris-dinamis/QRISResult";
-import { QrCode, Zap } from "lucide-react";
+import { QrCode } from "lucide-react";
+
+
 
 export default function QrisDinamisMenu() {
   const [qrisString, setQrisString] = useState("");
@@ -58,17 +60,6 @@ export default function QrisDinamisMenu() {
 
   return (
     <div className="pb-24 space-y-6 w-full animate-in fade-in duration-300">
-
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-2 border-b border-border/50">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Zap className="w-5 h-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-foreground">QRIS Dinamis</h1>
-          <p className="text-xs text-muted-foreground">Konversi QRIS statis menjadi QRIS dinamis dengan nominal tertentu</p>
-        </div>
-      </div>
 
       {/* Main Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
