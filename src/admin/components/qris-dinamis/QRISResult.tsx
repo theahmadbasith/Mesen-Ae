@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { parseQRIS } from "../../../lib/qris-dinamis/index";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, Download, ShieldCheck, Maximize2 } from "lucide-react";
+import { Check, Copy, Download, ShieldCheck, Maximize2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface Props {
@@ -111,7 +111,6 @@ export function QRISResult({ qrisString }: Props) {
       ctx.font = "500 12px 'Inter', system-ui, sans-serif";
       ctx.fillText("Powered by MesenAe", footerX, 560);
 
-      // Async Render Logo, Text, Auto-scale Nama Merchant, dan QR Code
       const renderAssets = async () => {
         try {
           const logo = new Image();
@@ -123,25 +122,26 @@ export function QRISResult({ qrisString }: Props) {
             logo.onerror = reject;
           });
 
-          const logoTargetHeight = 32;
+          // Konfigurasi Logo (Tinggi 60, Y 10 sesuai instruksi)
+          const logoTargetHeight = 60;
           const logoRatio = logo.width / logo.height;
           const logoTargetWidth = logoTargetHeight * logoRatio;
           const logoX = 25;
-          const logoY = 30;
+          const logoY = 10;
 
           ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
 
+          // Teks di samping logo (Diturunkan sejajar dengan visual logo 60px)
           const textStartX = logoX + logoTargetWidth + 14;
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           
-          // Diturunkan sedikit posisinya dari logoY
           ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", textStartX, logoY + 18); 
+          ctx.fillText("QR Code Standar", textStartX, 40); // Y spesifik agar pas di tengah logo
           
           ctx.fillStyle = "#334155";
           ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 36);
+          ctx.fillText("Pembayaran Nasional", textStartX, 58); // Y spesifik
 
           // Auto-scaling font size untuk Merchant Name
           let fontSize = 28;
@@ -163,18 +163,18 @@ export function QRISResult({ qrisString }: Props) {
 
           ctx.fillStyle = "#000000";
           ctx.textAlign = "center";
-          ctx.fillText(displayName, width / 2, 135);
+          ctx.fillText(displayName, width / 2, 140);
 
           if (currentNmid) {
             ctx.fillStyle = "#1E293B"; 
             ctx.font = "400 15px 'Inter', system-ui, sans-serif";
-            ctx.fillText(`NMID: ${currentNmid}`, width / 2, 160);
+            ctx.fillText(`NMID: ${currentNmid}`, width / 2, 165);
           }
 
           // Cutout & QR Code
           const qrBoxSize = 310;
           const qrBoxX = (width - qrBoxSize) / 2; 
-          const qrBoxY = 190;
+          const qrBoxY = 195;
           
           ctx.fillStyle = "#FFFFFF";
           drawRoundedRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 20);
@@ -204,9 +204,9 @@ export function QRISResult({ qrisString }: Props) {
           ctx.font = "900 36px 'Inter', system-ui, sans-serif";
           ctx.fillText("QRIS", 25, 60); 
           ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", 120, 50); 
+          ctx.fillText("QR Code Standar", 120, 44); 
           ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", 120, 68); 
+          ctx.fillText("Pembayaran Nasional", 120, 62); 
           
           setImageUrl(canvas.toDataURL("image/png", 1.0));
           setIsRendered(true);
@@ -329,18 +329,32 @@ export function QRISResult({ qrisString }: Props) {
         </div>
       </div>
 
-      {/* Modal Preview Gambar Besaran Penuh */}
+      {/* Modal Preview Gambar Besaran Penuh (Diperbaiki) */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[440px] w-[95vw] bg-transparent border-none shadow-none p-0 flex flex-col items-center justify-center outline-none">
+        {/* [&>button]:hidden digunakan untuk menyembunyikan default close button dari komponen Dialog shadcn */}
+        <DialogContent className="max-w-[440px] w-[95vw] bg-transparent border-none shadow-none p-0 flex flex-col items-center justify-center outline-none [&>button]:hidden">
           <div className="sr-only">
             <DialogTitle>Preview Kartu QRIS</DialogTitle>
           </div>
+          
           {imageUrl && (
-            <img 
-              src={imageUrl} 
-              alt="QRIS Result Preview" 
-              className="w-full h-auto max-h-[85vh] object-contain rounded-[24px] shadow-2xl animate-in zoom-in-95 duration-300"
-            />
+            <div className="relative flex flex-col items-center gap-5 w-full">
+              <img 
+                src={imageUrl} 
+                alt="QRIS Result Preview" 
+                className="w-full h-auto max-h-[80vh] object-contain rounded-[24px] shadow-2xl animate-in zoom-in-95 duration-300"
+              />
+              
+              {/* Custom Floating Close Button (Desktop & Mobile Friendly) */}
+              <Button 
+                variant="secondary" 
+                onClick={() => setPreviewOpen(false)}
+                className="rounded-full px-6 h-12 shadow-xl bg-background/95 backdrop-blur-md border border-border/50 hover:bg-background text-foreground font-semibold gap-2 transition-all active:scale-95"
+              >
+                <X className="w-4 h-4" />
+                Tutup Preview
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
