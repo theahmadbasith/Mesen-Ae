@@ -179,40 +179,30 @@ const SidebarFormContent = React.memo(function SidebarFormContent() {
       {/* 3. GAMBAR & STIKER TAMBAHAN */}
       <PanelSection title="Gambar & Stiker Tambahan" icon={Palette} defaultOpen={false}>
         <div className="space-y-5 pt-1">
-          <div>
-            <Label>Tipe Banner</Label>
-            <select value={ctx.bannerType} onChange={(e) => {
-              const val = e.target.value;
-              ctx.handleBannerTypeChange(val);
-              ctx.pushHistory({ ...ctx.getSnapshot(), type: val, productId: '', overlayImageUrl: null });
-            }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
-              <option value="custom">Kustom Bebas</option>
-              <option value="menu">Menu / Produk</option>
-            </select>
-          </div>
-
-          {ctx.bannerType === 'menu' ? (
-            <div>
-              <Label>Produk Terkait</Label>
-              <select value={ctx.bannerProductId} onChange={(e) => {
-                const prodId = e.target.value;
-                ctx.handleProductSelect(prodId);
-                const prod = ctx.products?.find((p: any) => String(p.id) === String(prodId));
-                const photo = prod?.photo || null;
-                ctx.pushHistory({ ...ctx.getSnapshot(), productId: prodId, overlayImageUrl: photo });
-              }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
-                <option value="">-- Pilih Produk --</option>
-                {ctx.products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <Label>Pilih Gambar Overlay (PNG / JPG)</Label>
-              <input ref={ctx.overlayFileInputRef} type="file" accept="image/*" className="hidden" onChange={ctx.handleAddImageFile} />
-              <button onClick={() => ctx.overlayFileInputRef.current?.click()}
-                className="w-full h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 border-2 border-dashed border-blue-200 dark:border-blue-800/30 hover:border-blue-400 transition-all flex items-center justify-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400">
-                <ImageIcon className="w-5 h-5" /> Cari Gambar Overlay
-              </button>
+          {ctx.overlays.length < 2 && (
+            <div className="space-y-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+              <div>
+                <Label>Pilih Produk Menu</Label>
+                <select value={ctx.bannerProductId} onChange={(e) => {
+                  const prodId = e.target.value;
+                  ctx.handleProductSelect(prodId);
+                }} className="w-full h-10 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none text-zinc-900 dark:text-zinc-100">
+                  <option value="">-- Tambah Produk --</option>
+                  {ctx.products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-px bg-zinc-200 dark:bg-zinc-700 flex-1"></div>
+                <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">ATAU</span>
+                <div className="h-px bg-zinc-200 dark:bg-zinc-700 flex-1"></div>
+              </div>
+              <div>
+                <input ref={ctx.overlayFileInputRef} type="file" accept="image/*" className="hidden" onChange={ctx.handleAddImageFile} />
+                <button onClick={() => ctx.overlayFileInputRef.current?.click()}
+                  className="w-full h-10 rounded-xl bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 border border-dashed border-blue-300 dark:border-blue-800/50 hover:border-blue-400 transition-all flex items-center justify-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                  <ImageIcon className="w-4 h-4" /> Pilih dari Galeri
+                </button>
+              </div>
             </div>
           )}
 

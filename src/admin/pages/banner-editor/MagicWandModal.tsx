@@ -20,6 +20,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   const containerRef = useRef<HTMLDivElement>(null);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const [history, setHistory] = useState<ImageData[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
   useEffect(() => {
     if (open && imageUrl) {
@@ -36,12 +37,22 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
             ctx.clearRect(0, 0, cvs.width, cvs.height);
             ctx.drawImage(img, 0, 0);
             setHistory([ctx.getImageData(0, 0, cvs.width, cvs.height)]);
+            setHistoryIndex(0);
+          }
+          const container = containerRef.current;
+          if (container) {
+            const maxW = container.clientWidth - 32;
+            const maxH = container.clientHeight - 32;
+            const scaleX = maxW / img.width;
+            const scaleY = maxH / img.height;
+            const minScale = Math.min(scaleX, scaleY, 1);
+            setZoom(Math.floor(minScale * 100));
+          } else {
+            setZoom(100);
           }
         }
       };
       img.src = imageUrl;
-      // Reset state
-      setZoom(100);
       setPatternMode('light');
     }
   }, [open, imageUrl]);
@@ -117,21 +128,33 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
 
     if (modified) {
       ctx.putImageData(imgData, 0, 0);
-      setHistory(prev => [...prev, imgData]);
+      const newHist = history.slice(0, historyIndex + 1);
+      setHistory([...newHist, imgData]);
+      setHistoryIndex(newHist.length);
     }
   };
 
   const undo = () => {
-    if (history.length <= 1) return;
-    const newHistory = [...history];
-    newHistory.pop(); // remove current state
-    const prevState = newHistory[newHistory.length - 1];
-    setHistory(newHistory);
+    if (historyIndex <= 0) return;
+    const newIdx = historyIndex - 1;
+    setHistoryIndex(newIdx);
     
     const cvs = canvasRef.current;
-    if (cvs && prevState) {
+    if (cvs && history[newIdx]) {
       const ctx = cvs.getContext('2d', { willReadFrequently: true });
-      ctx?.putImageData(prevState, 0, 0);
+      ctx?.putImageData(history[newIdx], 0, 0);
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const newIdx = historyIndex + 1;
+    setHistoryIndex(newIdx);
+    
+    const cvs = canvasRef.current;
+    if (cvs && history[newIdx]) {
+      const ctx = cvs.getContext('2d', { willReadFrequently: true });
+      ctx?.putImageData(history[newIdx], 0, 0);
     }
   };
 
@@ -175,8 +198,17 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
 
           <div className="w-px h-6 bg-border hidden sm:block" />
 
-          <button onClick={undo} disabled={history.length <= 1} className={cn("text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg border", history.length <= 1 ? "opacity-50 cursor-not-allowed border-border" : "border-border hover:bg-secondary")}>
+          <button onClick={() => setPatternMode(p => p === 'light' ? 'dark' : 'light')} 
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors border border-border" title="Ubah tema kotak transparan">
+            {patternMode === 'light' ? <Moon className="w-4 h-4 sm:w-5 sm:h-5" /> : <Sun className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </button>
+
+          <button onClick={undo} disabled={historyIndex <= 0} className={cn("text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg border", historyIndex <= 0 ? "opacity-50 cursor-not-allowed border-border" : "border-border hover:bg-secondary")}>
             Undo
+          </button>
+          
+          <button onClick={redo} disabled={historyIndex >= history.length - 1} className={cn("text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg border", historyIndex >= history.length - 1 ? "opacity-50 cursor-not-allowed border-border" : "border-border hover:bg-secondary")}>
+            Redo
           </button>
 
           <button onClick={handleSave} className="flex items-center gap-1.5 bg-primary text-primary-foreground font-bold px-3 sm:px-4 h-8 sm:h-9 rounded-full shadow-md active:scale-95 transition-transform text-xs sm:text-sm">
@@ -209,16 +241,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
             <ZoomOut className="w-4 h-4" />
           </button>
           <span className="text-xs font-mono font-bold w-12 text-center">{zoom}%</span>
-          <button onClick={() => setZoom(z => Math.min(300, z + 10))} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary">
+          <button onClick={() => setZoom(z => Math.min(500, z + 10))} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary">
             <ZoomIn className="w-4 h-4" />
-          </button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <button 
-            onClick={() => setPatternMode(p => p === 'light' ? 'dark' : 'light')} 
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary"
-            title="Ubah tema kotak transparan"
-          >
-            {patternMode === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
         </div>
 

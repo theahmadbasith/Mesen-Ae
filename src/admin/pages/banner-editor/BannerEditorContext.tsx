@@ -508,8 +508,8 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     const prod = products?.find((p: any) => String(p.id) === String(prodId));
     if (prod && prod.photo) {
       setOverlays((prev: OverlayData[]) => {
-        if (prev.length >= 3) {
-          toast.warning('Maksimal 3 overlay');
+        if (prev.length >= 2) {
+          toast.warning('Maksimal 2 overlay');
           return prev;
         }
         toast.success(`Gambar produk "${prod.name}" berhasil ditambahkan!`);
@@ -685,8 +685,8 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     reader.onload = async ev => {
       const dataUrl = ev.target?.result as string;
       setOverlays((prev: OverlayData[]) => {
-        if (prev.length >= 3) {
-          toast.warning('Maksimal 3 overlay');
+        if (prev.length >= 2) {
+          toast.warning('Maksimal 2 overlay');
           return prev;
         }
         return [...prev, {

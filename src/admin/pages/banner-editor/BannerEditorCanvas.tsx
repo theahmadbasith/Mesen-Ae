@@ -198,37 +198,6 @@ export default React.memo(function BannerEditorCanvas() {
         }}
         onPointerDown={e => ctx.onOverlayPointerDown(e, overlay.id)}
       >
-        {/* Floating Action Toolbar on Selected Overlay */}
-        {isSelected && (
-          <div 
-            className="absolute top-[-54px] left-1/2 -translate-x-1/2 bg-slate-950/85 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl px-2 py-1 flex items-center gap-1.5 shadow-xl z-50 pointer-events-auto text-white scale-90 sm:scale-100 transition-all origin-bottom select-none animate-in fade-in zoom-in-95 duration-200"
-            onPointerDown={e => e.stopPropagation()}
-          >
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, scale: Math.max(0.1, o.scale - 0.05) } : o)); setTimeout(() => ctx.pushHistory(), 50); }}
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">-</button>
-            <span className="text-[10px] font-mono px-1 min-w-[34px] text-center text-zinc-200">{Math.round(overlay.scale * 100)}%</span>
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, scale: Math.min(5, o.scale + 0.05) } : o)); setTimeout(() => ctx.pushHistory(), 50); }}
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center font-black transition-colors">+</button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, rotate: o.rotate - 15 } : o)); setTimeout(() => ctx.pushHistory(), 50); }} title="Putar Kiri"
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCcwIcon className="w-3.5 h-3.5" /></button>
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, rotate: o.rotate + 15 } : o)); setTimeout(() => ctx.pushHistory(), 50); }} title="Putar Kanan"
-              className="w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"><RotateCwIcon className="w-3.5 h-3.5" /></button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onClick={(ev) => { ev.stopPropagation(); ctx.setOverlays((prev: any[]) => prev.map(o => o.id === overlay.id ? { ...o, flipX: !o.flipX } : o)); setTimeout(() => ctx.pushHistory(), 50); }}
-              className={cn("w-7 h-7 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors", overlay.flipX && "text-blue-400 bg-white/5")}>
-              <FlipHorizontal className="w-3.5 h-3.5" /></button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onClick={(ev) => { 
-                ev.stopPropagation(); 
-                ctx.setOverlays((prev: any[]) => prev.filter(o => o.id !== overlay.id)); 
-                ctx.setActiveOverlayId(null); 
-                setTimeout(() => ctx.pushHistory(), 50); 
-              }}
-              className="w-7 h-7 text-red-400 hover:bg-red-500/10 rounded-lg flex items-center justify-center transition-colors">
-              <Trash className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
 
         {/* Bounding Box & Drag Resize Handles for Overlay */}
         {isSelected && (
