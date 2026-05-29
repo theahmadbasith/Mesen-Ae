@@ -12,6 +12,7 @@ import {
   ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat, Link as LinkIcon, Save, ZoomIn, GripVertical
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
+import ReceiptSettings from '@/admin/components/ReceiptSettings';
 
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card } from '@/components/ui/card';
@@ -40,7 +41,7 @@ import { cn } from '@/lib/utils';
 /* ─────────────────────────────────────────────────────────────────────────────
    TAB CONFIG
 ───────────────────────────────────────────────────────────────────────────── */
-type Tab = 'toko' | 'pembayaran' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
+type Tab = 'toko' | 'struk' | 'pembayaran' | 'pengguna' | 'tampilan' | 'data' | 'tentang';
 
 interface TabItem { id: Tab; label: string; icon: React.ReactNode }
 
@@ -54,6 +55,7 @@ const PM_CAT_ICONS: Record<string, React.ReactNode> = {
 
 const TABS: TabItem[] = [
   { id: 'toko',       label: 'Info Toko',    icon: <Store className="w-4 h-4" /> },
+  { id: 'struk',      label: 'Struk Pembelian', icon: <Receipt className="w-4 h-4" /> },
   { id: 'pembayaran', label: 'Pembayaran',   icon: <CreditCard className="w-4 h-4" /> },
   { id: 'pengguna',  label: 'Akses Pengguna',   icon: <Users className="w-4 h-4" /> },
   { id: 'tampilan',  label: 'Tampilan',     icon: <Paintbrush className="w-4 h-4" /> },
@@ -257,24 +259,11 @@ export default function Pengaturan() {
   const [customerUrl, setCustomerUrl] = useState('');
   const [isSavingCustomerUrl, setIsSavingCustomerUrl] = useState(false);
 
-  /* -- Receipt Footer & Sistem Penjualan Direct Settings -- */
-  const [receiptFooterLines, setReceiptFooterLines] = useState<string[]>(['', '', '', '', '']);
-  const [receiptFooterImg, setReceiptFooterImg] = useState<string | undefined>();
-  const [isSavingFooter, setIsSavingFooter] = useState(false);
-  const footerImgInputRef = useRef<HTMLInputElement>(null);
-
+  /* -- Receipt Settings & Sistem Penjualan Direct Settings -- */
   useEffect(() => {
     if (storeSettings) {
       setCustomerUrl(storeSettings.customerUrl || '');
       setDeliveryMode(storeSettings.deliveryMode || 'diantar');
-      setReceiptFooterImg(storeSettings.receiptFooterImg);
-      if (storeSettings.receiptFooterLines && Array.isArray(storeSettings.receiptFooterLines)) {
-        const lines = [...storeSettings.receiptFooterLines];
-        while (lines.length < 5) lines.push('');
-        setReceiptFooterLines(lines.slice(0, 5));
-      } else {
-        setReceiptFooterLines([storeSettings.receiptFooter || '', '', '', '', '']);
-      }
     }
   }, [storeSettings]);
 
@@ -290,69 +279,6 @@ export default function Pengaturan() {
       }
     } catch (e: any) {
       toast.error('Gagal memperbarui sistem penjualan: ' + e.message);
-    }
-  };
-
-  const handleFooterLineChange = (index: number, val: string) => {
-    const updated = [...receiptFooterLines];
-    updated[index] = val;
-    setReceiptFooterLines(updated);
-  };
-
-  const handleFooterImgSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const dataUrl = event.target?.result as string;
-        setReceiptFooterImg(dataUrl);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      toast.error('Gagal membaca gambar');
-    }
-  };
-
-  const saveReceiptFooter = async () => {
-    if (!hasEditAccess) {
-      toast.error('Akses ditolak.');
-      return;
-    }
-    setIsSavingFooter(true);
-    try {
-      let finalImgUrl = receiptFooterImg;
-      if (receiptFooterImg && receiptFooterImg.startsWith('data:image')) {
-        const res = await fetch(receiptFooterImg);
-        const blob = await res.blob();
-        const compressedDataUrl = await compressImage(blob, 0.5);
-        const url = await dbUploadFile('storeSettings', `footer-logo-${Date.now()}.jpg`, compressedDataUrl);
-        if (url) finalImgUrl = url;
-      }
-
-      if (storeSettings?.id) {
-        if (storeSettings.receiptFooterImg && finalImgUrl && storeSettings.receiptFooterImg !== finalImgUrl) {
-          await dbDeleteFile(storeSettings.receiptFooterImg);
-        } else if (storeSettings.receiptFooterImg && !finalImgUrl) {
-          await dbDeleteFile(storeSettings.receiptFooterImg);
-        }
-
-        const activeLines = receiptFooterLines.map(l => l.trim());
-        const primaryFooterText = activeLines.find(l => l !== '') || 'Terima kasih atas kunjungan Anda!';
-        
-        await dbUpdate('storeSettings', storeSettings.id, {
-          receiptFooterLines: activeLines,
-          receiptFooterImg: finalImgUrl || null,
-          receiptFooter: primaryFooterText
-        });
-        toast.success('Pengaturan footer struk berhasil disimpan');
-      } else {
-        toast.error('Pengaturan toko belum diinisialisasi');
-      }
-    } catch (error: any) {
-      toast.error('Gagal menyimpan footer struk: ' + error.message);
-    } finally {
-      setIsSavingFooter(false);
     }
   };
 
@@ -703,79 +629,15 @@ export default function Pengaturan() {
               </SettingCard>
             </div>
 
-            <div className="mt-6">
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide flex items-center gap-1.5"><Receipt className="w-3.5 h-3.5" /> Footer Struk Pembelian</p>
-              <SettingCard>
-                <div className="p-4 space-y-4">
-                  <p className="text-xs text-muted-foreground leading-snug">Tambahkan teks penutup struk belanja hingga 5 baris, dan upload logo/gambar pendukung (seperti QR code pembayaran statis atau ucapan khusus) yang akan otomatis diubah menjadi hitam putih di struk pembelian.</p>
-                  
-                  {/* Footer Image Upload */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold">Logo / Foto Penutup Struk</Label>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:border-primary/50 transition-colors",
-                          receiptFooterImg && "border-solid"
-                        )}
-                        onClick={() => footerImgInputRef.current?.click()}
-                      >
-                        {receiptFooterImg ? (
-                          <img 
-                            src={receiptFooterImg} 
-                            alt="Footer Logo" 
-                            className="w-full h-full object-contain grayscale contrast-125" 
-                            style={{ filter: 'grayscale(1) contrast(1.3)' }}
-                          />
-                        ) : (
-                          <Camera className="w-5 h-5 text-muted-foreground/50" />
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <Button type="button" variant="outline" size="sm" className="h-8 text-xs gap-1.5 font-semibold" onClick={() => footerImgInputRef.current?.click()}>
-                          <Camera className="w-3.5 h-3.5" /> {receiptFooterImg ? 'Ganti Foto' : 'Pilih Foto'}
-                        </Button>
-                        {receiptFooterImg && (
-                          <Button type="button" variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive font-semibold" onClick={() => setReceiptFooterImg(undefined)}>
-                            <X className="w-3.5 h-3.5" /> Hapus Foto
-                          </Button>
-                        )}
-                      </div>
-                      <input ref={footerImgInputRef} type="file" accept="image/*" className="hidden" onChange={handleFooterImgSelect} />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">Disarankan gambar beresolusi sedang dengan background putih bersih agar terlihat tajam saat dicetak / dirender.</p>
-                  </div>
-
-                  {/* 5 Text Lines Inputs */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold">Baris Teks Penutup (Maks. 5 Baris)</Label>
-                    <div className="space-y-2">
-                      {receiptFooterLines.map((line, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-muted-foreground w-4">{idx + 1}.</span>
-                          <Input
-                            value={line}
-                            onChange={e => handleFooterLineChange(idx, e.target.value)}
-                            placeholder={`Baris ke-${idx + 1} (Opsional)`}
-                            className="h-9 text-sm"
-                            maxLength={40}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {hasEditAccess && (
-                    <Button onClick={saveReceiptFooter} disabled={isSavingFooter} className="w-full h-10 shadow-sm gap-2 font-bold mt-2">
-                      {isSavingFooter ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      Simpan Footer Struk
-                    </Button>
-                  )}
-                </div>
-              </SettingCard>
-            </div>
-
           </Section>
+        )}
+
+        {/* ══════════════ STRUK PEMBELIAN ══════════════ */}
+        {activeTab === 'struk' && (
+          <ReceiptSettings 
+            storeSettings={storeSettings} 
+            hasEditAccess={hasEditAccess} 
+          />
         )}
 
         {/* ══════════════ PEMBAYARAN ══════════════ */}
