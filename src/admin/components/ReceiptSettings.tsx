@@ -22,7 +22,7 @@ export interface ReceiptTypography {
   lineHeight: 'tight' | 'normal' | 'relaxed';
   alignment: 'left' | 'center' | 'right';
   compactMode: boolean;
-  paperWidth: '58mm' | '80mm';
+  paperWidth: '58mm';
 }
 
 interface ReceiptSettingsProps {
@@ -47,14 +47,14 @@ function SortableFooterItem({ id, children }: { id: string; children: React.Reac
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-3 bg-background rounded-xl border transition-all',
-        isDragging ? 'shadow-lg border-primary/30 opacity-90' : 'border-border/80 hover:border-primary/20'
+        'flex items-center gap-2 bg-background rounded-xl border transition-all pl-2 pr-3 py-2',
+        isDragging ? 'shadow-md border-primary/40 bg-muted/20 opacity-95' : 'border-border/80 hover:border-primary/20'
       )}
     >
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground px-3 py-4 touch-none">
-        <GripVertical className="w-4 h-4" />
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-1 shrink-0 touch-none">
+        <GripVertical className="w-3.5 h-3.5" />
       </div>
-      <div className="flex-1 py-3 pr-3">{children}</div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }
@@ -66,20 +66,22 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   // Template
   const [template, setTemplate] = useState<TemplateType>('fnb');
 
-  // Paper Width
-  const [paperWidth, setPaperWidth] = useState<'58mm' | '80mm'>('58mm');
+  // Logo Toggle Checklist
+  const [showLogo, setShowLogo] = useState<boolean>(true);
 
   // Typography
   const [fontFamily, setFontFamily] = useState<'monospace' | 'sans-serif' | 'courier' | 'receipt-font'>('receipt-font');
   const [fontSize, setFontSize] = useState<number>(11);
   const [lineHeight, setLineHeight] = useState<'tight' | 'normal' | 'relaxed'>('tight');
-  const [compactMode] = useState(true);
 
   // Footer
   const [footerLine1, setFooterLine1] = useState('');
   const [footerLine2, setFooterLine2] = useState('');
   const [footerImg, setFooterImg] = useState<string | undefined>();
   const [footerOrder, setFooterOrder] = useState<FooterBlock[]>(['line1', 'line2', 'image']);
+
+  // Lightbox Preview Modal State
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Crop
   const [cropOpen, setCropOpen] = useState(false);
@@ -89,7 +91,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // DnD sensors
   const sensors = useSensors(
@@ -101,9 +102,13 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   useEffect(() => {
     if (storeSettings && !hasInitialized) {
       const s = storeSettings as any;
+      
       // Template - migrate finedining to classic
       const tmpl = s.receiptTemplate ?? 'fnb';
       setTemplate(tmpl === 'finedining' ? 'classic' : tmpl);
+
+      // Logo Toggle
+      setShowLogo(s.receiptShowLogo ?? true);
 
       // Typography
       const typo = s.receiptTypography || {};
@@ -119,7 +124,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       }
 
       setLineHeight(typo.lineHeight ?? 'tight');
-      setPaperWidth(typo.paperWidth ?? '58mm');
 
       // Footer
       setFooterImg(s.receiptFooterImg || '');
@@ -139,35 +143,10 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
     }
   }, [storeSettings, hasInitialized]);
 
-  useEffect(() => {
-    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, []);
-
-  // ─── Auto-Save ─────────────────────────────────────────────────────
-  const triggerAutoSave = (
-    tmpl = template, img = footerImg, l1 = footerLine1, l2 = footerLine2,
-    order = footerOrder, font = fontFamily, size = fontSize,
-    lh = lineHeight, width = paperWidth
-  ) => {
-    if (!hasEditAccess) return;
-    setSaveStatus('saving');
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        await executeSave(tmpl, img, l1, l2, order, font, size, lh, width);
-        setSaveStatus('saved');
-      } catch (err: any) {
-        setSaveStatus('error');
-        toast.error('Gagal menyimpan: ' + err.message);
-      }
-    }, 1500);
-  };
-
   const executeSave = async (
     tmpl = template, img = footerImg, l1 = footerLine1, l2 = footerLine2,
     order = footerOrder, font = fontFamily, size = fontSize,
-    lh = lineHeight, width = paperWidth
+    lh = lineHeight, logo = showLogo
   ) => {
     if (!storeSettings?.id) return;
 
@@ -190,7 +169,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
 
     await dbUpdate('storeSettings', storeSettings.id, {
       receiptTemplate: tmpl,
-      receiptShowLogo: true,
+      receiptShowLogo: logo,
       receiptShowCashier: true,
       receiptShowCustomer: true,
       receiptShowTable: true,
@@ -201,7 +180,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         lineHeight: lh,
         alignment: 'center',
         compactMode: true,
-        paperWidth: width
+        paperWidth: '58mm'
       },
       receiptFooterImg: finalImgUrl || null,
       receiptFooterLines: [l1.trim(), l2.trim()],
@@ -214,7 +193,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
     setIsSaving(true);
     setSaveStatus('saving');
     try {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       await executeSave();
       setSaveStatus('saved');
       toast.success('Konfigurasi struk berhasil disimpan');
@@ -244,7 +222,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       const newIndex = footerOrder.indexOf(over.id as FooterBlock);
       const newOrder = arrayMove(footerOrder, oldIndex, newIndex);
       setFooterOrder(newOrder);
-      triggerAutoSave(template, footerImg, footerLine1, footerLine2, newOrder);
     }
   };
 
@@ -266,24 +243,24 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
     'font-serif': fontFamily === 'courier'
   });
 
-  // ─── Mock Data ─────────────────────────────────────────────────────
+  // ─── Mock Data (Bahasa Indonesia) ──────────────────────────────────
   const mockItems = {
     minimarket: [
-      { name: 'KOPIKO 78C 240ML', qty: 2, price: 5500, total: 11000 },
-      { name: 'I/F BISC WNDRLND 300', qty: 1, price: 20900, total: 20900 },
-      { name: 'ABC ORANGE 525ML', qty: 1, price: 13500, total: 13500 },
+      { name: 'KOPI SUSU GULA AREN', qty: 2, price: 15000, total: 30000 },
+      { name: 'ROTI BAKAR COKELAT', qty: 1, price: 12000, total: 12000 },
+      { name: 'TEH BOTOL SOSRO', qty: 1, price: 5000, total: 5000 },
     ],
     fnb: [
-      { name: 'Bakmie Ayam', notes: 'Pedas', qty: 1, price: 24000, total: 24000 },
+      { name: 'Nasi Goreng Ayam', notes: 'Pedas', qty: 1, price: 25000, total: 25000 },
       { name: 'Es Teh Manis', notes: 'Gula Sedikit', qty: 2, price: 5000, total: 10000 },
     ],
     classic: [
-      { name: 'Nasi Goreng Spesial', qty: 1, price: 28000, total: 28000 },
-      { name: 'Jus Alpukat', qty: 1, price: 15000, total: 15000 },
+      { name: 'Mie Goreng Spesial', qty: 1, price: 18000, total: 18000 },
+      { name: 'Es Jeruk', qty: 1, price: 8000, total: 8000 },
     ],
     minimalis: [
-      { name: 'Americano', qty: 2, price: 22000, total: 44000 },
-      { name: 'Croissant', qty: 1, price: 18000, total: 18000 },
+      { name: 'Kopi Hitam', qty: 2, price: 12000, total: 24000 },
+      { name: 'Kentang Goreng', qty: 1, price: 15000, total: 15000 },
     ],
   };
 
@@ -323,8 +300,22 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             </div>
           </div>
 
+          {/* §Logo Toggle */}
+          <div className="flex items-center space-x-2 pt-1 pb-2">
+            <input
+              type="checkbox"
+              id="showLogo"
+              checked={showLogo}
+              onChange={e => setShowLogo(e.target.checked)}
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer accent-primary"
+            />
+            <Label htmlFor="showLogo" className="text-xs font-semibold text-foreground cursor-pointer select-none">
+              Tampilkan Logo Toko
+            </Label>
+          </div>
+
           {/* §1 — Template Selection */}
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3 border-t border-border/50">
             <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
               <Sliders className="w-3.5 h-3.5 text-primary/70" /> Tema Struk
             </div>
@@ -332,7 +323,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
               {templates.map(t => (
                 <button
                   key={t.key}
-                  onClick={() => { setTemplate(t.key); triggerAutoSave(t.key); }}
+                  onClick={() => setTemplate(t.key)}
                   className={cn(
                     "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all gap-1.5 relative overflow-hidden",
                     template === t.key
@@ -350,21 +341,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                 </button>
               ))}
             </div>
-
-            {/* Paper Width */}
-            <div className="flex items-center gap-3 mt-2">
-              <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Lebar Kertas</Label>
-              <div className="flex border border-border rounded-xl p-1 bg-muted/40 h-9 w-[160px]">
-                {(['58mm', '80mm'] as const).map(w => (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => { setPaperWidth(w); triggerAutoSave(template, footerImg, footerLine1, footerLine2, footerOrder, fontFamily, fontSize, lineHeight, w); }}
-                    className={cn("flex-1 text-[11px] font-bold rounded-lg transition-all h-full", paperWidth === w ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-                  >{w}</button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* §2 — Typography */}
@@ -377,7 +353,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                 <Label className="text-[11px] font-bold">Jenis Font</Label>
                 <select
                   value={fontFamily}
-                  onChange={e => { setFontFamily(e.target.value as any); triggerAutoSave(template, footerImg, footerLine1, footerLine2, footerOrder, e.target.value as any); }}
+                  onChange={e => setFontFamily(e.target.value as any)}
                   className="w-full text-xs h-9 px-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
                 >
                   <option value="receipt-font">Thermal</option>
@@ -394,15 +370,15 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   max={16}
                   step={1}
                   value={fontSize}
-                  onChange={e => { const v = Number(e.target.value); setFontSize(v); triggerAutoSave(template, footerImg, footerLine1, footerLine2, footerOrder, fontFamily, v); }}
-                  className="h-9 text-xs rounded-lg"
+                  onChange={e => setFontSize(Number(e.target.value))}
+                  className="h-9 text-xs rounded-lg bg-background"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-bold">Spasi Baris</Label>
                 <select
                   value={lineHeight}
-                  onChange={e => { setLineHeight(e.target.value as any); triggerAutoSave(template, footerImg, footerLine1, footerLine2, footerOrder, fontFamily, fontSize, e.target.value as any); }}
+                  onChange={e => setLineHeight(e.target.value as any)}
                   className="w-full text-xs h-9 px-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
                 >
                   <option value="tight">Rapat</option>
@@ -424,44 +400,52 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   {footerOrder.map(block => (
                     <SortableFooterItem key={block} id={block}>
                       {block === 'line1' && (
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-bold uppercase text-primary/80">Teks Utama</Label>
-                          <textarea
+                        <div className="flex items-center gap-3 w-full">
+                          <span className="text-[10px] font-bold uppercase text-primary/80 shrink-0 w-20">Teks Utama</span>
+                          <input
+                            type="text"
                             value={footerLine1}
-                            onChange={e => { setFooterLine1(e.target.value); triggerAutoSave(template, footerImg, e.target.value); }}
-                            className="w-full text-xs p-2.5 rounded-lg border border-border bg-muted/30 focus:bg-background focus:ring-1 focus:ring-primary h-12 resize-none transition-all placeholder:text-muted-foreground/40"
+                            onChange={e => setFooterLine1(e.target.value)}
+                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30"
                             placeholder="Terima Kasih Atas Kunjungan Anda"
                           />
                         </div>
                       )}
                       {block === 'line2' && (
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-bold uppercase text-primary/80">Info Tambahan</Label>
-                          <textarea
+                        <div className="flex items-center gap-3 w-full">
+                          <span className="text-[10px] font-bold uppercase text-primary/80 shrink-0 w-20">Info Tambahan</span>
+                          <input
+                            type="text"
                             value={footerLine2}
-                            onChange={e => { setFooterLine2(e.target.value); triggerAutoSave(template, footerImg, footerLine1, e.target.value); }}
-                            className="w-full text-xs p-2.5 rounded-lg border border-border bg-muted/30 focus:bg-background focus:ring-1 focus:ring-primary h-12 resize-none transition-all placeholder:text-muted-foreground/40"
+                            onChange={e => setFooterLine2(e.target.value)}
+                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30"
                             placeholder="Kritik & Saran: 0812-xxxx-xxxx"
                           />
                         </div>
                       )}
                       {block === 'image' && (
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-bold uppercase text-primary/80">Gambar Footer</Label>
-                          <div className="flex gap-3 items-center">
-                            <div className="h-12 w-12 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden grayscale shadow-inner shrink-0">
-                              {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-4 h-4 text-muted-foreground/30" />}
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              <Button type="button" variant={footerImg ? "outline" : "default"} size="sm" onClick={() => fileInputRef.current?.click()} className={cn("h-7 text-[10px] px-3 rounded-lg", !footerImg && "bg-primary text-primary-foreground hover:bg-primary/90")}>
-                                <Camera className="w-3 h-3 mr-1.5" /> {footerImg ? 'Ganti' : 'Unggah'}
-                              </Button>
-                              {footerImg && (
-                                <Button type="button" variant="ghost" size="sm" onClick={() => { setFooterImg(undefined); triggerAutoSave(template, undefined); }} className="h-6 text-[10px] px-2 text-destructive hover:bg-destructive/10 rounded-lg justify-start">
-                                  <Trash2 className="w-3 h-3 mr-1" /> Hapus
-                                </Button>
+                        <div className="flex items-center justify-between gap-3 w-full">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold uppercase text-primary/80 shrink-0 w-20">Gambar Footer</span>
+                            <div 
+                              onClick={() => footerImg && setLightboxOpen(true)}
+                              className={cn(
+                                "h-8 w-8 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden grayscale shadow-inner shrink-0",
+                                footerImg ? "cursor-zoom-in hover:border-primary/40 transition-colors" : ""
                               )}
+                            >
+                              {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-3.5 h-3.5 text-muted-foreground/30" />}
                             </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-[10px] px-2.5 rounded-lg bg-background">
+                              <Camera className="w-3 h-3 mr-1" /> {footerImg ? 'Ganti' : 'Unggah'}
+                            </Button>
+                            {footerImg && (
+                              <Button type="button" variant="ghost" size="sm" onClick={() => setFooterImg(undefined)} className="h-7 text-[10px] px-2 text-destructive hover:bg-destructive/10 rounded-lg">
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -485,8 +469,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
 
           <div
             className={cn(
-              "bg-white text-black p-5 sm:p-6 shadow-2xl border border-gray-200 transition-all duration-500 select-none",
-              paperWidth === '58mm' ? "w-[280px]" : "w-[360px]",
+              "bg-white text-black p-5 sm:p-6 shadow-2xl border border-gray-200 transition-all duration-500 select-none w-[280px]",
               previewFontClass
             )}
             style={{
@@ -498,14 +481,18 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             {/* ── MINIMARKET ── */}
             {template === 'minimarket' && (
               <div className="w-full text-left">
-                <div className="mb-3">
-                  <div className="w-28 h-8 mb-2 grayscale">
-                    <img src={storeSettings.logo || '/placeholder.png'} className="w-full h-full object-contain object-left" />
+                {showLogo && storeSettings.logo && (
+                  <div className="mb-3">
+                    <div className="w-28 h-8 mb-2 grayscale">
+                      <img src={storeSettings.logo} className="w-full h-full object-contain object-left" />
+                    </div>
                   </div>
+                )}
+                <div className="mb-2">
                   <h2 className="font-extrabold">{storeSettings.storeName?.toUpperCase() || 'TOKO SUMBER BERKAH'}</h2>
-                  <p>{storeSettings.address?.toUpperCase() || 'JL. KEBANGSAAN NO. 12'}</p>
+                  <p className="text-[0.8em]">{storeSettings.address?.toUpperCase() || 'JL. KEBANGSAAN NO. 12'}</p>
                 </div>
-                <div className="mb-2 uppercase">
+                <div className="mb-2 uppercase text-[0.85em]">
                   <div className="flex gap-2 flex-wrap">
                     <span>29.05.26-17:08</span>
                     <span>K:BASITH</span>
@@ -514,7 +501,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   <span>Pelanggan: Ahmad</span>
                 </div>
                 <div className="border-t border-dashed border-black my-2" />
-                <div className="space-y-0 uppercase">
+                <div className="space-y-0.5 uppercase text-[0.85em]">
                   {mockItems.minimarket.map((item, i) => (
                     <div key={i} className="flex justify-between leading-tight">
                       <span className="flex-1 pr-1">{item.name}</span>
@@ -525,19 +512,19 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   ))}
                 </div>
                 <div className="border-t border-dashed border-black my-2" />
-                <div className="space-y-0.5 uppercase">
+                <div className="space-y-0.5 uppercase text-[0.85em]">
                   <div className="flex justify-end gap-4">
-                    <span>HARGA JUAL :</span><span className="w-16 text-right">{rp(45400)}</span>
+                    <span>HARGA JUAL :</span><span className="w-16 text-right">{rp(47000)}</span>
                   </div>
                   <div className="border-t border-dashed border-black my-1" />
-                  <div className="flex justify-end gap-4 font-extrabold text-[1.1em]">
-                    <span>TOTAL :</span><span className="w-16 text-right">{rp(45400)}</span>
+                  <div className="flex justify-end gap-4 font-extrabold text-[1.05em]">
+                    <span>TOTAL :</span><span className="w-16 text-right">{rp(47000)}</span>
                   </div>
                   <div className="flex justify-end gap-4">
                     <span>TUNAI :</span><span className="w-16 text-right">{rp(50000)}</span>
                   </div>
                   <div className="flex justify-end gap-4">
-                    <span>KEMBALI :</span><span className="w-16 text-right">{rp(4600)}</span>
+                    <span>KEMBALI :</span><span className="w-16 text-right">{rp(3000)}</span>
                   </div>
                 </div>
               </div>
@@ -547,37 +534,40 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             {template === 'fnb' && (
               <div className="w-full text-left">
                 <div className="text-center mb-4">
-                  <div className="w-14 h-14 mx-auto mb-2 grayscale">
-                    <img src={storeSettings.logo || '/placeholder.png'} className="w-full h-full object-contain" />
-                  </div>
+                  {showLogo && storeSettings.logo && (
+                    <div className="w-14 h-14 mx-auto mb-2 grayscale">
+                      <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                    </div>
+                  )}
                   <h2 className="font-bold text-[1.2em]">{storeSettings.storeName?.toUpperCase() || 'KOPI NUSANTARA'}</h2>
-                  <p className="opacity-90">{storeSettings.address || 'Jl. Dr Soetomo No. 93'}</p>
+                  <p className="text-[0.8em] opacity-90">{storeSettings.address || 'Jl. Dr Soetomo No. 93'}</p>
                 </div>
-                <div className="mb-2">
-                  <div className="grid grid-cols-[55px_auto] gap-x-1">
+                <div className="mb-2 text-[0.85em]">
+                  <div className="grid grid-cols-[65px_auto] gap-x-1">
                     <span>No</span><span>: SI-MN4KU-106</span>
                     <span>Tanggal</span><span>: 29 Mei 2026, 19.14</span>
-                    <span>Kasir</span><span>: Crew</span>
+                    <span>Kasir</span><span>: Basith</span>
                     <span>Nama</span><span>: Ahmad</span>
-                    <span>Jenis</span><span>: Dine In (Meja 04)</span>
+                    <span>Tipe</span><span>: Dine In (Meja 04)</span>
                   </div>
                 </div>
                 <div className="border-t border-dashed border-black my-2" />
-                <div className="space-y-2">
+                <div className="space-y-2 text-[0.85em]">
                   {mockItems.fnb.map((item: any, i) => (
                     <div key={i} className="leading-tight">
                       <div className="font-bold">{item.name}</div>
-                      <div className="flex justify-between text-[0.9em]">
-                        <span>{item.qty} x {rp(item.price)} = {rp(item.total)}</span>
+                      <div className="flex justify-between text-[0.95em]">
+                        <span>{item.qty} x {rp(item.price)}</span>
+                        <span>{rp(item.total)}</span>
                       </div>
-                      {item.notes && <div className="opacity-80">Catatan: {item.notes}</div>}
+                      {item.notes && <div className="opacity-80 text-[0.9em]">Catatan: {item.notes}</div>}
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-dashed border-black my-2" />
-                <div className="grid grid-cols-[75px_auto] gap-x-1 ml-auto max-w-[200px]">
-                  <span>Subtotal</span><span>: {rp(34000)}</span>
-                  <span className="font-extrabold text-[1.1em]">Total</span><span className="font-extrabold text-[1.1em]">: {rp(34000)}</span>
+                <div className="grid grid-cols-[75px_auto] gap-x-1 ml-auto max-w-[200px] text-[0.85em]">
+                  <span>Subtotal</span><span>: {rp(35000)}</span>
+                  <span className="font-extrabold text-[1.05em]">Total</span><span className="font-extrabold text-[1.05em]">: {rp(35000)}</span>
                   <span>Bayar</span><span>: QRIS</span>
                 </div>
               </div>
@@ -587,15 +577,17 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             {template === 'classic' && (
               <div className="w-full">
                 <div className="text-center mb-3">
-                  <div className="w-16 h-16 mx-auto mb-2 grayscale">
-                    <img src={storeSettings.logo || '/placeholder.png'} className="w-full h-full object-contain" />
-                  </div>
-                  <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings.storeName || 'Toko Saya'}</h2>
-                  {storeSettings.address && <p className="text-[0.85em] mt-1 leading-tight">{storeSettings.address}</p>}
-                  {storeSettings.phone && <p className="text-[0.85em] leading-tight">{storeSettings.phone}</p>}
+                  {showLogo && storeSettings.logo && (
+                    <div className="w-16 h-16 mx-auto mb-2 grayscale">
+                      <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings.storeName || 'TOKO SAYA'}</h2>
+                  {storeSettings.address && <p className="text-[0.8em] mt-1 leading-tight">{storeSettings.address}</p>}
+                  {storeSettings.phone && <p className="text-[0.8em] leading-tight">{storeSettings.phone}</p>}
                 </div>
                 <div className="border-t border-dashed border-black/60 my-2" />
-                <div className="text-[0.9em] space-y-0.5">
+                <div className="text-[0.85em] space-y-0.5">
                   <div className="flex justify-between"><span>No. Struk: SI-CL-042</span><span>Tunai</span></div>
                   <div className="flex justify-between"><span>29/05/2026</span><span>19:30</span></div>
                 </div>
@@ -606,20 +598,20 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   <div className="flex justify-between"><span className="text-gray-500">Meja / Tipe:</span><span className="font-bold">Meja 03</span></div>
                 </div>
                 <div className="border-t border-dashed border-black/60 my-2" />
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 text-[0.85em]">
                   {mockItems.classic.map((item, i) => (
-                    <div key={i} className="text-[0.95em]">
+                    <div key={i}>
                       <div className="flex justify-between font-semibold"><span>{item.name}</span><span>{rp(item.total)}</span></div>
-                      <div className="text-[0.85em] text-gray-500 pl-2">{item.qty} x {rp(item.price)}</div>
+                      <div className="text-[0.9em] text-gray-500 pl-2">{item.qty} x {rp(item.price)}</div>
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-dashed border-black/60 my-2" />
-                <div className="space-y-1 text-[0.9em]">
-                  <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{rp(43000)}</span></div>
-                  <div className="flex justify-between font-black text-[1.15em] border-t border-gray-300 pt-1.5 mt-1.5"><span>Total</span><span>{rp(43000)}</span></div>
-                  <div className="flex justify-between mt-1"><span className="text-gray-600">Bayar</span><span>{rp(50000)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Kembali</span><span>{rp(7000)}</span></div>
+                <div className="space-y-1 text-[0.85em]">
+                  <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{rp(26000)}</span></div>
+                  <div className="flex justify-between font-black text-[1.05em] border-t border-gray-300 pt-1.5 mt-1.5"><span>Total</span><span>{rp(26000)}</span></div>
+                  <div className="flex justify-between mt-1"><span className="text-gray-600">Bayar</span><span>{rp(30000)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Kembali</span><span>{rp(4000)}</span></div>
                 </div>
               </div>
             )}
@@ -628,9 +620,11 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             {template === 'minimalis' && (
               <div className="w-full text-center">
                 <div className="mb-4">
-                  <div className="w-10 h-10 mx-auto mb-2 grayscale">
-                    <img src={storeSettings.logo || '/placeholder.png'} className="w-full h-full object-contain" />
-                  </div>
+                  {showLogo && storeSettings.logo && (
+                    <div className="w-10 h-10 mx-auto mb-2 grayscale">
+                      <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                    </div>
+                  )}
                   <h2 className="font-bold text-[1.1em]">{storeSettings.storeName || 'Toko'}</h2>
                 </div>
                 <div className="border-t border-solid border-black/20 my-3" />
@@ -643,7 +637,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   <div className="flex justify-between"><span className="opacity-60">Meja</span><span>05</span></div>
                 </div>
                 <div className="border-t border-solid border-black/20 my-3" />
-                <div className="space-y-1 text-left">
+                <div className="space-y-1 text-left text-[0.85em]">
                   {mockItems.minimalis.map((item, i) => (
                     <div key={i} className="flex justify-between">
                       <span>{item.qty}x {item.name}</span>
@@ -652,8 +646,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   ))}
                 </div>
                 <div className="border-t border-solid border-black/20 my-3" />
-                <div className="flex justify-between font-bold text-[1.15em]">
-                  <span>Total</span><span>{rp(62000)}</span>
+                <div className="flex justify-between font-bold text-[1.05em] text-[0.85em]">
+                  <span>Total</span><span>{rp(39000)}</span>
                 </div>
                 <div className="flex justify-between text-[0.85em] opacity-80 mt-1">
                   <span>Pembayaran</span><span>QRIS</span>
@@ -663,7 +657,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
 
             {/* ── Dynamic Footer ── */}
             <div className="border-t border-black mt-4 mb-3 opacity-40" />
-            <div className="text-center space-y-2 pb-8">
+            <div className="text-center space-y-2 pb-8 text-[0.85em]">
               {footerOrder.map((block, idx) => {
                 if (block === 'line1' && footerLine1) {
                   return <p key={idx} className="whitespace-pre-wrap leading-relaxed font-semibold">{footerLine1}</p>;
@@ -690,6 +684,23 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         </div>
       </div>
 
+      {/* Lightbox Modal */}
+      {lightboxOpen && footerImg && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <img 
+              src={footerImg} 
+              alt="Footer Preview" 
+              className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200" 
+            />
+            <p className="text-white text-center text-xs mt-3 font-medium">Klik di luar gambar untuk menutup</p>
+          </div>
+        </div>
+      )}
+
       {/* Crop Modal */}
       <PhotoCropModal
         open={cropOpen}
@@ -700,7 +711,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
           setFooterImg(url);
           setCropOpen(false);
           setSelectedFile(null);
-          triggerAutoSave(template, url);
         }}
       />
     </div>

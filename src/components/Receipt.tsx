@@ -117,6 +117,9 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const fontSizeVal = typo.fontSize ?? 'sm';
   const lineHeightVal = typo.lineHeight || 'normal';
   const paperWidthVal = typo.paperWidth || '58mm';
+  const rawTemplate = (storeSettings as any)?.receiptTemplate ?? 'fnb';
+  const template = rawTemplate === 'finedining' ? 'classic' : rawTemplate;
+  const showLogo = (storeSettings as any)?.receiptShowLogo ?? true;
 
   if (!transaction) return null;
   const safeItems = Array.isArray(items) ? items : [];
@@ -418,173 +421,306 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
           
           <div ref={receiptRef} className="relative z-10 bg-white text-black">
 
-            {/* Header Toko */}
-            <div className="text-center relative z-10 mb-2.5">
-              {storeSettings?.logo && (
-                <img src={storeSettings.logo} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-2 grayscale" />
-              )}
-              <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings?.storeName || 'Toko'}</h2>
-              {storeSettings?.address && <p className="text-[0.85em] mt-1 leading-tight">{storeSettings.address}</p>}
-              {storeSettings?.phone && <p className="text-[0.85em] leading-tight">{storeSettings.phone}</p>}
-            </div>
-
-            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
-
-            {/* Info Transaksi */}
-            <div className="flex justify-between text-[0.9em] relative z-10">
-              <span>No. Struk: {transaction.receiptNumber}</span>
-              <span className="text-right font-medium">{paymentMethodName}</span>
-            </div>
-            <div className="flex justify-between text-[0.9em] mb-2 relative z-10">
-              <span>{format(new Date(transaction.date), 'dd/MM/yyyy', { locale: id })}</span>
-              <span>{format(new Date(transaction.date), 'HH:mm', { locale: id })}</span>
-            </div>
-
-            {/* Metadata — Always shown */}
-            <div className="space-y-1 text-[0.85em] mb-2 relative z-10 text-left border-t border-dashed border-gray-300 pt-2">
-              {(() => {
-                const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name || transaction.confirmedBy;
-                if (cashierNameVal) {
-                  return (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Kasir:</span>
-                      <span className="font-semibold">{cashierNameVal}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {(() => {
-                const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
-                if (buyerNameVal) {
-                  return (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Pelanggan:</span>
-                      <span className="font-semibold truncate max-w-[150px]">{buyerNameVal}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {(() => {
-                const tableVal = transaction.tableNumber || (transaction as any).table_number;
-                if (tableVal) {
-                  const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
-                    ? 'Bawa Pulang'
-                    : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
-                  return (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Meja / Tipe:</span>
-                      <span className="font-bold">{displayTable}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-
-            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
-
-            {/* Daftar Item */}
-            <div className="relative z-10 min-h-[60px] space-y-2">
-              {safeItems.map((item: any, i: number) => {
-                const pName = item.productName || item.product_name || 'Produk';
-                let variants = item.selectedVariants || item.selected_variants || [];
-                if (typeof variants === 'string') {
-                  try { variants = JSON.parse(variants); } catch (e) { variants = []; }
-                }
-                if (!Array.isArray(variants)) variants = [];
-
-                const discAmt = item.discountAmount || item.discount_amount || 0;
-                
-                return (
-                  <div key={i} className="text-[0.95em]">
-                    <div className="flex justify-between font-semibold">
-                      <span>{pName}</span>
-                      <span>{rp(item.subtotal)}</span>
-                    </div>
-                    {variants.length > 0 && (
-                      <p className="text-[0.8em] text-gray-500 pl-2">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
-                    )}
-                    {item.notes && <p className="text-[0.8em] text-gray-500 italic pl-2">  Catatan: {item.notes}</p>}
-                    <div className="flex justify-between text-[0.85em] text-gray-500 pl-2 mt-0.5">
-                      <span>{item.quantity} x {rp(item.price)}</span>
-                    </div>
-                    {discAmt > 0 && (
-                      <div className="flex justify-between text-[0.85em] text-gray-500 pl-2">
-                        <span>  Diskon</span>
-                        <span>-{rp(discAmt)}</span>
-                      </div>
+            {/* ── MINIMARKET TEMPLATE ── */}
+            {template === 'minimarket' && (
+              <div className="w-full text-left uppercase text-[0.85em] relative z-10">
+                {showLogo && storeSettings?.logo && (
+                  <div className="mb-3 text-center">
+                    <img src={storeSettings.logo} alt="Logo" className="w-28 h-8 object-contain mx-auto mb-2 grayscale" />
+                  </div>
+                )}
+                <div className="mb-2">
+                  <h2 className="font-extrabold text-[1.1em]">{storeSettings?.storeName?.toUpperCase() || 'TOKO'}</h2>
+                  {storeSettings?.address && <p className="text-[0.9em] leading-tight">{storeSettings.address.toUpperCase()}</p>}
+                  {storeSettings?.phone && <p className="text-[0.9em] leading-tight">{storeSettings.phone}</p>}
+                </div>
+                <div className="mb-2 text-[0.95em]">
+                  <div className="flex gap-2 flex-wrap font-medium">
+                    <span>{format(new Date(transaction.date), 'dd.MM.yy-HH:mm')}</span>
+                    <span>K:{String(transaction.cashierName || (transaction as any).cashier_name || 'Staff').toUpperCase()}</span>
+                    {transaction.tableNumber && (
+                      <span>Meja:{String(transaction.tableNumber).replace(/^(meja\s+)+/i, '')}</span>
                     )}
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
-
-            {/* Kalkulasi Total */}
-            <div className="space-y-1 text-[0.9em] relative z-10">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span>{rp(transaction.subtotal)}</span>
-              </div>
-              {((transaction.tax_and_service || transaction.taxAndService) > 0) && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Biaya Admin</span>
-                  <span>{rp(transaction.tax_and_service || transaction.taxAndService)}</span>
+                  {transaction.customerName && (
+                    <span>Pelanggan: {String(transaction.customerName).toUpperCase()}</span>
+                  )}
+                  <div className="mt-0.5 font-medium">No. Struk: {transaction.receiptNumber}</div>
                 </div>
-              )}
-              {txDiscountAmount > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Diskon</span>
-                  <span>-{rp(txDiscountAmount)}</span>
+                <div className="border-t border-dashed border-black my-2" />
+                
+                {/* Items */}
+                <div className="space-y-0.5">
+                  {safeItems.map((item: any, i: number) => {
+                    const pName = item.productName || item.product_name || 'Produk';
+                    return (
+                      <div key={i} className="flex justify-between leading-tight font-medium">
+                        <span className="flex-1 pr-1 truncate">{pName.toUpperCase()}</span>
+                        <span className="w-4 text-center">{item.quantity}</span>
+                        <span className="w-14 text-right">{rp(item.price)}</span>
+                        <span className="w-14 text-right">{rp(item.subtotal)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-              
-              <div className="flex justify-between font-black text-[1.15em] border-t border-gray-300 pt-1.5 mt-1.5">
-                <span>Total Tagihan</span>
-                <span>{rp(transaction.total)}</span>
+                
+                <div className="border-t border-dashed border-black my-2" />
+                <div className="space-y-0.5 text-[0.95em] font-medium">
+                  <div className="flex justify-end gap-4">
+                    <span>HARGA JUAL :</span><span className="w-20 text-right">{rp(transaction.subtotal)}</span>
+                  </div>
+                  {txDiscountAmount > 0 && (
+                    <div className="flex justify-end gap-4">
+                      <span>DISKON :</span><span className="w-20 text-right">-{rp(txDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {((transaction.tax_and_service || transaction.taxAndService) > 0) && (
+                    <div className="flex justify-end gap-4">
+                      <span>BIAYA ADMIN :</span><span className="w-20 text-right">{rp(transaction.tax_and_service || transaction.taxAndService)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-dashed border-black my-1" />
+                  <div className="flex justify-end gap-4 font-extrabold text-[1.05em]">
+                    <span>TOTAL :</span><span className="w-20 text-right">{rp(transaction.total)}</span>
+                  </div>
+                  <div className="flex justify-end gap-4">
+                    <span>TUNAI/QRIS :</span><span className="w-20 text-right">{rp(txPaymentAmount || transaction.total)}</span>
+                  </div>
+                  <div className="flex justify-end gap-4">
+                    <span>KEMBALI :</span><span className="w-20 text-right">{rp(transaction.change)}</span>
+                  </div>
+                </div>
               </div>
-              
-              {(() => {
-                let paymentsList = transaction.payments || [];
-                if (typeof paymentsList === 'string') {
-                  try { paymentsList = JSON.parse(paymentsList); } catch (e) { paymentsList = []; }
-                }
-                if (!Array.isArray(paymentsList)) paymentsList = [];
+            )}
 
-                if (paymentsList.length > 0) {
-                  return (
-                    <div className="mt-2 pt-2 border-t border-gray-300 space-y-1">
-                      <span className="text-gray-600 block">Rincian Pembayaran:</span>
-                      {paymentsList.map((p, idx) => (
-                        <div key={idx} className="flex justify-between pl-2">
-                          <span className="text-gray-500">{p.method_name || p.methodName || 'Pembayaran'}</span>
-                          <span>{rp(p.amount)}</span>
+            {/* ── FNB (Kafe/Resto) TEMPLATE ── */}
+            {template === 'fnb' && (
+              <div className="w-full text-left text-[0.85em] relative z-10">
+                <div className="text-center mb-4">
+                  {showLogo && storeSettings?.logo && (
+                    <div className="w-14 h-14 mx-auto mb-2 grayscale">
+                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto" />
+                    </div>
+                  )}
+                  <h2 className="font-bold text-[1.25em]">{storeSettings?.storeName?.toUpperCase() || 'TOKO'}</h2>
+                  {storeSettings?.address && <p className="opacity-90">{storeSettings.address}</p>}
+                  {storeSettings?.phone && <p className="opacity-90 leading-tight">{storeSettings.phone}</p>}
+                </div>
+                <div className="mb-2 font-medium">
+                  <div className="grid grid-cols-[65px_auto] gap-x-1">
+                    <span>No Struk</span><span>: {transaction.receiptNumber}</span>
+                    <span>Tanggal</span><span>: {format(new Date(transaction.date), 'dd MMM yyyy, HH:mm', { locale: id })}</span>
+                    <span>Kasir</span><span>: {transaction.cashierName || (transaction as any).cashier_name || 'Staff'}</span>
+                    {transaction.customerName && (
+                      <><span>Nama</span><span>: {transaction.customerName}</span></>
+                    )}
+                    {transaction.tableNumber && (
+                      <>
+                        <span>Tipe/Meja</span>
+                        <span>: {
+                          String(transaction.tableNumber).toLowerCase() === 'bawa pulang' || String(transaction.tableNumber).toLowerCase() === 'take away'
+                            ? 'Bawa Pulang'
+                            : 'Dine In (Meja ' + String(transaction.tableNumber).replace(/^(meja\s+)+/i, '') + ')'
+                        }</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="border-t border-dashed border-black my-2" />
+                
+                {/* Items */}
+                <div className="space-y-2">
+                  {safeItems.map((item: any, i: number) => {
+                    const pName = item.productName || item.product_name || 'Produk';
+                    let variants = item.selectedVariants || item.selected_variants || [];
+                    if (typeof variants === 'string') {
+                      try { variants = JSON.parse(variants); } catch (e) { variants = []; }
+                    }
+                    return (
+                      <div key={i} className="leading-tight font-medium">
+                        <div className="font-bold">{pName}</div>
+                        <div className="flex justify-between text-[0.95em]">
+                          <span>{item.quantity} x {rp(item.price)}</span>
+                          <span>{rp(item.subtotal)}</span>
                         </div>
-                      ))}
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="flex justify-between mt-2">
-                      <span className="text-gray-600">Bayar</span>
-                      <span>{rp(txPaymentAmount)}</span>
-                    </div>
-                  );
-                }
-              })()}
-              
-              <div className="flex justify-between mt-1">
-                <span className="text-gray-600">Kembali</span>
-                <span>{rp(transaction.change)}</span>
+                        {Array.isArray(variants) && variants.length > 0 && (
+                          <div className="opacity-80 text-[0.9em] pl-1">+ {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</div>
+                        )}
+                        {item.notes && <div className="opacity-80 text-[0.9em] pl-1">Catatan: {item.notes}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="border-t border-dashed border-black my-2" />
+                <div className="grid grid-cols-[80px_auto] gap-x-1 ml-auto max-w-[200px] font-medium text-[0.95em]">
+                  <span>Subtotal</span><span>: {rp(transaction.subtotal)}</span>
+                  {txDiscountAmount > 0 && (
+                    <><span>Diskon</span><span>: -{rp(txDiscountAmount)}</span></>
+                  )}
+                  {((transaction.tax_and_service || transaction.taxAndService) > 0) && (
+                    <><span>Biaya Admin</span><span>: {rp(transaction.tax_and_service || transaction.taxAndService)}</span></>
+                  )}
+                  <span className="font-extrabold text-[1.1em]">Total</span><span className="font-extrabold text-[1.1em]">: {rp(transaction.total)}</span>
+                  <span>Bayar</span><span>: {paymentMethodName}</span>
+                  <span>Kembali</span><span>: {rp(transaction.change)}</span>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
+            {/* ── CLASSIC TEMPLATE ── */}
+            {template === 'classic' && (
+              <div className="w-full text-[0.85em] relative z-10">
+                <div className="text-center mb-3">
+                  {showLogo && storeSettings?.logo && (
+                    <div className="w-16 h-16 mx-auto mb-2 grayscale">
+                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto" />
+                    </div>
+                  )}
+                  <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings?.storeName || 'TOKO'}</h2>
+                  {storeSettings?.address && <p className="text-[0.9em] mt-1 leading-tight">{storeSettings.address}</p>}
+                  {storeSettings?.phone && <p className="text-[0.9em] leading-tight">{storeSettings.phone}</p>}
+                </div>
+                <div className="border-t border-dashed border-black/60 my-2" />
+                <div className="space-y-0.5 font-medium">
+                  <div className="flex justify-between"><span>No. Struk: {transaction.receiptNumber}</span><span>{paymentMethodName}</span></div>
+                  <div className="flex justify-between">
+                    <span>{format(new Date(transaction.date), 'dd/MM/yyyy')}</span>
+                    <span>{format(new Date(transaction.date), 'HH:mm')}</span>
+                  </div>
+                </div>
+                <div className="border-t border-dashed border-black/40 my-2" />
+                <div className="space-y-0.5 text-left font-medium">
+                  <div className="flex justify-between"><span className="text-gray-500">Kasir:</span><span className="font-semibold">{transaction.cashierName || (transaction as any).cashier_name || 'Staff'}</span></div>
+                  {transaction.customerName && (
+                    <div className="flex justify-between"><span className="text-gray-500">Pelanggan:</span><span className="font-semibold">{transaction.customerName}</span></div>
+                  )}
+                  {transaction.tableNumber && (
+                    <div className="flex justify-between"><span className="text-gray-500">Meja / Tipe:</span><span className="font-bold">{
+                      String(transaction.tableNumber).toLowerCase() === 'bawa pulang' || String(transaction.tableNumber).toLowerCase() === 'take away'
+                        ? 'Bawa Pulang'
+                        : 'Meja ' + String(transaction.tableNumber).replace(/^(meja\s+)+/i, '')
+                    }</span></div>
+                  )}
+                </div>
+                <div className="border-t border-dashed border-black/60 my-2" />
+                
+                {/* Items */}
+                <div className="space-y-1.5 font-medium">
+                  {safeItems.map((item: any, i: number) => {
+                    const pName = item.productName || item.product_name || 'Produk';
+                    let variants = item.selectedVariants || item.selected_variants || [];
+                    if (typeof variants === 'string') {
+                      try { variants = JSON.parse(variants); } catch (e) { variants = []; }
+                    }
+                    return (
+                      <div key={i}>
+                        <div className="flex justify-between font-semibold"><span>{pName}</span><span>{rp(item.subtotal)}</span></div>
+                        <div className="text-[0.9em] text-gray-500 pl-2">
+                          {item.quantity} x {rp(item.price)}
+                          {Array.isArray(variants) && variants.length > 0 && ` (+ ${variants.map((v: any) => v.optionName || v.option_name).join(', ')})`}
+                          {item.notes && ` (Catatan: ${item.notes})`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="border-t border-dashed border-black/60 my-2" />
+                <div className="space-y-1 font-medium">
+                  <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{rp(transaction.subtotal)}</span></div>
+                  {txDiscountAmount > 0 && (
+                    <div className="flex justify-between"><span className="text-gray-600">Diskon</span><span>-{rp(txDiscountAmount)}</span></div>
+                  )}
+                  {((transaction.tax_and_service || transaction.taxAndService) > 0) && (
+                    <div className="flex justify-between"><span className="text-gray-600">Biaya Admin</span><span>{rp(transaction.tax_and_service || transaction.taxAndService)}</span></div>
+                  )}
+                  <div className="flex justify-between font-black text-[1.1em] border-t border-gray-300 pt-1.5 mt-1.5"><span>Total</span><span>{rp(transaction.total)}</span></div>
+                  <div className="flex justify-between mt-1"><span className="text-gray-600">Bayar</span><span>{rp(txPaymentAmount || transaction.total)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Kembali</span><span>{rp(transaction.change)}</span></div>
+                </div>
+              </div>
+            )}
 
-            {/* Dynamic Footer — rendered in footerOrder */}
+            {/* ── MINIMALIS TEMPLATE ── */}
+            {template === 'minimalis' && (
+              <div className="w-full text-center text-[0.85em] relative z-10">
+                <div className="mb-4">
+                  {showLogo && storeSettings?.logo && (
+                    <div className="w-10 h-10 mx-auto mb-2 grayscale">
+                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto" />
+                    </div>
+                  )}
+                  <h2 className="font-bold text-[1.15em]">{storeSettings?.storeName || 'Toko'}</h2>
+                  {storeSettings?.address && <p className="text-[0.9em] opacity-75">{storeSettings.address}</p>}
+                </div>
+                <div className="border-t border-solid border-black/20 my-3" />
+                <div className="opacity-80 flex justify-between font-medium">
+                  <span>{format(new Date(transaction.date), 'dd/MM/yyyy')}</span>
+                  <span>{transaction.receiptNumber}</span>
+                </div>
+                <div className="text-left space-y-0.5 mt-1 mb-2 font-medium">
+                  <div className="flex justify-between"><span className="opacity-60">Kasir</span><span>{transaction.cashierName || (transaction as any).cashier_name || 'Staff'}</span></div>
+                  {transaction.customerName && (
+                    <div className="flex justify-between"><span className="opacity-60">Pelanggan</span><span>{transaction.customerName}</span></div>
+                  )}
+                  {transaction.tableNumber && (
+                    <div className="flex justify-between"><span className="opacity-60">Meja</span><span>{String(transaction.tableNumber).replace(/^(meja\s+)+/i, '')}</span></div>
+                  )}
+                </div>
+                <div className="border-t border-solid border-black/20 my-3" />
+                
+                {/* Items */}
+                <div className="space-y-1 text-left font-medium">
+                  {safeItems.map((item: any, i: number) => {
+                    const pName = item.productName || item.product_name || 'Produk';
+                    let variants = item.selectedVariants || item.selected_variants || [];
+                    if (typeof variants === 'string') {
+                      try { variants = JSON.parse(variants); } catch (e) { variants = []; }
+                    }
+                    return (
+                      <div key={i} className="flex justify-between">
+                        <span>
+                          {item.quantity}x {pName}
+                          {Array.isArray(variants) && variants.length > 0 && ` (+${variants.map((v: any) => v.optionName || v.option_name).join(', ')})`}
+                          {item.notes && ` (*${item.notes})`}
+                        </span>
+                        <span>{rp(item.subtotal)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="border-t border-solid border-black/20 my-3" />
+                <div className="space-y-0.5 font-medium">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span><span>{rp(transaction.subtotal)}</span>
+                  </div>
+                  {txDiscountAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Diskon</span><span>-{rp(txDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {((transaction.tax_and_service || transaction.taxAndService) > 0) && (
+                    <div className="flex justify-between">
+                      <span>Biaya Admin</span><span>{rp(transaction.tax_and_service || transaction.taxAndService)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-[1.1em] pt-1 mt-1 border-t border-dashed border-gray-300">
+                    <span>Total</span><span>{rp(transaction.total)}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between opacity-80 mt-1.5 font-medium">
+                  <span>Pembayaran</span><span>{paymentMethodName}</span>
+                </div>
+                <div className="flex justify-between opacity-80 font-medium">
+                  <span>Kembali</span><span>{rp(transaction.change)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── Dynamic Footer ── */}
+            <div className="border-t border-black mt-4 mb-3 opacity-40" />
             <div className="relative z-10 pt-1 pb-3 space-y-2 text-gray-500 text-[0.85em] text-center">
               {footerOrder.map((block: string, idx: number) => {
                 if (block === 'line1' && footerLinesData[0]?.trim()) {
