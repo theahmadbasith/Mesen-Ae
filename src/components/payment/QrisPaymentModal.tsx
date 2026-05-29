@@ -197,8 +197,8 @@ export function QrisPaymentModal({
             <div className="flex flex-col items-center py-4 gap-3 w-full">
               {isManual && qrisData ? (
                 <div className="flex flex-col items-center gap-4 w-full animate-in fade-in zoom-in duration-300">
-                  <div className="w-full max-w-[400px]">
-                    <QRISResult qrisString={qrisData} />
+                  <div className="w-full flex justify-center mt-2 max-w-[320px]">
+                    <QRISResult qrisString={qrisData} hideExtras={true} />
                   </div>
                   <p className="text-xs text-muted-foreground text-center mt-2 px-4">
                     Minta pelanggan scan QRIS ini dan pastikan nominal tagihan sesuai.
