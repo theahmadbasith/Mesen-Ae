@@ -117,11 +117,23 @@ export function QRISResult({ qrisString }: Props) {
           const logo = new Image();
           logo.crossOrigin = "anonymous";
           logo.src = "/ico/qris.png"; 
+
+          const gpn = new Image();
+          gpn.crossOrigin = "anonymous";
+          gpn.src = "/ico/gpn.png"; 
           
-          await new Promise((resolve, reject) => {
-            logo.onload = resolve;
-            logo.onerror = reject;
-          });
+          await Promise.all([
+            new Promise((resolve, reject) => {
+              logo.onload = resolve;
+              logo.onerror = reject;
+            }),
+            new Promise((resolve, reject) => {
+              gpn.onload = resolve;
+              gpn.onerror = reject;
+            }).catch(err => {
+              console.warn("Gagal memuat logo GPN:", err);
+            })
+          ]);
 
           const logoTargetHeight = 60;
           const logoRatio = logo.width / logo.height;
@@ -130,7 +142,7 @@ export function QRISResult({ qrisString }: Props) {
           const logoY = 10;
 
           // ==============================================================
-          // PEMBERSIHAN PIXEL PUTIH DARI LOGO (SMOOTH WHITE REMOVAL)
+          // PEMBERSIHAN PIXEL PUTIH DARI LOGO QRIS (SMOOTH WHITE REMOVAL)
           // ==============================================================
           const tempCanvas = document.createElement("canvas");
           tempCanvas.width = logo.width;
@@ -162,6 +174,43 @@ export function QRISResult({ qrisString }: Props) {
           } else {
             // Fallback
             ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
+          }
+
+          // ==============================================================
+          // GAMBAR LOGO GPN DI KANAN ATAS (SEJAJAR & PEMBERSIHAN PIXEL)
+          // ==============================================================
+          if (gpn.width > 0) {
+            const gpnHeight = 34;
+            const gpnRatio = gpn.width / gpn.height || 0.788;
+            const gpnWidth = gpnHeight * gpnRatio;
+            const gpnX = width - 25 - gpnWidth;
+            const gpnY = 23;
+
+            const gpnCanvas = document.createElement("canvas");
+            gpnCanvas.width = gpn.width;
+            gpnCanvas.height = gpn.height;
+            const gpnCtx = gpnCanvas.getContext("2d", { willReadFrequently: true });
+            
+            if (gpnCtx) {
+              gpnCtx.drawImage(gpn, 0, 0);
+              const gpnImgData = gpnCtx.getImageData(0, 0, gpnCanvas.width, gpnCanvas.height);
+              const gpnData = gpnImgData.data;
+              
+              for (let i = 0; i < gpnData.length; i += 4) {
+                const r = gpnData[i];
+                const g = gpnData[i + 1];
+                const b = gpnData[i + 2];
+                const avg = (r + g + b) / 3;
+                if (avg > 210) {
+                  const alpha = Math.max(0, 255 - (avg - 210) * (255 / 45));
+                  gpnData[i + 3] = Math.min(gpnData[i + 3], alpha);
+                }
+              }
+              gpnCtx.putImageData(gpnImgData, 0, 0);
+              ctx.drawImage(gpnCanvas, gpnX, gpnY, gpnWidth, gpnHeight);
+            } else {
+              ctx.drawImage(gpn, gpnX, gpnY, gpnWidth, gpnHeight);
+            }
           }
           // ==============================================================
 
