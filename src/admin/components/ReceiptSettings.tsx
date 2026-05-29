@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   Camera, Save, Loader2, CheckCircle2, Printer, ImageIcon,
-  Sliders, Type, AlignCenter, Trash2, GripVertical, Store, Utensils, Coffee, Zap
+  Sliders, Type, AlignCenter, Trash2, GripVertical, Store, Utensils, Coffee, Zap,
+  QrCode
 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -15,6 +16,7 @@ import { dbUploadFile, dbDeleteFile, dbUpdate, type StoreSettings } from '@/hook
 import { compressImage } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
 import PhotoCropModal from '@/admin/components/PhotoCropModal';
+import { QRCodeSVG } from 'qrcode.react';
 
 export interface ReceiptTypography {
   fontFamily: 'monospace' | 'sans-serif' | 'courier' | 'receipt-font';
@@ -130,6 +132,9 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   const [footerImg, setFooterImg] = useState<string | undefined>();
   const [footerOrder, setFooterOrder] = useState<FooterBlock[]>(['line1', 'line2', 'image']);
   const [processedLogo, setProcessedLogo] = useState<string | undefined>();
+  const [footerType, setFooterType] = useState<'image' | 'qrcode'>('image');
+  const [footerQrUrl, setFooterQrUrl] = useState<string>('');
+  const [rawFooterImg, setRawFooterImg] = useState<string | undefined>();
 
   // Bold, Italic, Underline for Footer lines
   const [line1Bold, setLine1Bold] = useState(false);
@@ -186,6 +191,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       setLineHeight(typo.lineHeight ?? 'tight');
 
       // Footer
+      setFooterType(s.receiptFooterType ?? 'image');
+      setFooterQrUrl(s.receiptFooterQrUrl ?? '');
       setFooterOrder(s.receiptFooterOrder ?? ['line1', 'line2', 'image']);
 
       const oldLines = s.receiptFooterLines || [];
@@ -222,8 +229,10 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   useEffect(() => {
     const footerImgUrl = storeSettings?.receiptFooterImg || '';
     if (footerImgUrl) {
+      setRawFooterImg(footerImgUrl);
       removeWhiteBackground(footerImgUrl).then(setFooterImg);
     } else {
+      setRawFooterImg('');
       setFooterImg('');
     }
   }, [storeSettings?.receiptFooterImg]);
@@ -233,13 +242,14 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
     order = footerOrder, font = fontFamily, size = fontSize,
     lh = lineHeight, logo = showLogo, footerLogo = showFooterImg,
     l1B = line1Bold, l1I = line1Italic, l1U = line1Underline,
-    l2B = line2Bold, l2I = line2Italic, l2U = line2Underline
+    l2B = line2Bold, l2I = line2Italic, l2U = line2Underline,
+    type = footerType, qrUrl = footerQrUrl, rawImg = rawFooterImg
   ) => {
     if (!storeSettings?.id) return;
 
-    let finalImgUrl = img;
-    if (img && img.startsWith('data:image')) {
-      const res = await fetch(img);
+    let finalImgUrl = rawImg;
+    if (rawImg && rawImg.startsWith('data:image')) {
+      const res = await fetch(rawImg);
       const blob = await res.blob();
       const compressedDataUrl = await compressImage(blob, 0.2);
       const folderPath = `stores/${storeSettings.id}/receipt`;
@@ -249,7 +259,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         if (oldUrl && oldUrl !== uploadedUrl) await dbDeleteFile(oldUrl);
         finalImgUrl = uploadedUrl;
       }
-    } else if (!img) {
+    } else if (!rawImg) {
       const oldUrl = (storeSettings as any).receiptFooterImg;
       if (oldUrl) await dbDeleteFile(oldUrl);
     }
@@ -270,6 +280,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         compactMode: true,
         paperWidth: '58mm'
       },
+      receiptFooterType: type,
+      receiptFooterQrUrl: qrUrl,
       receiptFooterImg: finalImgUrl || null,
       receiptFooterLines: [l1.trim(), l2.trim()],
       receiptFooterOrder: order,
@@ -610,52 +622,123 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                         </div>
                       )}
                       {block === 'image' && (
-                        <div className={cn("flex items-center justify-between gap-3 w-full transition-opacity", !showFooterImg && "opacity-50")}>
-                          <div className="flex items-center gap-3">
-                            <div 
-                              onClick={() => footerImg && showFooterImg && setLightboxOpen(true)}
-                              className={cn(
-                                "h-8 w-8 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden grayscale shadow-inner shrink-0",
-                                footerImg && showFooterImg ? "cursor-zoom-in hover:border-primary/40 transition-colors" : ""
-                              )}
-                            >
-                              {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-3.5 h-3.5 text-muted-foreground/30" />}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs text-muted-foreground font-medium">Gambar Struk Footer</span>
-                              {!showFooterImg && <span className="text-[9px] text-amber-500 font-bold uppercase tracking-wider">Nonaktif</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {/* Toggle Aktif/Nonaktif */}
-                            <div className="flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded-lg border border-border/30 h-7 shrink-0">
-                              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider select-none">
-                                {showFooterImg ? 'Aktif' : 'Off'}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setShowFooterImg(!showFooterImg)}
-                                className={cn(
-                                  "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                                  showFooterImg ? "bg-primary border-primary" : "bg-muted border-muted-foreground/30"
-                                )}
-                              >
-                                <span
+                        <div className="w-full space-y-3">
+                          {/* Segment Controller & Main Switch */}
+                          <div className="flex items-center justify-between border-b border-border/30 pb-2">
+                            <div className="flex items-center gap-1.5">
+                              <div className="inline-flex rounded-lg p-0.5 bg-muted border border-border/50 text-[10px] font-semibold h-7 select-none">
+                                <button
+                                  type="button"
+                                  onClick={() => setFooterType('image')}
                                   className={cn(
-                                    "pointer-events-none inline-block h-3 w-3 transform rounded-full bg-background shadow transition duration-200 ease-in-out",
-                                    showFooterImg ? "translate-x-3.5" : "translate-x-0"
+                                    "px-3 rounded-md transition-all duration-200",
+                                    footerType === 'image' 
+                                      ? "bg-background text-foreground shadow-sm font-bold" 
+                                      : "text-muted-foreground hover:text-foreground"
                                   )}
-                                />
-                              </button>
+                                >
+                                  Foto
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFooterType('qrcode')}
+                                  className={cn(
+                                    "px-3 rounded-md transition-all duration-200",
+                                    footerType === 'qrcode' 
+                                      ? "bg-background text-foreground shadow-sm font-bold" 
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  QR Code
+                                </button>
+                              </div>
+                              {!showFooterImg && (
+                                <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider select-none">
+                                  Nonaktif
+                                </span>
+                              )}
                             </div>
 
-                            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-[10px] px-2.5 rounded-lg bg-background">
-                              <Camera className="w-3 h-3 mr-1" /> {footerImg ? 'Ganti' : 'Unggah'}
-                            </Button>
-                            {footerImg && (
-                              <Button type="button" variant="ghost" size="sm" onClick={() => setFooterImg(undefined)} className="h-7 text-[10px] px-2 text-destructive hover:bg-destructive/10 rounded-lg">
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
+                            <div className="flex items-center gap-2">
+                              {/* Toggle Aktif/Nonaktif */}
+                              <div className="flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded-lg border border-border/30 h-7 shrink-0">
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider select-none">
+                                  {showFooterImg ? 'Aktif' : 'Off'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowFooterImg(!showFooterImg)}
+                                  className={cn(
+                                    "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                                    showFooterImg ? "bg-primary border-primary" : "bg-muted border-muted-foreground/30"
+                                  )}
+                                >
+                                  <span
+                                    className={cn(
+                                      "pointer-events-none inline-block h-3 w-3 transform rounded-full bg-background shadow transition duration-200 ease-in-out",
+                                      showFooterImg ? "translate-x-3.5" : "translate-x-0"
+                                    )}
+                                  />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Conditional Inputs */}
+                          <div className={cn("transition-all duration-300", !showFooterImg && "opacity-45 pointer-events-none")}>
+                            {footerType === 'image' ? (
+                              <div className="flex items-center justify-between gap-3 bg-muted/20 p-2 rounded-xl border border-border/40">
+                                <div className="flex items-center gap-3">
+                                  <div 
+                                    onClick={() => rawFooterImg && showFooterImg && setLightboxOpen(true)}
+                                    className={cn(
+                                      "h-9 w-9 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden shadow-inner shrink-0 transition-all",
+                                      rawFooterImg && showFooterImg ? "cursor-zoom-in hover:border-primary/55 hover:scale-105 active:scale-95" : ""
+                                    )}
+                                  >
+                                    {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-4 h-4 text-muted-foreground/30" />}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-foreground font-semibold">Foto Struk Footer</span>
+                                    <span className="text-[10px] text-muted-foreground">Format webp/png transparan</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-[10px] px-2.5 rounded-lg bg-background font-semibold">
+                                    <Camera className="w-3 h-3 mr-1" /> {footerImg ? 'Ganti' : 'Unggah'}
+                                  </Button>
+                                  {footerImg && (
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => { setFooterImg(undefined); setRawFooterImg(undefined); }} className="h-7 text-[10px] px-2 text-destructive hover:bg-destructive/10 rounded-lg">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3 bg-muted/20 p-2 rounded-xl border border-border/40 w-full">
+                                <div 
+                                  onClick={() => footerQrUrl && showFooterImg && setLightboxOpen(true)}
+                                  className={cn(
+                                    "h-9 w-9 rounded-lg border border-border bg-white flex items-center justify-center overflow-hidden shadow-sm shrink-0 transition-all",
+                                    footerQrUrl && showFooterImg ? "cursor-zoom-in hover:border-primary/55 hover:scale-105 active:scale-95" : ""
+                                  )}
+                                >
+                                  {footerQrUrl ? (
+                                    <QRCodeSVG value={footerQrUrl} size={28} level="M" includeMargin={false} />
+                                  ) : (
+                                    <QrCode className="w-4 h-4 text-muted-foreground/30" />
+                                  )}
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <Input 
+                                    type="text" 
+                                    placeholder="Masukkan link/URL qrcode..." 
+                                    value={footerQrUrl}
+                                    onChange={(e) => setFooterQrUrl(e.target.value)}
+                                    className="h-8 text-xs rounded-lg px-2.5 bg-background shadow-inner"
+                                  />
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -889,17 +972,40 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   </p>
                 );
               }
-              if (block === 'image' && showFooterImg && footerImg) {
-                return (
-                  <div key={idx} className="my-2">
-                    <img
-                      src={footerImg}
-                      className="max-w-20 h-auto mx-auto object-contain grayscale rounded-xl"
-                      style={{ filter: 'grayscale(1) contrast(1.2) brightness(0.9)' }}
-                      alt="Footer"
-                    />
-                  </div>
-                );
+              if (block === 'image' && showFooterImg) {
+                if (footerType === 'qrcode' && footerQrUrl) {
+                  return (
+                    <div 
+                      key={idx} 
+                      className="my-2 flex justify-center cursor-zoom-in hover:scale-105 transition-transform"
+                      onClick={() => setLightboxOpen(true)}
+                    >
+                      <QRCodeSVG 
+                        value={footerQrUrl} 
+                        size={72} 
+                        level="M" 
+                        includeMargin={true} 
+                        className="mx-auto bg-white p-0.5 rounded"
+                      />
+                    </div>
+                  );
+                }
+                if (footerType === 'image' && footerImg) {
+                  return (
+                    <div 
+                      key={idx} 
+                      className="my-2 cursor-zoom-in hover:opacity-85 transition-opacity"
+                      onClick={() => setLightboxOpen(true)}
+                    >
+                      <img
+                        src={footerImg}
+                        className="max-w-20 h-auto mx-auto object-contain grayscale rounded-xl"
+                        style={{ filter: 'grayscale(1) contrast(1.2) brightness(0.9)' }}
+                        alt="Footer"
+                      />
+                    </div>
+                  );
+                }
               }
               return null;
             })}
@@ -908,18 +1014,30 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       </div>
 
       {/* Lightbox Modal */}
-      {lightboxOpen && footerImg && (
+      {lightboxOpen && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setLightboxOpen(false)}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <img 
-              src={footerImg} 
-              alt="Footer Preview" 
-              className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200" 
-            />
-            <p className="text-white text-center text-xs mt-3 font-medium">Klik di luar gambar untuk menutup</p>
+          <div className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            {footerType === 'qrcode' && footerQrUrl ? (
+              <div className="bg-white p-6 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+                <QRCodeSVG 
+                  value={footerQrUrl} 
+                  size={240} 
+                  level="M" 
+                  includeMargin={true} 
+                />
+                <p className="text-center text-xs text-slate-500 font-mono mt-3 select-all max-w-[240px] break-all">{footerQrUrl}</p>
+              </div>
+            ) : (rawFooterImg || footerImg) ? (
+              <img 
+                src={rawFooterImg || footerImg} 
+                alt="Footer Preview" 
+                className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200" 
+              />
+            ) : null}
+            <p className="text-white text-center text-xs mt-4 font-medium">Klik di luar untuk menutup</p>
           </div>
         </div>
       )}
@@ -931,6 +1049,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         file={selectedFile}
         aspectRatio={1}
         onCropped={(url) => {
+          setRawFooterImg(url);
           removeWhiteBackground(url).then(processedUrl => {
             setFooterImg(processedUrl);
           });

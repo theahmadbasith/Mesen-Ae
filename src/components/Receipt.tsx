@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import type { Transaction, StoreSettings, TransactionItemRecord } from '@/hooks/db-hooks';
 import { cn } from '@/lib/utils';
+import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'qrcode';
 
 // Helper to convert image URL to ESC/POS raster bit image (binarized 1-bit GS v 0 format)
 async function convertImageUrlToEscPosRaster(url: string): Promise<Uint8Array | null> {
@@ -182,6 +184,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const template = rawTemplate === 'finedining' ? 'classic' : rawTemplate;
   const showLogo = (storeSettings as any)?.receiptShowLogo ?? true;
   const showFooterImg = (storeSettings as any)?.receiptShowFooterImg ?? true;
+  const footerType = (storeSettings as any)?.receiptFooterType || 'image';
+  const footerQrUrl = (storeSettings as any)?.receiptFooterQrUrl || '';
 
   useEffect(() => {
     if (open && storeSettings?.logo) {
@@ -431,16 +435,30 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         if (block === 'line2' && footerLines[1]?.trim()) {
           footerLines[1].split('\n').forEach(sub => { if (sub.trim()) lines.push(`${sub}\n`); });
         }
-        if (block === 'image' && showFooterImg && footerImgUrl) {
-          try {
-            const rasterData = await convertImageUrlToEscPosRaster(footerImgUrl);
-            if (rasterData) {
-              lines.push('\x1B\x61\x01');
-              lines.push(rasterData);
-              lines.push('\n');
+        if (block === 'image' && showFooterImg) {
+          if (footerType === 'qrcode' && footerQrUrl) {
+            try {
+              const qrDataUrl = await QRCode.toDataURL(footerQrUrl, { width: 180, margin: 1 });
+              const rasterData = await convertImageUrlToEscPosRaster(qrDataUrl);
+              if (rasterData) {
+                lines.push('\x1B\x61\x01');
+                lines.push(rasterData);
+                lines.push('\n');
+              }
+            } catch (e) {
+              console.warn('Gagal memformat QR Code footer ke printer:', e);
             }
-          } catch (e) {
-            console.warn('Gagal memformat gambar footer ke printer:', e);
+          } else if (footerType === 'image' && footerImgUrl) {
+            try {
+              const rasterData = await convertImageUrlToEscPosRaster(footerImgUrl);
+              if (rasterData) {
+                lines.push('\x1B\x61\x01');
+                lines.push(rasterData);
+                lines.push('\n');
+              }
+            } catch (e) {
+              console.warn('Gagal memformat gambar footer ke printer:', e);
+            }
           }
         }
       }
@@ -863,17 +881,31 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                     </p>
                   );
                 }
-                if (block === 'image' && showFooterImg && footerImgData) {
-                  return (
-                    <div key={idx} className="my-2.5 text-center">
-                      <img 
-                        src={processedFooterImg || footerImgData} 
-                        alt="Footer" 
-                        className="h-16 w-auto mx-auto object-contain rounded-xl grayscale opacity-75 select-none" 
-                        style={{ filter: 'grayscale(1) contrast(1.2)' }}
-                      />
-                    </div>
-                  );
+                if (block === 'image' && showFooterImg) {
+                  if (footerType === 'qrcode' && footerQrUrl) {
+                    return (
+                      <div key={idx} className="my-2.5 flex justify-center text-center">
+                        <QRCodeSVG 
+                          value={footerQrUrl} 
+                          size={72} 
+                          level="M" 
+                          includeMargin={true} 
+                          className="mx-auto bg-white p-0.5 rounded"
+                        />
+                      </div>
+                    );
+                  } else if (footerType === 'image' && footerImgData) {
+                    return (
+                      <div key={idx} className="my-2.5 text-center">
+                        <img 
+                          src={processedFooterImg || footerImgData} 
+                          alt="Footer" 
+                          className="h-16 w-auto mx-auto object-contain rounded-xl grayscale opacity-75 select-none" 
+                          style={{ filter: 'grayscale(1) contrast(1.2)' }}
+                        />
+                      </div>
+                    );
+                  }
                 }
                 return null;
               })}
