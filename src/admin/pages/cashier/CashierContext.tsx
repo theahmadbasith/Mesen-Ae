@@ -278,7 +278,7 @@ export const CashierProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const taxAndService = useMemo(() => {
     const currentMethod = paymentMethods?.find(m => m.id!.toString() === paymentMethodId);
-    if (!currentMethod) return 0;
+    if (!currentMethod || currentMethod.provider === 'manual') return 0;
     
     const baseTotal = Math.max(0, subtotal - txDiscountAmount);
     
