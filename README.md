@@ -1,8 +1,8 @@
-# 🧾 MesenAe - Dashboard (Premium POS & Admin PWA)
+# 🧾 Mesen.Ae - Premium Cloud POS & Smart Ordering System
 
 <p align="center">
-  <strong>Aplikasi Point of Sale (POS) & Kasir Modern Kelas Atas, Offline-First, Berkinerja Tinggi, didukung oleh Firebase (Firestore & Storage) & Midtrans.</strong><br>
-  <em>(Repositori ini khusus untuk portal Admin, Kasir, dan Dapur)</em>
+  <strong>Platform Point of Sale (POS), Self-Ordering, dan Manajemen Restoran Kelas Atas Berbasis Cloud & PWA.</strong><br>
+  <em>Solusi Digital End-to-End dengan Real-time Sync, Offline Resilience, dan Sistem Caching Mutakhir.</em>
 </p>
 
 <p align="center">
@@ -11,139 +11,135 @@
   <img src="https://img.shields.io/badge/Platform-Web%20%7C%20PWA-orange?style=for-the-badge" alt="PWA Platform" />
   <img src="https://img.shields.io/badge/Database-Firebase%20Firestore-blue?style=for-the-badge" alt="Firebase Firestore" />
   <img src="https://img.shields.io/badge/Storage-Cloudinary%20API-yellow?style=for-the-badge" alt="Cloudinary Storage" />
-  <img src="https://img.shields.io/badge/Performance-React%20Query%20Cache-purple?style=for-the-badge" alt="React Query Cache" />
-  <img src="https://img.shields.io/badge/Optimized-Zero%20Deadcode-success?style=for-the-badge" alt="Zero Deadcode" />
+  <img src="https://img.shields.io/badge/Architecture-Real--time%20Sync-purple?style=for-the-badge" alt="Real-time Sync" />
 </p>
 
 ---
 
-## 🔒 Lisensi & Hak Cipta (MIT License)
+## 🌟 Ringkasan Eksekutif (Executive Summary)
 
-> [!NOTE]
-> **MIT LICENSE**  
-> Hak Cipta © 2026 **Ahmad Basith**.  
-> 
-> Dengan ini diberikan izin, secara cuma-cuma, kepada siapa pun yang memperoleh salinan perangkat lunak ini dan file dokumentasi terkait (Perangkat Lunak), untuk memperlakukan Perangkat Lunak ini tanpa batasan, termasuk tanpa batasan hak untuk menggunakan, menyalin, memodifikasi, menggabungkan, memublikasikan, mendistribusikan, mensublisensikan, dan/atau menjual salinan Perangkat Lunak, serta mengizinkan orang yang menerima Perangkat Lunak ini untuk melakukannya, dengan tunduk pada ketentuan standar lisensi MIT.
+**Mesen.Ae** adalah ekosistem Point of Sale (POS) dan Self-Ordering mutakhir yang dirancang khusus untuk memodernisasi operasional F&B (Kafe, Restoran, dan UMKM). 
+
+Beranjak dari aplikasi kasir konvensional, Mesen.Ae menghadirkan arsitektur **Cloud-Native** terdistribusi yang menghubungkan Admin (Kasir), Dapur (Kitchen Display System), dan Pelanggan (Customer Self-Order) secara real-time tanpa latensi yang berarti. Aplikasi ini dirancang agar ringan, cepat, dan tetap tangguh (*resilient*) bahkan dalam kondisi koneksi internet yang tidak stabil.
 
 ---
 
-## 🌟 Tentang MesenAe
+## ⚡ Arsitektur Caching & Real-time Synchronization
 
-**MesenAe** adalah platform Point of Sale (POS) kelas atas yang dirancang khusus untuk memenuhi kebutuhan operasional dan digitalisasi kafe, restoran, dan UMKM modern di Indonesia. 
+Kunci utama kecepatan Mesen.Ae terletak pada kombinasi **TanStack React Query** dan **Firebase Real-time Listeners (onSnapshot)** yang membentuk infrastruktur data responsif dan hemat biaya:
 
-MesenAe menggunakan **100% infrastruktur Firebase (Cloud Firestore)** sebagai basis data utama, memastikan sinkronisasi transaksi secara seketika (*real-time*). Untuk penyimpanan media, aplikasi ini menggunakan integrasi cerdas **Cloudinary** yang didukung *Web Worker Compression*, menjaga ukuran foto tetap mini dan sangat jernih tanpa membebani server Firebase Anda.
+1. **Zero Latency UI Updates (Optimistic Updates)**  
+   Aksi kritis seperti menambahkan pesanan atau mengubah status pembayaran langsung diperbarui di layar antarmuka pengguna secara instan (*Optimistic UI*), sembari sistem melakukan sinkronisasi latar belakang ke server.
+   
+2. **Intelligent Local Caching (Offline Resilience)**  
+   React Query menyimpan *cache* lokal cerdas. Perpindahan antar menu atau halaman terjadi dalam 0 milidetik tanpa kedipan *loader* (*zero visual flash*). Jika koneksi terputus, aplikasi tetap responsif membaca data dari *cache* lokal.
 
----
+3. **Real-time Push Synchronization**  
+   Perubahan sekecil apapun di sisi Pelanggan atau Kasir akan di-push otomatis oleh Firestore dalam hitungan milidetik. Dapur akan langsung menerima notifikasi pesanan masuk tanpa perlu melakukan mekanisme *pulling/refresh* halaman secara manual.
 
-## ⚡ Arsitektur Caching & Real-time Sync
-
-MesenAe menerapkan strategi pengelolaan data modern menggunakan `@tanstack/react-query` yang dikombinasikan dengan *Real-time Listeners* dari Firebase SDK:
-
-1. **Real-time Updates:** Setiap perubahan data (seperti pesanan baru, pembaruan stok, dll) langsung di-push oleh Firestore ke semua klien yang terhubung dalam hitungan milidetik. Layar kasir dan dapur selalu sinkron tanpa perlu *refresh*.
-2. **Smooth UI Update:** UI akan ter-update secara mulus tanpa mengganggu aktivitas interaksi pengguna berkat integrasi React Query dengan Firebase `onSnapshot`.
-3. **Offline Resilience:** React Query menyimpan *cache* lokal sehingga perpindahan antar halaman terasa instan (0 milidetik) tanpa ada kedipan layar loader (*zero visual flash*).
-
----
-
-## ✨ Fitur Unggulan Kelas Atas (High-End POS)
-
-### 🛒 1. Operasional Kasir Super Lengkap
-*   **Split Bill & Cicilan:** Solusi pembayaran fleksibel di mana satu nota/meja bisa dibayar sebagian, dibagi rata, atau dicicil dengan beberapa metode pembayaran berbeda sekaligus!
-*   **Manajemen Open Bill & Simpan Bill:** Tahan pesanan pelanggan untuk diselesaikan nanti. Stok produk dikelola secara dinamis saat menahan/membatalkan bill.
-*   **Voucher & Diskon Spesifik:** Terapkan diskon manual (nominal/persentase) yang tervalidasi secara instan pada keranjang belanja.
-*   **Sistem Variasi Produk (Product Variants):** Tambahkan pilihan topping/variasi (opsional/wajib, *single/multiple choice*) dengan penyesuaian harga otomatis saat checkout.
-*   **Batas Modifikasi Nomor Meja:** Pelanggan yang memesan melalui kode QR di meja terkunci nomor mejanya agar tidak dapat dimodifikasi secara manual.
-
-### 💳 2. Integrasi Pembayaran Otomatis & Terpusat
-*   **Midtrans Gateway:** Terima pembayaran e-Wallet (GoPay, OVO, ShopeePay), QRIS, dan Transfer Bank langsung di layar Kasir/Pelanggan. Status pembayaran akan terupdate otomatis!
-*   **Pencatatan QRIS/Bank Manual:** Mendukung pencatatan manual metode pembayaran apapun melalui manajemen Settings yang bisa disesuaikan sepenuhnya.
-
-### 🖨️ 3. Struk, Laporan PDF & Integrasi WhatsApp
-*   **Cetak Struk Thermal:** Hubungkan perangkat POS (HP/Tablet/PC) ke printer *thermal* bluetooth atau USB, cetak struk rapi dengan Header & Footer *custom* dari pengaturan.
-*   **Cetak Invoice PDF & Bagikan ke WA:** Sediakan struk digital profesional dalam bentuk file PDF atau pesan teks rapi yang langsung dibagikan ke WhatsApp pelanggan.
-
-### 📦 4. Manajemen Database & Cloudinary Storage
-*   **Firebase Firestore Database:** Manajemen tabel produk, stok, transaksi, dan data pengguna secara terstruktur menggunakan NoSQL.
-*   **Web Worker Compression:** Gambar dikompresi di latar belakang peramban (*browser*) secara otomatis menjadi di bawah 300KB (max resolusi 1920px) tanpa pembekuan antarmuka (*UI freeze*).
-*   **Cloudinary Auto-Delete:** Integrasi pintar di mana sistem akan otomatis memusnahkan gambar lama di server Cloudinary ketika Anda menghapus/mengganti foto produk atau *banner* toko!
-
-### 📱 5. UI/UX Interaktif & Pro Progressive Web App (PWA)
-*   **Interactive Drag & Drop Banner:** Bangun *banner* promosi toko Anda secara bebas! Pindahkan gambar, teks, dan tombol promo ke mana saja menggunakan kursor secara presisi langsung dari panel Admin.
-*   **Store Logo Cropper:** Alat pemotong otomatis (*cropper*) untuk merapikan logo toko Anda agar presisi di struk dan aplikasi pelanggan.
-*   **Premium Edge-to-Edge UI:** Foto produk ditampilkan tanpa jarak (*borderless*) di beranda pelanggan. Ditambah dukungan mode layar Dapur (*Kitchen View*) dan *Horizontal Carousel* untuk pengalaman sekelas aplikasi *Native*.
-*   **Split Bill Sync to Kitchen:** Tagihan bayar parsial (Split Bill) otomatis melanjutkan pesanan ke status dapur sesaat setelah lunas, menjamin efisiensi koki tanpa *delay*!
-*   **Dynamic High-Res Store Logo:** Logo di Sidebar Admin dan Struk diatur terpusat berdasarkan prioritas; menggunakan Logo Toko Anda jika ada, atau turun *(fallback)* ke Ikon sistem.
-*   **Indikator Animasi & Loading Mulus:** Memberikan respons visual (seperti Spinner & "Menyimpan...") di semua aksi simpan.
-*   **Premium Built-In Modals:** Semua komponen dialog, checkout, variasi, dan hapus bill dibuat menggunakan komponen bawaan (`Dialog` & `AlertDialog` shadcn). Aplikasi ini **100% bebas dari dialog native browser**.
+4. **Optimasi Biaya Firebase (Cost-Effective Reads)**  
+   Sistem caching sangat efisien dalam meminimalkan jumlah *reads* ke Firestore. Data yang tidak berubah akan dilayani langsung dari memori *browser*, mencegah pembengkakan biaya *database*.
 
 ---
 
-## 🛠️ Stack Teknologi
+## ✨ Fitur Unggulan Sistem (Key Features)
 
-Perangkat lunak ini dikembangkan tanpa satupun dead-code, 100% divalidasi dengan arsitektur web modern yang sangat solid:
-*   **Core Framework**: [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite 8](https://vite.dev/)
-*   **UI & Desain**: Vanilla CSS + [Tailwind CSS 3](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Premium Glassmorphism)
-*   **Kueri & State**: [TanStack React Query 5](https://tanstack.com/query/latest)
-*   **Database & Storage**: [Firebase SDK](https://firebase.google.com/) (Cloud Firestore & Firebase Storage)
-*   **Ikonografi & Interaksi**: [Lucide React](https://lucide.dev/) & [html5-qrcode](https://github.com/mebjas/html5-qrcode) (Kamera Barcode/QR)
+### 🏪 1. Modul Kasir & Manajemen Order Lanjutan
+*   **Split Bill & Cicilan:** Fleksibilitas pembayaran di mana satu meja dapat dibayar secara terpisah, dicicil bertahap, atau digabungkan (*merge*).
+*   **Open Bill & Hold Order:** Kemampuan menahan pesanan pelanggan untuk diselesaikan kemudian tanpa mengganggu antrean kasir.
+*   **Multi-Variant & Add-on Engine:** Sistem kustomisasi pesanan mendalam (contoh: *Sugar Level*, *Ice Level*, Ekstra Topping). Mendukung wajib/opsional dan *single/multiple choice* dengan kalkulasi harga otomatis.
+*   **Manajemen Voucher:** Terapkan diskon manual (nominal/persentase) atau scan voucher belanja dengan validasi cerdas secara real-time.
+
+### 💳 2. Ekosistem Pembayaran Digital Terpadu
+*   **Midtrans Payment Gateway:** Dukungan instan untuk pembayaran via e-Wallet (GoPay, OVO, ShopeePay), transfer Virtual Account Bank, dan QRIS Dinamis.
+*   **Smart QRIS Validation:** Status transaksi QRIS/Bank diperbarui secara otomatis *(webhook auto-sync)* dari server ke layar kasir tanpa perlu verifikasi manual.
+*   **Multi-Tender Payments:** Kombinasi pembayaran tunai dan digital dalam satu tagihan (*split payment*).
+
+### 🎨 3. Studio Banner Promosi Visual (Pro Editor)
+*   **Drag & Drop Visual Engine:** Admin dapat mendesain *banner* promosi toko layaknya menggunakan software desain profesional langsung di peramban.
+*   **Multi-Layering & Overlays:** Mendukung penumpukan (*stacking*) beberapa stiker/gambar produk (hingga 3 overlay) pada satu kanvas banner.
+*   **Magic Wand (AI-like Background Remover):** Alat *crop* dan hapus latar belakang interaktif terintegrasi yang mendukung *pan* (geser) dan *zoom* menggunakan tetikus.
+*   **Smart Auto-Sync Preview:** Apa yang didesain di Editor Admin dijamin 100% presisi (ukuran, rasio, rotasi, efek *blur/brightness*) dengan yang tampil di aplikasi *Customer*.
+
+### 📦 4. Manajemen Media & Efisiensi Penyimpanan
+*   **Web Worker Image Compression:** Menggunakan *thread* latar belakang *browser* (Web Worker) untuk mengompresi ukuran foto produk/logo hingga < 300KB sebelum diunggah. Menjamin *UI* tidak membeku (*freeze*) selama proses pemampatan.
+*   **Cloudinary Integration:** Foto dan *banner* dilayani lewat CDN Cloudinary yang dilengkapi transformasi otomatis (*auto-format, auto-quality*).
+*   **Orphan Media Auto-Cleanup:** Sistem akan membuang file media lama di *cloud* secara otomatis saat pengguna mengganti/menghapus gambar untuk menghindari pemborosan ruang penyimpanan.
+
+### 🖨️ 5. Rekapitulasi & Output (Cetak & Digital)
+*   **Integrasi Printer Thermal Thermal:** Pencetakan struk nirkabel (Bluetooth) maupun kabel (USB) dengan format teks yang rapi, lengkap dengan kustomisasi Header & Footer Toko.
+*   **E-Receipt & WhatsApp Integration:** Konversi struk tagihan ke dalam format dokumen PDF cantik yang bisa dibagikan langsung ke WhatsApp pelanggan dalam satu ketukan.
+*   **Dynamic High-Res Logo:** Logo toko dicetak dalam resolusi tajam di dokumen PDF dan beradaptasi secara dinamis (Mode Gelap/Terang) di dalam aplikasi.
+
+### 📱 6. Progressive Web App (PWA) & Native-like UI
+*   **Premium Glassmorphism Design:** Antarmuka modern yang memanjakan mata dengan dukungan Mode Gelap (*Dark Mode*) yang komprehensif, memanfaatkan Tailwind CSS dan shadcn/ui.
+*   **Installable App:** Aplikasi dapat diinstal ke *Homescreen* iOS/Android dan berjalan dalam mode layar penuh (*standalone*) layaknya aplikasi *Native*.
+*   **Kitchen Display System (KDS):** Layar khusus untuk dapur yang merender antrean masakan secara *real-time* berbasis *Grid/Carousel*, sehingga operasional memasak jauh lebih efisien.
 
 ---
 
-## 📂 Struktur Folder Proyek
+## 🛠️ Stack Teknologi & Perangkat Lunak
+
+Aplikasi dibangun dari nol dengan validasi ketat, mengeliminasi *dead-code*, dan hanya menggunakan pustaka modern berkinerja tinggi:
+
+*   **Frontend Framework:** [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite 8](https://vite.dev/)
+*   **UI/UX & Styling:** Vanilla CSS + [Tailwind CSS 3](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Premium UI Components)
+*   **State & Caching Management:** [TanStack React Query 5](https://tanstack.com/query/latest) & Zustand
+*   **Real-time Database:** [Firebase SDK v10+](https://firebase.google.com/) (Cloud Firestore)
+*   **Media Storage & CDN:** Cloudinary API & Firebase Storage
+*   **Payment Gateway:** Midtrans Snap API
+*   **Ikonografi & Periferal:** Lucide React & html5-qrcode (Barcode/QR Scanner)
+
+---
+
+## 📂 Struktur Repositori & Arsitektur Direktori
 
 ```text
 MesenAe/
 ├── src/
-│   ├── admin/              # Panel Utama Administrasi, Laporan, & Pengaturan
-│   ├── kitchen/            # Modul Layar Dapur (KDS) Terintegrasi
-│   ├── login/              # Portal Autentikasi Sistem Terpusat
-│   ├── hooks/              # Custom React Hooks & Real-time Firestore Listeners (db-hooks.ts)
-│   ├── lib/                # Konfigurasi utilitas (Firebase Config, Push Notification, utils)
-│   ├── App.tsx             # Entry Point Router Utama Aplikasi
-│   └── index.css           # Token Desain & Styling Global
-├── public/                 # Aset Publik (Logo, Service Worker FCM, PWA Icons)
-├── vite.config.ts          # Konfigurasi PWA Generator & Vite Bundler
-└── package.json            # Daftar Dependencies
+│   ├── admin/              # Panel Utama Administrasi, Editor Banner & Manajemen Stok
+│   ├── kitchen/            # Modul Layar Dapur (KDS) Real-time
+│   ├── login/              # Portal Autentikasi Keamanan Sentral
+│   ├── components/         # Komponen UI Reusable (Tombol, Modal, Banner)
+│   ├── hooks/              # Custom React Hooks & Abstraksi Kueri Firestore (db-hooks.ts)
+│   ├── lib/                # Konfigurasi Utilitas (Firebase Config, Cloudinary, Midtrans)
+│   ├── App.tsx             # Entry Point & Definisi Router Navigasi
+│   └── index.css           # Token CSS Global, Tailwind Directives, & Tema Warna
+├── public/                 # Aset Publik Statis (Logo, Service Worker, Manifest PWA)
+├── vite.config.ts          # Konfigurasi PWA Vite Plugin & Modul Bundler
+└── package.json            # Manajemen Pustaka Node.js
 ```
 
 > [!NOTE]
-> **Arsitektur Terpisah (Decoupled):** Aplikasi antarmuka pemesanan mandiri untuk **Pelanggan (Customer)** saat ini telah dipisahkan secara struktural ke repositori/URL mandiri demi menjamin keamanan data kasir, pemuatan awal yang jauh lebih ringan, serta pemisahan *environment* secara total. Anda sedang melihat repositori untuk portal **Admin & Dapur**.
+> **Arsitektur Decoupled (Terdistribusi):** Antarmuka **Self-Ordering Pelanggan (Customer App)** dipisahkan secara struktural dari aplikasi Kasir/Admin untuk mengisolasi beban kerja (workload), meminimalisasi kerentanan keamanan, serta mempercepat waktu pemuatan *(Time to Interactive)* bagi pelanggan.
 
 ---
 
-## 📊 Skema Database (Firestore Collections)
+## 📊 Skema Database (NoSQL - Firestore Collections)
 
-Database disimpan dalam koleksi Firestore berikut:
-
-1.  **`store_settings`**: Menyimpan data profil toko, nama, alamat, telepon, teks footer struk thermal, tabel aktif, daftar warna tema, dan banner.
-2.  **`categories`**: Daftar kategori produk (nama, warna tag, ikon visual).
-3.  **`products`**: Data inventaris menu (nama, SKU, harga jual, HPP, stok saat ini, variasi, URL foto dari Storage, dan barcode).
-4.  **`vouchers`**: Kode promo/voucher belanja, potongan diskon, dan kriteria berlakunya.
-5.  **`transactions`**: Histori bill transaksi lengkap beserta status pembayaran dan dapur.
-6.  **`transaction_items`**: Rincian produk per transaksi yang terhubung ke dokumen `transactions`.
-7.  **`suppliers`**: Data pemasok/supplier bahan baku.
-8.  **`stock_ins` & `stock_outs`**: Rekaman log pergerakan stok barang.
-9.  **`hpp_history`**: Riwayat perubahan Harga Pokok Penjualan (HPP).
-10. **`payment_methods`**: Daftar opsi pembayaran (tunai, QRIS, dll).
-11. **`users`**: Data kredensial pengguna admin/kasir/dapur (dengan password terenkripsi Web Crypto API SHA-256).
+*   **`store_settings`**: Menyimpan metadata toko (nama, alamat, teks struk thermal, mode operasional, palet warna kustom, konfigurasi integrasi).
+*   **`categories` & `products`**: Inventaris menu, harga (HPP & Jual), stok, link gambar CDN, dan relasi varian kustom (topping).
+*   **`transactions` & `transaction_items`**: Rekam jejak pesanan, pembaruan status dapur (antre/dimasak/selesai), dan riwayat penyelesaian pembayaran (Split/Full).
+*   **`banners`**: Penyimpanan objek vektor dan raster kustom hasil dari *Promo Banner Editor* (posisi X/Y, scale, blending mode).
+*   **`vouchers`**: Aturan promosi dan potongan diskon dengan parameter tenggat waktu dan limit penggunaan.
+*   **`stock_ins`, `stock_outs`, & `hpp_history`**: Sistem pencatatan log pergerakan stok dan fluktuasi Harga Pokok Penjualan secara akuntabel.
 
 ---
 
-## 🚀 Panduan Deployment & Variabel Lingkungan (.env)
+## 🚀 Panduan Deployment & Instalasi
 
-Buat file `.env` di direktori utama proyek Anda:
+Buat file `.env` di direktori utama proyek Anda untuk konfigurasi lingkungan:
 
 ```bash
-# FIREBASE CONFIGURATION
+# FIREBASE CLOUD CONFIGURATION
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
-# CLOUDINARY MEDIA STORAGE
+# CLOUDINARY MEDIA CDN
 VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
 VITE_CLOUDINARY_API_KEY=your_api_key
 VITE_CLOUDINARY_API_SECRET=your_api_secret
@@ -151,40 +147,18 @@ VITE_CLOUDINARY_API_SECRET=your_api_secret
 # MIDTRANS PAYMENT GATEWAY
 VITE_MIDTRANS_CLIENT_KEY=SB-Mid-client-your_client_key_here
 MIDTRANS_SERVER_KEY=SB-Mid-server-your_server_key_here
-MIDTRANS_IS_PRODUCTION=false # set ke true di production
+MIDTRANS_IS_PRODUCTION=false # Set 'true' untuk mode produksi nyata
 ```
 
-Terapkan variabel ini pada dashboard deployment Anda (misal: Vercel Environment Variables).
+Langkah-langkah menjalankan secara lokal:
+
+1. **Instalasi Dependencies:** `npm install`
+2. **Jalankan Development Server:** `npm run dev` (Akses melalui `http://localhost:5173`)
+3. **Compile for Production:** `npm run build`
 
 ---
 
-## 💻 Cara Menjalankan Secara Lokal (Development)
+## 🔒 Lisensi & Hak Cipta
 
-Pastikan perangkat Anda sudah terinstall **Node.js 18+** atau runtime **Bun**.
-
-1.  **Instalasi Dependencies:**
-    ```bash
-    npm install
-    ```
-
-2.  **Jalankan Server Development:**
-    ```bash
-    npm run dev
-    ```
-    Buka `http://localhost:5173` di browser Anda.
-
-3.  **Lakukan Build Produksi:**
-    ```bash
-    npm run build
-    ```
-
-4.  **Uji Build Lokal:**
-    ```bash
-    npm run preview
-    ```
-
----
-
-## 👨‍💻 Pengembang Utama
-
-Dikembangkan dengan dedikasi tinggi, kode yang bersih (*clean code*), terstruktur secara solid, dan dioptimasi secara penuh untuk memajukan perekonomian UMKM digital oleh **Ahmad Basith**.
+**MIT License** — Hak Cipta © 2026 **Ahmad Basith**.  
+Penggunaan, modifikasi, dan distribusi sistem perangkat lunak ini tunduk pada syarat dan ketentuan yang diatur di bawah lisensi MIT. Dibangun dengan fokus penuh terhadap performa, kebersihan kode (*clean code*), dan pemberdayaan ekosistem F&B digital.
