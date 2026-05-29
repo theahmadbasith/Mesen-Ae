@@ -213,14 +213,14 @@ export default function QrCodeMenu() {
                   padding-top: 20px;
                 }
                 @media print {
-                  @page { margin: 0; } /* Mencegah halaman ekstra */
+                  @page { margin: 0; }
                   body { 
                     background-color: white; 
                     justify-content: center; 
                     height: 100vh;
                     margin: 0;
                     padding: 0;
-                    overflow: hidden; /* Memastikan tidak ada scroll/halaman 2 */
+                    overflow: hidden; 
                   }
                   .print-container { border: none; box-shadow: none; transform: scale(0.95); }
                   .table-badge { background: #000; color: #fff; box-shadow: none; }
@@ -414,8 +414,8 @@ export default function QrCodeMenu() {
                           includeMargin={false}
                           imageSettings={storeSettings?.logo ? {
                             src: transparentPixel,
-                            height: 60, // Lubang di-set agak besar 60px
-                            width: 60,
+                            height: 52, // Area yg di-excavate dari QR code (akan berbentuk kotak bersiku)
+                            width: 52,
                             excavate: true,
                           } : undefined}
                         />
@@ -423,22 +423,22 @@ export default function QrCodeMenu() {
                         {/* Overlay Logo menutupi potongan kasar modul QR */}
                         {storeSettings?.logo && (
                           <div 
-                            className="absolute flex items-center justify-center bg-white"
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white flex items-center justify-center shadow-sm"
                             style={{
-                              width: '72px', // Ukuran overlap 72px sepenuhnya menutupi kotak kasar 60px
-                              height: '72px',
-                              borderRadius: '20px', // Kurva mulus (rounded curve)
-                              top: '50%',
-                              left: '50%',
-                              transform: 'translate(-50%, -50%)',
-                              padding: '6px', // Spacer padding putih di sekitar logo
+                              width: '76px', // Dibuat lebih besar dari area excavate (52px) agar menutupi siku kasarnya
+                              height: '76px',
+                              borderRadius: '24px', // Membuat tepi lapisan putih melengkung rapi (rounded)
                             }}
                           >
                             <img 
                               src={storeSettings.logo} 
                               alt="Logo" 
-                              className="w-full h-full object-cover" 
-                              style={{ borderRadius: '14px' }} // Ikon dalamnya juga melengkung
+                              style={{
+                                width: '60px', 
+                                height: '60px',
+                                borderRadius: '16px', // Membuat ikon gambar di dalamnya juga ikut melengkung
+                                objectFit: 'cover'
+                              }}
                               crossOrigin="anonymous" 
                             />
                           </div>
