@@ -1050,7 +1050,7 @@ export default function Pengaturan() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 p-0 shrink-0 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95 animate-in fade-in"
+                    className="h-9 px-2.5 shrink-0 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95 animate-in fade-in flex items-center gap-1.5"
                     onClick={() => {
                       if (!pmQrisString) {
                         toast.error('Kolom string kosong.');
@@ -1062,6 +1062,7 @@ export default function Pengaturan() {
                     title="Salin String QRIS"
                   >
                     <Copy className="w-3.5 h-3.5 text-foreground" />
+                    <span className="text-xs font-semibold">Salin</span>
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-snug">Sistem akan otomatis mengubah string statis ini menjadi QRIS dinamis di kasir berdasarkan nominal transaksi.</p>

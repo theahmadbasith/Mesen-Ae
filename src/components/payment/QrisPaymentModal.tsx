@@ -25,6 +25,7 @@ import { MidtransService } from '@/services/midtransService';
 import { PaymentMethod } from '@/hooks/db-hooks';
 import { QRCodeSVG } from 'qrcode.react';
 import { convertQRIS } from '@/lib/qris-dinamis';
+import { QRISResult } from '@/admin/components/qris-dinamis/QRISResult';
 
 interface QrisPaymentModalProps {
   isOpen: boolean;
@@ -196,10 +197,10 @@ export function QrisPaymentModal({
             <div className="flex flex-col items-center py-4 gap-3 w-full">
               {isManual && qrisData ? (
                 <div className="flex flex-col items-center gap-4 w-full animate-in fade-in zoom-in duration-300">
-                  <div className="bg-white p-4 rounded-2xl shadow-sm border">
-                    <QRCodeSVG value={qrisData} size={200} level="M" includeMargin={false} />
+                  <div className="w-full max-w-[400px]">
+                    <QRISResult qrisString={qrisData} />
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-muted-foreground text-center mt-2 px-4">
                     Minta pelanggan scan QRIS ini dan pastikan nominal tagihan sesuai.
                   </p>
                   <Button className="w-full font-bold h-12" onClick={() => onSuccessRef.current()}>

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import type { Transaction, StoreSettings, TransactionItemRecord } from '@/hooks/db-hooks';
 import { cn } from '@/lib/utils';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import QRCode from 'qrcode';
 
 // Helper to convert image URL to ESC/POS raster bit image (binarized 1-bit GS v 0 format)
@@ -124,8 +124,13 @@ async function removeWhiteBackground(imageUrl: string): Promise<string> {
           const g = data[i + 1];
           const b = data[i + 2];
           
-          // Calculate average pixel brightness
+          // Calculate average pixel brightness for grayscale
           const avg = (r + g + b) / 3;
+          
+          // Convert to grayscale
+          data[i] = avg;
+          data[i + 1] = avg;
+          data[i + 2] = avg;
           
           // If the pixel is close to white (brightness > 210)
           if (avg > 210) {
@@ -885,7 +890,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                   if (footerType === 'qrcode' && footerQrUrl) {
                     return (
                       <div key={idx} className="my-2.5 flex justify-center text-center">
-                        <QRCodeSVG 
+                        <QRCodeCanvas 
                           value={footerQrUrl} 
                           size={72} 
                           level="M" 

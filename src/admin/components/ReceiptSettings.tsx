@@ -52,8 +52,13 @@ async function removeWhiteBackground(imageUrl: string): Promise<string> {
           const g = data[i + 1];
           const b = data[i + 2];
           
-          // Calculate average pixel brightness
+          // Calculate average pixel brightness for grayscale
           const avg = (r + g + b) / 3;
+          
+          // Convert to grayscale
+          data[i] = avg;
+          data[i + 1] = avg;
+          data[i + 2] = avg;
           
           // If the pixel is close to white (brightness > 210)
           if (avg > 210) {
@@ -88,7 +93,7 @@ type FooterBlock = 'line1' | 'line2' | 'image';
 function SortableFooterItem({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 1,
     position: 'relative' as const,
@@ -748,7 +753,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 w-8 p-0 shrink-0 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95 animate-in fade-in"
+                                    className="h-8 px-2.5 shrink-0 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95 animate-in fade-in flex items-center gap-1.5"
                                     onClick={() => {
                                       if (!footerQrUrl) {
                                         toast.error('Kolom URL QR Code kosong.');
@@ -760,6 +765,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                                     title="Salin Link QR Code"
                                   >
                                     <Copy className="w-3.5 h-3.5 text-foreground" />
+                                    <span className="text-xs font-semibold">Salin</span>
                                   </Button>
                                 </div>
                               </div>
