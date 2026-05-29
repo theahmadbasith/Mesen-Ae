@@ -6,6 +6,7 @@ import { useDbQuery, dbUpdate, dbDelete } from '@/hooks/db-hooks';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { cldBanner, cldUrl } from '@/lib/cld';
 
 // ── inline helpers ──────────────────────────────────────────────────────────
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
@@ -90,7 +91,7 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
           {/* Background image */}
           {b.imageUrl && (
             <div className="absolute inset-0 z-0">
-              <img src={b.imageUrl} alt="Banner" className="w-full h-full object-cover" style={{ filter: previewFilter }} />
+              <img src={cldBanner(b.imageUrl)} alt="Banner" className="w-full h-full object-cover" style={{ filter: previewFilter }} />
               {b.bgGradientOverlay?.enabled ? (
                 <div className="absolute inset-0 z-[1]" style={{
                   background: `linear-gradient(${b.bgGradientOverlay.angle ?? 90}deg, rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityLeft ?? 70) / 100}), rgba(${hexToRgb(b.bgGradientOverlay.color || '#000000')}, ${(b.bgGradientOverlay.opacityRight ?? 0) / 100}))`
@@ -124,7 +125,7 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
                 }}
               >
                 <img
-                  src={overlay.imageUrl}
+                  src={cldUrl(overlay.imageUrl, { q: 'auto', f: 'auto', w: 600 })}
                   style={{
                     transform: `scaleX(${overlay.flipX ? -1 : 1}) rotate(${overlay.rotate ?? 0}deg)`,
                     filter: overlayFilterStyle,
