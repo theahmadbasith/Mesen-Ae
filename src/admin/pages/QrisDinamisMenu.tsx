@@ -7,7 +7,6 @@ import { ConvertForm } from "../components/qris-dinamis/ConvertForm";
 import { QRISResult } from "../components/qris-dinamis/QRISResult";
 import { QrCode } from "lucide-react";
 
-
 export default function QrisDinamisMenu() {
   const [qrisString, setQrisString] = useState("");
   const [parsed, setParsed] = useState<QRISData | null>(null);
