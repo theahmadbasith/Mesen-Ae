@@ -137,16 +137,19 @@ export function QRISResult({ qrisString }: Props) {
         ctx.fillText(`NMID: ${currentNmid}`, width / 2, 170);
       }
 
-      // Render Footer (Rata Kiri Bawah)
+      // ==========================================
+      // MODIFIKASI: Render Footer (Geser Kiri ke 25)
+      // ==========================================
+      const footerX = 25; // Disamakan dengan logoX baru
       ctx.textAlign = "left";
       
       ctx.fillStyle = "#0f172a";
       ctx.font = "700 15px 'Inter', system-ui, sans-serif";
-      ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, 40, 540);
+      ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, footerX, 540);
 
       ctx.fillStyle = "#64748b"; 
       ctx.font = "500 12px 'Inter', system-ui, sans-serif";
-      ctx.fillText("Powered by MesenAe", 40, 560);
+      ctx.fillText("Powered by MesenAe", footerX, 560);
 
       // ==========================================
       // D. PROSES ASYNC: LOGO & QR CODE CUTOUT
@@ -163,26 +166,28 @@ export function QRISResult({ qrisString }: Props) {
             logo.onerror = reject;
           });
 
-          // Kalkulasi proporsi logo
-          const logoTargetHeight = 32;
+          // ==========================================
+          // MODIFIKASI: Logo Diperbesar & Geser Kiri
+          // ==========================================
+          const logoTargetHeight = 40; // Diperbesar (sebelumnya 32)
           const logoRatio = logo.width / logo.height;
           const logoTargetWidth = logoTargetHeight * logoRatio;
-          const logoX = 40;
+          const logoX = 25; // Geser ke kiri (sebelumnya 40)
           const logoY = 30;
 
           ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
 
-          // Teks Header Pendamping Logo 
+          // Teks Header Pendamping Logo (Otomatis mengikuti logoY/logoX)
           const textStartX = logoX + logoTargetWidth + 14;
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           
           ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", textStartX, logoY + 13);
+          ctx.fillText("QR Code Standar", textStartX, logoY + 16);
           
           ctx.fillStyle = "#334155";
           ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 30);
+          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 34);
 
           // 2. Efek "Cutout" untuk QR Code
           // Kotak putih tebal membulat untuk menimpa aksen merah
@@ -212,15 +217,15 @@ export function QRISResult({ qrisString }: Props) {
         } catch (error) {
           console.error("Gagal me-render QRIS Canvas:", error);
           
-          // Fallback UI Jika Gambar Gagal Dimuat
+          // Fallback UI Jika Gambar Gagal Dimuat (Geser Kiri Consistent)
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           ctx.font = "900 36px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QRIS", 40, 60);
+          ctx.fillText("QRIS", 25, 60); // Shifted X to 25
           ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", 135, 48);
+          ctx.fillText("QR Code Standar", 120, 48); // Shifted slightly
           ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", 135, 65);
+          ctx.fillText("Pembayaran Nasional", 120, 65); // Shifted slightly
           setIsRendered(true);
         }
       };
