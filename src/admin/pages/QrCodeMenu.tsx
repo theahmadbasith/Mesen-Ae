@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2, Link as LinkIcon, Save } from 'lucide-react';
+import { QrCode, Download, Printer, Copy, Plus, Trash2, LayoutGrid, Store, CheckCircle2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate } from '@/hooks/db-hooks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-// Transparent pixel untuk "melubangi" QR Code dengan rapi tanpa merender gambar kotak tajam bawaan SVG
+// Transparent pixel untuk "melubangi" ruang di QR Code
 const transparentPixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 export default function QrCodeMenu() {
@@ -31,7 +31,7 @@ export default function QrCodeMenu() {
     setTables(existingTables);
     if (!activeTable) {
       if (existingTables.length > 0) setActiveTable(existingTables[0]);
-      else setActiveTable('1'); // Default fallback
+      else setActiveTable('1');
     }
   }, [storeSettings, activeTable]);
 
@@ -260,7 +260,7 @@ export default function QrCodeMenu() {
         
         {/* Kolom Kiri: Manajemen Meja */}
         <div className="lg:col-span-5 space-y-6">
-          <Card className="shadow-sm border-border/50">
+          <Card className="shadow-sm border-border/50 bg-card text-card-foreground">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Store className="w-5 h-5 text-muted-foreground" />
@@ -357,7 +357,7 @@ export default function QrCodeMenu() {
 
         {/* Kolom Kanan: Preview & Actions QR Code */}
         <div className="lg:col-span-7">
-          <Card className="shadow-sm border-border/50 h-full flex flex-col overflow-hidden">
+          <Card className="shadow-sm border-border/50 h-full flex flex-col overflow-hidden bg-card text-card-foreground">
             <div className="bg-muted/30 px-6 py-4 border-b border-border/50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <QrCode className="w-5 h-5 text-muted-foreground" />
@@ -365,7 +365,7 @@ export default function QrCodeMenu() {
               </CardTitle>
             </div>
             
-            <CardContent className="p-8 flex-1 flex flex-col items-center justify-center relative bg-slate-50/50">
+            <CardContent className="p-8 flex-1 flex flex-col items-center justify-center relative bg-muted/10">
               {!activeTable ? (
                 <div className="text-center space-y-3 opacity-50">
                   <LayoutGrid className="w-16 h-16 mx-auto text-muted-foreground" />
@@ -373,11 +373,13 @@ export default function QrCodeMenu() {
                 </div>
               ) : (
                 <>
-                  {/* Wrapper animasi efek hover. cardRef diatur lebih padat dan presisi untuk hasil PNG */}
+                  {/* Wrapper animasi efek hover */}
                   <div className="mx-auto mb-10 transform transition-all hover:scale-[1.02] hover:shadow-2xl rounded-[32px]">
+                    
+                    {/* CARD REF - Selalu dipaksa terang (Light Mode) agar hasil export PNG valid & bisa di-scan */}
                     <div 
                       ref={cardRef}
-                      className="bg-white p-10 rounded-[32px] shadow-xl shadow-slate-200/50 relative flex flex-col items-center text-center"
+                      className="bg-white p-10 rounded-[32px] shadow-xl shadow-black/5 relative flex flex-col items-center text-center"
                       style={{ 
                         width: '380px', 
                         boxSizing: 'border-box',
@@ -400,34 +402,35 @@ export default function QrCodeMenu() {
                         <QRCodeSVG 
                           value={generatedUrl} 
                           size={240} 
-                          level={"H"} // Level H wajib untuk custom logo (error correction 30%)
+                          level={"H"} 
                           includeMargin={false}
                           imageSettings={storeSettings?.logo ? {
-                            src: transparentPixel, // Menghindari svg menggambar kotak tajam, cukup "melubangi" ruangnya
-                            height: 68,
-                            width: 68,
+                            src: transparentPixel,
+                            height: 52, // Area yg diexcavate lebih kecil
+                            width: 52,
                             excavate: true,
                           } : undefined}
                         />
                         
-                        {/* Overlay Logo dengan Desain Rounded Premium */}
+                        {/* Overlay Logo dengan Kurva Halus (Lebih besar dari area kotak excavate) */}
                         {storeSettings?.logo && (
                           <div 
-                            className="absolute bg-white flex items-center justify-center shadow-sm"
+                            className="absolute flex items-center justify-center bg-white"
                             style={{
-                              width: '68px',
-                              height: '68px',
-                              borderRadius: '18px',
+                              width: '76px', // Lebih besar dari kotak lubang (52px) menutupi tepian kasar
+                              height: '76px',
+                              borderRadius: '22px', // Sudut melengkung halus
                               top: '50%',
                               left: '50%',
                               transform: 'translate(-50%, -50%)',
+                              padding: '6px', // Spacer area putih
                             }}
                           >
                             <img 
                               src={storeSettings.logo} 
                               alt="Logo" 
-                              className="w-[56px] h-[56px] object-cover" 
-                              style={{ borderRadius: '12px' }}
+                              className="w-full h-full object-cover" 
+                              style={{ borderRadius: '16px' }}
                               crossOrigin="anonymous" 
                             />
                           </div>
@@ -444,13 +447,13 @@ export default function QrCodeMenu() {
                     </div>
                   </div>
 
-                  {/* Actions Area */}
+                  {/* Actions Area - Beradaptasi dengan Dark/Light Mode */}
                   <div className="w-full max-w-md space-y-4">
-                    <div className="flex gap-2 p-1.5 bg-white rounded-xl border border-border/80 shadow-sm">
+                    <div className="flex gap-2 p-1.5 bg-background rounded-xl border border-input shadow-sm">
                       <Input 
                         readOnly 
                         value={generatedUrl} 
-                        className="font-mono text-xs border-0 bg-transparent focus-visible:ring-0 truncate" 
+                        className="font-mono text-xs border-0 bg-transparent focus-visible:ring-0 truncate text-foreground" 
                       />
                       <Button variant="secondary" size="sm" onClick={copyToClipboard} className="shrink-0 gap-2 h-9 rounded-lg">
                         <Copy className="w-4 h-4" />
@@ -489,10 +492,10 @@ export default function QrCodeMenu() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-12 font-bold text-slate-600 border-slate-200 hover:bg-slate-50">Batal</AlertDialogCancel>
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-12 font-bold text-foreground border-border hover:bg-muted">Batal</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleRemoveTable} 
-              className="flex-1 rounded-xl h-12 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-lg shadow-destructive/20"
+              className="flex-1 rounded-xl h-12 font-bold bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/20"
             >
               Ya, Hapus
             </AlertDialogAction>
