@@ -116,6 +116,12 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
 
       setIsInitializing(true);
 
+      // 1. Jalankan pemindai kamera secara instan dengan constraint default ideal
+      if (mounted) {
+        await startScanner();
+      }
+
+      // 2. Lakukan pencarian daftar kamera di background agar pemindai terbuka langsung
       try {
         const devices = await Html5Qrcode.getCameras();
         if (mounted && devices && devices.length > 0) {
@@ -131,14 +137,9 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
           
           const targetIdx = rearIdx >= 0 ? rearIdx : 0;
           setActiveCameraIdx(targetIdx);
-          await startScanner(devices[targetIdx].id);
-        } else {
-          // Fallback tanpa daftar perangkat (langsung panggil kamera)
-          if (mounted) await startScanner();
         }
       } catch (err) {
-        // Fallback jika API enumerasi diblokir
-        if (mounted) await startScanner();
+        console.warn("Enumerasi kamera di background gagal:", err);
       }
     };
 
@@ -184,6 +185,9 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
           }
           /* Hapus elemen watermark bawaan library */
           #${scannerId} img[alt="Info icon"], #${scannerId} a { display: none !important; }
+          
+          /* Hapus canvas overlay bawaan html5-qrcode agar tidak ada kotak putih ganda */
+          #${scannerId} canvas { display: none !important; }
         `}} />
 
         {/* ── HEADER ── */}
@@ -194,7 +198,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
               Scan Barcode Produk
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-[12px] font-medium">
-              Posisikan barcode sejajar dengan garis merah.
+              Posisikan barcode sejajar dengan garis laser.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -235,14 +239,14 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
                 {/* Zona Scan Persegi Panjang */}
                 <div className="relative w-[85%] max-w-[340px] h-[120px] shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] rounded-xl overflow-hidden">
                   
-                  {/* Siku Sudut yang Bersih dan Fungsional */}
-                  <div className="absolute top-0 left-0 w-6 h-6 border-t-[3px] border-l-[3px] border-white/80 rounded-tl-xl" />
-                  <div className="absolute top-0 right-0 w-6 h-6 border-t-[3px] border-r-[3px] border-white/80 rounded-tr-xl" />
-                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-[3px] border-l-[3px] border-white/80 rounded-bl-xl" />
-                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-[3px] border-r-[3px] border-white/80 rounded-br-xl" />
+                  {/* Siku Sudut yang Bersih, Fungsional & Menyesuaikan Tema (Primary/Biru) */}
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-[3px] border-l-[3px] border-primary rounded-tl-xl" />
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-[3px] border-r-[3px] border-primary rounded-tr-xl" />
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-[3px] border-l-[3px] border-primary rounded-bl-xl" />
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-[3px] border-r-[3px] border-primary rounded-br-xl" />
                   
-                  {/* Garis Laser Merah */}
-                  <div className="absolute left-[2%] right-[2%] h-[2px] bg-red-500 shadow-[0_0_12px_2px_rgba(239,68,68,0.8)] animate-barcode-laser z-30" />
+                  {/* Garis Laser Biru/Primary yang Menyala Indah */}
+                  <div className="absolute left-[2%] right-[2%] h-[2px] bg-primary shadow-[0_0_12px_2px_hsl(var(--primary)/0.85)] animate-barcode-laser z-30" />
                 </div>
               </div>
             </>
