@@ -264,7 +264,7 @@ export default React.memo(function BannerEditorCanvas() {
     <div
       className="flex-1 relative overflow-auto flex items-start md:items-center justify-center p-3 pt-4 md:p-10 bg-muted md:bg-secondary"
       style={{ paddingBottom: '72px' }}
-      onPointerDown={() => ctx.setSelectedId(null)}
+      onPointerDown={() => { ctx.setSelectedId(null); ctx.setActiveOverlayId(null); }}
     >
       {/* Canvas Container */}
       <div

@@ -210,12 +210,12 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = '36px
     onChange(editorRef.current?.innerHTML || '');
   };
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-0.5 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+    <div className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+      <div className="flex items-center gap-0.5 px-2 py-1 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
         {[{ cmd: 'bold', label: 'B', cls: 'font-bold' }, { cmd: 'italic', label: 'I', cls: 'italic' }, { cmd: 'underline', label: 'U', cls: 'underline' }].map(({ cmd, label, cls }) => (
           <button key={cmd} type="button"
             onMouseDown={e => { e.preventDefault(); applyFormat(cmd); }}
-            className={cn('w-7 h-7 rounded text-sm flex items-center justify-center transition-colors text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700', cls)}
+            className={cn('w-6 h-6 rounded text-[11px] flex items-center justify-center transition-colors text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100', cls)}
           >{label}</button>
         ))}
       </div>
@@ -225,7 +225,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = '36px
         suppressContentEditableWarning
         onInput={(e: any) => onChange(e.currentTarget.innerHTML)}
         style={{ minHeight }}
-        className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 rte-placeholder transition-all"
+        className="w-full px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none rte-placeholder"
         data-placeholder={placeholder}
       />
     </div>

@@ -186,8 +186,8 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
             </div>
           )}
 
-          {/* Status badge */}
-          <div className="absolute top-4 right-4 flex gap-2">
+          {/* Status badge — z-30 ensures it's always above overlays */}
+          <div className="absolute top-4 right-4 flex gap-2 z-30">
             <Badge variant={b.isActive ? "success" : "default"} className="shadow-lg backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 pointer-events-none">
               {b.isActive ? 'Ditampilkan' : 'Disembunyikan'}
             </Badge>
@@ -206,9 +206,9 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
                 onClick={() => onEdit(b.id)}>
                 <Edit2 className="w-3.5 h-3.5" /> Edit
               </Button>
-              <Button variant="danger" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold"
-                onClick={() => onDelete(b.id)}>
-                <Trash2 className="w-3.5 h-3.5" /> Hapus
+              <Button variant="danger" size="icon" className="h-9 w-9 rounded-lg"
+                onClick={() => onDelete(b.id)} title="Hapus Banner">
+                <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
