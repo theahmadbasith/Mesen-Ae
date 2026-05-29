@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Upload, Scan, X, AlertTriangle, XCircle, SwitchCamera } from "lucide-react";
+import { Upload, Scan, AlertTriangle, XCircle, SwitchCamera, Trash2 } from "lucide-react";
 
 interface Props {
   value: string;
@@ -108,7 +108,6 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
   const startCamera = async (mode: "environment" | "user" = facingMode) => {
     try {
-      // Pastikan stream lama dihentikan sebelum meminta yang baru (penting untuk ganti kamera)
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
@@ -120,13 +119,12 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       setScanning(true);
       setFacingMode(mode);
 
-      // Gunakan setTimeout kecil untuk memberi waktu React me-render elemen <video> jika baru dibuka
       setTimeout(async () => {
         const video = videoRef.current;
         if (!video) return;
         
         video.srcObject = stream;
-        video.setAttribute("playsinline", "true"); // Fallback untuk iOS lama
+        video.setAttribute("playsinline", "true");
         
         try {
           await video.play();
@@ -142,7 +140,6 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
         const scan = () => {
           if (!streamRef.current || !video) return;
           
-          // Memastikan video sudah siap dan dimensinya valid (>0) sebelum drawImage
           if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -173,11 +170,10 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
   const toggleCameraMode = () => {
     const newMode = facingMode === "environment" ? "user" : "environment";
-    // Hentikan kamera saat ini lalu mulai ulang dengan mode baru
     stopCamera();
     setTimeout(() => {
       startCamera(newMode);
-    }, 200); // Jeda singkat agar perangkat keras kamera punya waktu untuk reset
+    }, 200);
   };
 
   useEffect(() => {
@@ -202,20 +198,25 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       `}} />
 
       {/* Textarea Area */}
-      <div className="space-y-2">
+      <div className="space-y-2.5">
+        
+        {/* Header Section dengan Tombol Hapus */}
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium">String QRIS</Label>
+          <Label className="text-sm font-semibold text-foreground/90">String QRIS</Label>
           {hasValue && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={onReset}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+              className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
             >
-              <X className="w-3 h-3" />
-              Hapus
-            </button>
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Hapus Text
+            </Button>
           )}
         </div>
+        
         <div
           className={`relative rounded-xl border-2 transition-all duration-200 ${
             dragOver
