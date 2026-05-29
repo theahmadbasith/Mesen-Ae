@@ -229,7 +229,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
                   <span className="bg-black/70 backdrop-blur-md text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2">
                     <ScanLine className="w-4 h-4 text-primary" />
-                    Arahkan ke barcode batang
+                    Arahkan ke barcode
                   </span>
                 </div>
               </>
