@@ -169,7 +169,7 @@ export function QRISResult({ qrisString }: Props) {
           // ==========================================
           // MODIFIKASI: Logo Diperbesar & Geser Kiri
           // ==========================================
-          const logoTargetHeight = 45;
+          const logoTargetHeight = 55;
           const logoRatio = logo.width / logo.height;
           const logoTargetWidth = logoTargetHeight * logoRatio;
           const logoX = 25;
