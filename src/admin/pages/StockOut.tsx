@@ -174,8 +174,8 @@ export default function StockOutPage() {
 
       {/* Dialog Form Stock Out */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[92vw] sm:max-w-md rounded-2xl p-5 gap-4">
-          <DialogHeader>
+        <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] rounded-2xl p-0 overflow-hidden flex flex-col border border-border/60 shadow-2xl">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/50 bg-muted/10 shrink-0">
             <DialogTitle className="text-lg font-bold flex items-center gap-1.5">
               <ArrowUpFromLine className="w-5 h-5 text-destructive" /> Catat Stok Keluar
             </DialogTitle>
@@ -184,7 +184,7 @@ export default function StockOutPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 mt-1">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
             {/* Input Pemilihan Produk */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">Pilih Produk <span className="text-destructive">*</span></Label>

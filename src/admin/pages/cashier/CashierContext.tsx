@@ -626,6 +626,14 @@ export const CashierProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const txNeedsKitchen = cart.some(c => categories.find(cat => String(cat.id) === String(c.product.categoryId))?.needsKitchen !== false);
 
+      // Load active cashier name from admin session
+      const authDataStr = localStorage.getItem('admin_auth') || '{}';
+      let cashierName = 'Kasir';
+      try {
+        const authData = JSON.parse(authDataStr);
+        cashierName = authData.name || authData.username || 'Kasir';
+      } catch (e) {}
+
       const txPayload = {
         subtotal,
         discount_type: txDiscountType,
@@ -640,6 +648,7 @@ export const CashierProvider: React.FC<{ children: React.ReactNode }> = ({ child
         profit: totalProfit,
         customer_name: finalCustomerName.trim() || null,
         table_number: finalTableNumber.trim() || null,
+        cashier_name: cashierName,
         needs_kitchen: txNeedsKitchen,
       };
 

@@ -135,6 +135,23 @@ export default function Vouchers() {
                   <div className="absolute left-[30%] sm:left-[25%] top-[-10px] w-5 h-5 bg-background rounded-full border-b-2 border-primary/20 dark:border-primary/30 z-10 -translate-x-1/2 shadow-inner" />
                   <div className="absolute left-[30%] sm:left-[25%] bottom-[-10px] w-5 h-5 bg-background rounded-full border-t-2 border-primary/20 dark:border-primary/30 z-10 -translate-x-1/2 shadow-inner" />
 
+                  {/* Active Toggle Switch Floating at Top-Right */}
+                  <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-background/80 dark:bg-card/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-border/40 shadow-sm">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Aktif</span>
+                    <Switch 
+                      checked={v.isActive} 
+                      onCheckedChange={async (checked) => {
+                        try {
+                          await dbUpdate('vouchers', v.id!, { isActive: checked });
+                          toast.success(`Voucher ${v.code} ${checked ? 'diaktifkan' : 'dinonaktifkan'}`);
+                        } catch (err: any) {
+                          toast.error('Gagal memperbarui status: ' + (err.message || err));
+                        }
+                      }}
+                      className="data-[state=checked]:bg-green-500 scale-75"
+                    />
+                  </div>
+
                   {/* Shine Effect */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[100%] group-hover:animate-shimmer z-0 pointer-events-none" />
 
@@ -161,7 +178,7 @@ export default function Vouchers() {
                     </div>
 
                     {/* Bagian Kanan Tiket (Detail & Aksi) */}
-                    <div className="flex-1 p-5 pl-8 flex flex-col relative z-20">
+                    <div className="flex-1 p-5 pl-8 pr-16 flex flex-col relative z-20">
                       <div className="flex justify-between items-start gap-4">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
@@ -207,8 +224,8 @@ export default function Vouchers() {
 
       {/* Modal Add/Edit Voucher */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[480px] rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl">
-          <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10">
+        <DialogContent className="max-w-[92vw] sm:max-w-[600px] max-h-[90vh] rounded-[1.5rem] md:rounded-[2rem] p-0 overflow-hidden border-border/60 shadow-2xl flex flex-col">
+          <DialogHeader className="px-6 py-5 border-b border-border/50 bg-muted/10 shrink-0">
             <DialogTitle className="text-xl font-extrabold flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
                 {editVoucher ? <Edit2 className="w-5 h-5" /> : <Ticket className="w-5 h-5" strokeWidth={2.5} />}
@@ -217,7 +234,7 @@ export default function Vouchers() {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="px-6 py-5 space-y-5">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 space-y-5">
             <div className="space-y-2 group">
               <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Kode Promo <span className="text-destructive">*</span></Label>
               <div className="relative">
@@ -266,7 +283,7 @@ export default function Vouchers() {
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Produk Spesifik</Label>
                 <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded text-muted-foreground">Opsional</span>
               </div>
-              <div className="border border-border/60 rounded-xl p-2 max-h-[160px] overflow-y-auto bg-background/50 space-y-1 custom-scrollbar">
+              <div className="border border-border/60 rounded-xl p-2 max-h-[160px] overflow-y-auto custom-scrollbar bg-background/50 space-y-1">
                 {products.length === 0 ? (
                   <p className="text-xs text-muted-foreground p-3 text-center">Belum ada produk di database.</p>
                 ) : (
@@ -309,7 +326,7 @@ export default function Vouchers() {
             </div>
           </div>
           
-          <DialogFooter className="px-6 py-4 border-t border-border/50 bg-muted/10 gap-2 sm:gap-0">
+          <DialogFooter className="px-6 py-4 border-t border-border/50 bg-muted/10 gap-2 sm:gap-0 shrink-0">
             <Button variant="outline" className="h-11 rounded-xl font-bold border-border/60 hover:bg-muted" onClick={() => setDialogOpen(false)}>
               Batal
             </Button>

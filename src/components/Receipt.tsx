@@ -128,7 +128,23 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push('--------------------------------\n');
       lines.push(`No: ${transaction.receiptNumber}\n`);
       lines.push(`${format(new Date(transaction.date), 'dd/MM/yyyy HH:mm')}\n`);
-      if (transaction.customerName) lines.push(`Pelanggan: ${transaction.customerName}\n`);
+      
+      // Metadata Struk
+      const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name;
+      if (cashierNameVal) {
+        lines.push(`Kasir: ${cashierNameVal}\n`);
+      }
+      const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
+      if (buyerNameVal) {
+        lines.push(`Pelanggan: ${buyerNameVal}\n`);
+      }
+      const tableVal = transaction.tableNumber || (transaction as any).table_number;
+      if (tableVal) {
+        const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
+          ? 'Bawa Pulang'
+          : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
+        lines.push(`Meja/Tipe: ${displayTable}\n`);
+      }
       lines.push('--------------------------------\n');
 
       lines.push('\x1B\x61\x00'); // Left align
@@ -181,7 +197,14 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push('--------------------------------\n');
       
       lines.push('\x1B\x61\x01'); // Center align
-      lines.push(`${storeSettings?.receiptFooter || 'Terima kasih!'}\n\n\n`);
+      if (storeSettings?.receiptFooterLines && storeSettings.receiptFooterLines.length > 0) {
+        storeSettings.receiptFooterLines.forEach((line: string) => {
+          if (line.trim()) lines.push(`${line}\n`);
+        });
+      } else {
+        lines.push(`${storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}\n`);
+      }
+      lines.push('\n\n\n');
 
       const data = encoder.encode(lines.join(''));
 
@@ -253,12 +276,49 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               <span>{format(new Date(transaction.date), 'dd/MM/yyyy', { locale: id })}</span>
               <span>{format(new Date(transaction.date), 'HH:mm', { locale: id })}</span>
             </div>
-            {transaction.customerName && (
-              <div className="flex justify-between text-[10px] mb-1 relative z-10">
-                <span className="text-gray-500">Pelanggan:</span>
-                <span className="font-semibold uppercase truncate max-w-[150px]">{transaction.customerName}</span>
-              </div>
-            )}
+
+            {/* Rincian Tambahan: Kasir, Pelanggan, Meja/Tipe */}
+            <div className="space-y-1 text-[10px] mb-2 relative z-10 text-left border-t border-dashed border-border/30 pt-2">
+              {(() => {
+                const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name;
+                if (cashierNameVal) {
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Kasir:</span>
+                      <span className="font-semibold uppercase">{cashierNameVal}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              {(() => {
+                const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
+                if (buyerNameVal) {
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Pelanggan:</span>
+                      <span className="font-semibold uppercase truncate max-w-[150px]">{buyerNameVal}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              {(() => {
+                const tableVal = transaction.tableNumber || (transaction as any).table_number;
+                if (tableVal) {
+                  const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
+                    ? 'Bawa Pulang'
+                    : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Meja / Tipe:</span>
+                      <span className="font-semibold uppercase">{displayTable}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
 
             <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
@@ -359,8 +419,22 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
 
             {/* Footer */}
-            <div className="text-center text-[10px] text-gray-500 relative z-10 pt-1 pb-3">
-              <p className="font-medium">{storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
+            <div className="text-center text-[10px] text-gray-500 relative z-10 pt-1 pb-3 space-y-1">
+              {storeSettings?.receiptFooterImg && (
+                <img 
+                  src={storeSettings.receiptFooterImg} 
+                  alt="Footer Logo" 
+                  className="h-16 w-auto mx-auto object-contain mb-2 grayscale contrast-125 select-none print:grayscale print:contrast-125" 
+                  style={{ filter: 'grayscale(1) contrast(1.3)' }}
+                />
+              )}
+              {storeSettings?.receiptFooterLines && storeSettings.receiptFooterLines.length > 0 ? (
+                storeSettings.receiptFooterLines.map((line: string, idx: number) => (
+                  line.trim() && <p key={idx} className="font-medium">{line}</p>
+                ))
+              ) : (
+                <p className="font-medium">{storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
+              )}
             </div>
           </div>
         </div>

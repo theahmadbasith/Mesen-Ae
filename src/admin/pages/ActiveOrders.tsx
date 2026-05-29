@@ -137,6 +137,14 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
     if (!billToConfirmManual) return;
     try {
       const pm = paymentMethods.find((m: any) => m.id === billToConfirmManual.paymentMethodId);
+      // Load active cashier name from admin session
+      const authDataStr = localStorage.getItem('admin_auth') || '{}';
+      let cashierName = 'Kasir';
+      try {
+        const authData = JSON.parse(authDataStr);
+        cashierName = authData.name || authData.username || 'Kasir';
+      } catch (e) {}
+
       const txPayload = {
         status: 'lunas',
         payment_amount: billToConfirmManual.total,
@@ -147,6 +155,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           date: new Date().toISOString()
         }],
         kitchen_status: getBillNeedsKitchen(billToConfirmManual) ? 'diproses' : (billToConfirmManual.remarks?.includes('Web') ? 'diproses' : null),
+        cashier_name: cashierName,
         closed_at: new Date().toISOString(),
       };
       await dbUpdate('transactions', billToConfirmManual.id!, txPayload);
@@ -176,6 +185,14 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
       const primaryMethodId = data.primaryMethodId;
       const finalPaymentAmount = finalPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
 
+      // Load active cashier name from admin session
+      const authDataStr = localStorage.getItem('admin_auth') || '{}';
+      let cashierName = 'Kasir';
+      try {
+        const authData = JSON.parse(authDataStr);
+        cashierName = authData.name || authData.username || 'Kasir';
+      } catch (e) {}
+
       const txPayload = {
         tax_and_service: finalTax,
         total: finalTotal,
@@ -187,6 +204,7 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
         table_number: data.tableNumber || null,
         remarks: data.remarks || null,
         status: 'lunas',
+        cashier_name: cashierName,
         // Ritel dari web (termasuk split bill): set 'diproses' agar tampil di ActiveOrders dan bisa di-manage
         // Pesanan kasir dengan needsKitchen=false (kitchenStatus=null): null (tidak perlu tracking)
         kitchen_status: getBillNeedsKitchen(bill)

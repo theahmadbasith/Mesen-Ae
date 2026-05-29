@@ -245,8 +245,8 @@ export default function Categories() {
 
       {/* Dialog Kategori */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[420px] sm:max-w-[500px] rounded-2xl p-0 overflow-hidden bg-background border-border shadow-xl">
-          <div className="bg-primary/5 p-5 border-b border-border/40">
+        <DialogContent className="max-w-[92vw] sm:max-w-[500px] max-h-[90vh] rounded-2xl p-0 overflow-hidden bg-background border border-border shadow-xl flex flex-col">
+          <div className="bg-primary/5 p-5 border-b border-border/40 shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-bold">{editCategory ? 'Edit' : 'Tambah'} Kategori</DialogTitle>
               <DialogDescription className="text-[11px] mt-1">
@@ -254,80 +254,82 @@ export default function Categories() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <form onSubmit={saveCat} className="p-5 space-y-4">
-            <div className="space-y-3.5">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nama Kategori</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Cth: Makanan Berat"
-                  className="h-10 text-sm rounded-xl"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={saveCat} className="flex-1 flex flex-col overflow-hidden min-h-0">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4 min-h-0">
+              <div className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ketik Ikon (Emoji)</Label>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nama Kategori</Label>
                   <Input
-                    value={catIcon}
-                    onChange={(e) => setCatIcon(e.target.value)}
-                    placeholder="📦"
-                    className="h-10 text-center text-lg rounded-xl font-bold"
-                    maxLength={2}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Cth: Makanan Berat"
+                    className="h-10 text-sm rounded-xl"
+                    required
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Warna Tema Kategori</Label>
-                  <Input
-                    type="color"
-                    value={catColor}
-                    onChange={(e) => setCatColor(e.target.value)}
-                    className="h-10 w-full p-1 cursor-pointer rounded-xl border-border/50"
-                  />
-                </div>
-              </div>
-
-              {/* Emoji Picker Full Width */}
-              <div className="space-y-2">
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Atau Pilih dari Saran</Label>
-                <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto custom-scrollbar border border-border/50 p-2.5 rounded-xl bg-muted/10 shadow-inner">
-                  {['📦', '🍔', '🍕', '🍜', '🥤', '☕', '🧁', '🍦', '🏷️', '🚬', '🧼', '🧹', '📱', '🛒', '🛍️', '🍺', '🍚', '🍗', '🥐', '🍞', '🍟', '🥩', '🥘', '🍲', '🍣', '🍱', '🍧', '🍰', '🍹', '🍵', '🍶', '🍎', '🍓', '🥑', '🌶️', '🥩', '🥓', '🍳', '🥞', '🥗', '🍿', '🍘', '🍙', '🍛', '🦞', '🦐', '🦑', '🍢', '🍡', '🍭', '🍬', '🍫', '🍩', '🍪', '🌰', '🥜', '🧋', '🧉', '🍾', '🍷', '🥂', '🍻', '🥃', '🧊', '🥄', '🍴', '🍽️', '🥣', '🥡', '🥢', '🧂'].map(emoji => (
-                    <button
-                      type="button"
-                      key={emoji}
-                      onClick={() => setCatIcon(emoji)}
-                      className={cn(
-                        "w-9 h-9 flex items-center justify-center text-xl rounded-lg transition-all hover:bg-muted active:scale-95",
-                        catIcon === emoji ? "bg-primary/20 border-2 border-primary shadow-sm" : "bg-card border border-border/50 hover:border-primary/40 shadow-sm"
-                      )}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 border border-border/50 bg-muted/20 rounded-xl mt-2">
-                <div className="space-y-0.5 pr-4">
-                  <Label className="text-xs font-bold text-foreground">Disiapkan di Dapur</Label>
-                  <p className="text-[10px] text-muted-foreground leading-normal">
-                    Bila aktif, pesanan produk ini akan muncul di layar Dapur Koki.
-                  </p>
-                </div>
-                <div className="shrink-0 flex items-center">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={catNeedsKitchen}
-                      onChange={(e) => setCatNeedsKitchen(e.target.checked)}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ketik Ikon (Emoji)</Label>
+                    <Input
+                      value={catIcon}
+                      onChange={(e) => setCatIcon(e.target.value)}
+                      placeholder="📦"
+                      className="h-10 text-center text-lg rounded-xl font-bold"
+                      maxLength={2}
                     />
-                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-                  </label>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Warna Tema Kategori</Label>
+                    <Input
+                      type="color"
+                      value={catColor}
+                      onChange={(e) => setCatColor(e.target.value)}
+                      className="h-10 w-full p-1 cursor-pointer rounded-xl border-border/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Emoji Picker Full Width */}
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Atau Pilih dari Saran</Label>
+                  <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto custom-scrollbar border border-border/50 p-2.5 rounded-xl bg-muted/10 shadow-inner">
+                    {['📦', '🍔', '🍕', '🍜', '🥤', '☕', '🧁', '🍦', '🏷️', '🚬', '🧼', '🧹', '📱', '🛒', '🛍️', '🍺', '🍚', '🍗', '🥐', '🍞', '🍟', '🥩', '🥘', '🍲', '🍣', '🍱', '🍧', '🍰', '🍹', '🍵', '🍶', '🍎', '🍓', '🥑', '🌶️', '🥩', '🥓', '🍳', '🥞', '🥗', '🍿', '🍘', '🍙', '🍛', '🦞', '🦐', '🦑', '🍢', '🍡', '🍭', '🍬', '🍫', '🍩', '🍪', '🌰', '🥜', '🧋', '🧉', '🍾', '🍷', '🥂', '🍻', '🥃', '🧊', '🥄', '🍴', '🍽️', '🥣', '🥡', '🥢', '🧂'].map(emoji => (
+                      <button
+                        type="button"
+                        key={emoji}
+                        onClick={() => setCatIcon(emoji)}
+                        className={cn(
+                          "w-9 h-9 flex items-center justify-center text-xl rounded-lg transition-all hover:bg-muted active:scale-95",
+                          catIcon === emoji ? "bg-primary/20 border-2 border-primary shadow-sm" : "bg-card border border-border/50 hover:border-primary/40 shadow-sm"
+                        )}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 border border-border/50 bg-muted/20 rounded-xl mt-2">
+                  <div className="space-y-0.5 pr-4">
+                    <Label className="text-xs font-bold text-foreground">Disiapkan di Dapur</Label>
+                    <p className="text-[10px] text-muted-foreground leading-normal">
+                      Bila aktif, pesanan produk ini akan muncul di layar Dapur Koki.
+                    </p>
+                  </div>
+                  <div className="shrink-0 flex items-center">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={catNeedsKitchen}
+                        onChange={(e) => setCatNeedsKitchen(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="pt-2">
+            <div className="px-5 py-4 border-t border-border/40 bg-muted/10 shrink-0">
               <Button type="submit" className="w-full h-11 font-bold text-sm rounded-xl" disabled={isSavingCat}>
                 {isSavingCat ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Kategori'}
               </Button>
