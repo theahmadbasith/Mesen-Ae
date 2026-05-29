@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -30,7 +30,6 @@ import { MidtransPaymentModal } from '@/components/MidtransPaymentModal';
 
 export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?: () => void } = {}) {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [printActionTx, setPrintActionTx] = useState<Transaction | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [billToCancel, setBillToCancel] = useState<Transaction | null>(null);
@@ -82,21 +81,6 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
       return isUnpaid || isPaidButCooking;
     }
   ).sort((a, b) => new Date(a.date || a.created_at || 0).getTime() - new Date(b.date || b.created_at || 0).getTime());
-
-  const payTxId = searchParams.get('payTxId');
-
-  useEffect(() => {
-    if (payTxId && openBills && openBills.length > 0) {
-      const foundBill = openBills.find(b => String(b.id) === String(payTxId) || b.receiptNumber === payTxId);
-      if (foundBill) {
-        setPayingBill(foundBill);
-        // Clear search parameter so it doesn't reopen if closed
-        const newParams = new URLSearchParams(searchParams);
-        newParams.delete('payTxId');
-        setSearchParams(newParams, { replace: true });
-      }
-    }
-  }, [payTxId, openBills, searchParams, setSearchParams]);
 
   // Handlers
 
