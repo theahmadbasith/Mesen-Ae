@@ -25,6 +25,55 @@ export interface ReceiptTypography {
   paperWidth: '58mm';
 }
 
+// Helper to remove white background pixels smoothly from images
+async function removeWhiteBackground(imageUrl: string): Promise<string> {
+  if (!imageUrl) return '';
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          resolve(imageUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Calculate average pixel brightness
+          const avg = (r + g + b) / 3;
+          
+          // If the pixel is close to white (brightness > 210)
+          if (avg > 210) {
+            // Apply smooth alpha gradient for anti-aliasing
+            const alpha = Math.max(0, 255 - (avg - 210) * (255 / 45));
+            data[i + 3] = Math.min(data[i + 3], alpha);
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        console.error('Error removing white background:', err);
+        resolve(imageUrl);
+      }
+    };
+    img.onerror = () => {
+      resolve(imageUrl);
+    };
+    img.src = imageUrl;
+  });
+}
+
 interface ReceiptSettingsProps {
   storeSettings: StoreSettings | undefined;
   hasEditAccess: boolean;
@@ -80,6 +129,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   const [footerLine2, setFooterLine2] = useState('');
   const [footerImg, setFooterImg] = useState<string | undefined>();
   const [footerOrder, setFooterOrder] = useState<FooterBlock[]>(['line1', 'line2', 'image']);
+  const [processedLogo, setProcessedLogo] = useState<string | undefined>();
 
   // Bold, Italic, Underline for Footer lines
   const [line1Bold, setLine1Bold] = useState(false);
@@ -136,7 +186,6 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       setLineHeight(typo.lineHeight ?? 'tight');
 
       // Footer
-      setFooterImg(s.receiptFooterImg || '');
       setFooterOrder(s.receiptFooterOrder ?? ['line1', 'line2', 'image']);
 
       const oldLines = s.receiptFooterLines || [];
@@ -161,6 +210,23 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       setHasInitialized(true);
     }
   }, [storeSettings, hasInitialized]);
+
+  useEffect(() => {
+    if (storeSettings?.logo) {
+      removeWhiteBackground(storeSettings.logo).then(setProcessedLogo);
+    } else {
+      setProcessedLogo(undefined);
+    }
+  }, [storeSettings?.logo]);
+
+  useEffect(() => {
+    const footerImgUrl = storeSettings?.receiptFooterImg || '';
+    if (footerImgUrl) {
+      removeWhiteBackground(footerImgUrl).then(setFooterImg);
+    } else {
+      setFooterImg('');
+    }
+  }, [storeSettings?.receiptFooterImg]);
 
   const executeSave = async (
     tmpl = template, img = footerImg, l1 = footerLine1, l2 = footerLine2,
@@ -623,7 +689,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
               {showLogo && storeSettings.logo && (
                 <div className="mb-3">
                   <div className="w-28 h-8 mb-2 overflow-hidden bg-transparent">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain object-left grayscale mix-blend-multiply" />
+                    <img src={processedLogo || storeSettings.logo} className="w-full h-full object-contain object-left grayscale" />
                   </div>
                 </div>
               )}
@@ -678,7 +744,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
               <div className="text-center mb-4">
                 {showLogo && storeSettings.logo && (
                   <div className="w-14 h-14 mx-auto mb-2 overflow-hidden bg-transparent">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain grayscale mix-blend-multiply" />
+                    <img src={processedLogo || storeSettings.logo} className="w-full h-full object-contain grayscale" />
                   </div>
                 )}
                 <h2 className="font-bold text-[1.2em]">{storeSettings.storeName?.toUpperCase() || 'KOPI NUSANTARA'}</h2>
@@ -721,7 +787,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
               <div className="text-center mb-3">
                 {showLogo && storeSettings.logo && (
                   <div className="w-16 h-16 mx-auto mb-2 overflow-hidden bg-transparent">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain grayscale mix-blend-multiply" />
+                    <img src={processedLogo || storeSettings.logo} className="w-full h-full object-contain grayscale" />
                   </div>
                 )}
                 <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings.storeName || 'TOKO SAYA'}</h2>
@@ -764,7 +830,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
               <div className="mb-4">
                 {showLogo && storeSettings.logo && (
                   <div className="w-10 h-10 mx-auto mb-2 overflow-hidden bg-transparent">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain grayscale mix-blend-multiply" />
+                    <img src={processedLogo || storeSettings.logo} className="w-full h-full object-contain grayscale" />
                   </div>
                 )}
                 <h2 className="font-bold text-[1.1em]">{storeSettings.storeName || 'Toko'}</h2>
@@ -828,7 +894,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   <div key={idx} className="my-2">
                     <img
                       src={footerImg}
-                      className="max-w-20 h-auto mx-auto object-contain grayscale rounded-xl mix-blend-multiply"
+                      className="max-w-20 h-auto mx-auto object-contain grayscale rounded-xl"
                       style={{ filter: 'grayscale(1) contrast(1.2) brightness(0.9)' }}
                       alt="Footer"
                     />
@@ -865,7 +931,9 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         file={selectedFile}
         aspectRatio={1}
         onCropped={(url) => {
-          setFooterImg(url);
+          removeWhiteBackground(url).then(processedUrl => {
+            setFooterImg(processedUrl);
+          });
           setCropOpen(false);
           setSelectedFile(null);
         }}

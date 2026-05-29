@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
@@ -97,6 +97,55 @@ function resolveFontSize(val: any): string {
   return map[val] || '11px';
 }
 
+// Helper to remove white background pixels smoothly from images
+async function removeWhiteBackground(imageUrl: string): Promise<string> {
+  if (!imageUrl) return '';
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          resolve(imageUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Calculate average pixel brightness
+          const avg = (r + g + b) / 3;
+          
+          // If the pixel is close to white (brightness > 210)
+          if (avg > 210) {
+            // Apply smooth alpha gradient for anti-aliasing
+            const alpha = Math.max(0, 255 - (avg - 210) * (255 / 45));
+            data[i + 3] = Math.min(data[i + 3], alpha);
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        console.error('Error removing white background:', err);
+        resolve(imageUrl);
+      }
+    };
+    img.onerror = () => {
+      resolve(imageUrl);
+    };
+    img.src = imageUrl;
+  });
+}
+
 interface ReceiptProps {
   open: boolean;
   onClose: () => void;
@@ -110,6 +159,18 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const receiptRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState<boolean>(false);
   const [printing, setPrinting] = useState<boolean>(false);
+  const [processedLogo, setProcessedLogo] = useState<string | undefined>();
+  const [processedFooterImg, setProcessedFooterImg] = useState<string | undefined>();
+
+  useState(() => {
+    // Empty trigger
+  });
+
+  const footerImgUrl = (storeSettings as any)?.receiptFooterImg || (storeSettings as any)?.receiptFooterImage;
+
+  useState(() => {
+    // Empty trigger
+  });
 
   // Parse dynamic receipt configuration settings
   const typo = (storeSettings as any)?.receiptTypography || {};
@@ -121,6 +182,22 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const template = rawTemplate === 'finedining' ? 'classic' : rawTemplate;
   const showLogo = (storeSettings as any)?.receiptShowLogo ?? true;
   const showFooterImg = (storeSettings as any)?.receiptShowFooterImg ?? true;
+
+  useEffect(() => {
+    if (open && storeSettings?.logo) {
+      removeWhiteBackground(storeSettings.logo).then(setProcessedLogo);
+    } else {
+      setProcessedLogo(undefined);
+    }
+  }, [open, storeSettings?.logo]);
+
+  useEffect(() => {
+    if (open && footerImgUrl) {
+      removeWhiteBackground(footerImgUrl).then(setProcessedFooterImg);
+    } else {
+      setProcessedFooterImg(undefined);
+    }
+  }, [open, footerImgUrl]);
 
   // Custom Styles
   const footerStyles = (storeSettings as any)?.receiptFooterStyles || {};
@@ -454,7 +531,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               <div className="w-full text-left uppercase text-[0.85em] relative z-10">
                 {showLogo && storeSettings?.logo && (
                   <div className="mb-3 text-center">
-                    <img src={storeSettings.logo} alt="Logo" className="w-28 h-8 object-contain mx-auto mb-2 grayscale mix-blend-multiply" />
+                    <img src={processedLogo || storeSettings.logo} alt="Logo" className="w-28 h-8 object-contain mx-auto mb-2 grayscale" style={{ filter: 'grayscale(1) contrast(1.2) brightness(1.1)' }} />
                   </div>
                 )}
                 <div className="mb-2">
@@ -527,7 +604,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div className="text-center mb-4">
                   {showLogo && storeSettings?.logo && (
                     <div className="w-14 h-14 mx-auto mb-2 overflow-hidden bg-transparent">
-                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto grayscale mix-blend-multiply" />
+                      <img src={processedLogo || storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto grayscale" />
                     </div>
                   )}
                   <h2 className="font-bold text-[1.25em]">{storeSettings?.storeName?.toUpperCase() || 'TOKO'}</h2>
@@ -602,7 +679,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div className="text-center mb-3">
                   {showLogo && storeSettings?.logo && (
                     <div className="w-16 h-16 mx-auto mb-2 overflow-hidden bg-transparent">
-                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto grayscale mix-blend-multiply" />
+                      <img src={processedLogo || storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto grayscale" />
                     </div>
                   )}
                   <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings?.storeName || 'TOKO'}</h2>
@@ -682,7 +759,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div className="mb-4">
                   {showLogo && storeSettings?.logo && (
                     <div className="w-10 h-10 mx-auto mb-2 overflow-hidden bg-transparent">
-                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto grayscale mix-blend-multiply" />
+                      <img src={processedLogo || storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto grayscale" />
                     </div>
                   )}
                   <h2 className="font-bold text-[1.15em]">{storeSettings?.storeName || 'Toko'}</h2>
@@ -788,11 +865,11 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 }
                 if (block === 'image' && showFooterImg && footerImgData) {
                   return (
-                    <div key={idx} className="my-2.5 text-center mix-blend-multiply">
+                    <div key={idx} className="my-2.5 text-center">
                       <img 
-                        src={footerImgData} 
+                        src={processedFooterImg || footerImgData} 
                         alt="Footer" 
-                        className="h-16 w-auto mx-auto object-contain rounded-xl grayscale opacity-75 select-none mix-blend-multiply" 
+                        className="h-16 w-auto mx-auto object-contain rounded-xl grayscale opacity-75 select-none" 
                         style={{ filter: 'grayscale(1) contrast(1.2)' }}
                       />
                     </div>
