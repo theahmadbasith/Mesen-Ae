@@ -181,12 +181,12 @@ const CashierCart: React.FC = React.memo(() => {
                     <SelectValue placeholder="Pilih Meja" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl max-h-[200px]">
-                    <SelectItem value="Bawa Pulang">🛍️ Bawa Pulang</SelectItem>
+                    <SelectItem value="Bawa Pulang">Bawa Pulang</SelectItem>
                     {tables.map((t: string) => {
                       const label = t.toLowerCase().startsWith('meja') ? t : `Meja ${t}`;
                       return (
                         <SelectItem key={t} value={t}>
-                          🍽️ {label}
+                          {label}
                         </SelectItem>
                       );
                     })}

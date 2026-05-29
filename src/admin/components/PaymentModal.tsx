@@ -57,7 +57,7 @@ export default function PaymentModal({
   onOpenChange,
   baseTotal,
   initialCustomerName = '',
-  initialTableNumber = '',
+  initialTableNumber = 'Bawa Pulang',
   initialRemarks = '',
   initialPayments = [],
   paymentMethods,
@@ -379,14 +379,14 @@ export default function PaymentModal({
                   className={cn("flex-1 text-xs py-2 rounded-lg font-bold transition-all", tableNumber === 'Bawa Pulang' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
                   onClick={() => setTableNumber('Bawa Pulang')}
                 >
-                  🛍️ Bawa Pulang
+                  Bawa Pulang
                 </button>
                 <button
                   type="button"
                   className={cn("flex-1 text-xs py-2 rounded-lg font-bold transition-all", tableNumber !== 'Bawa Pulang' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
                   onClick={() => setTableNumber(prev => prev === 'Bawa Pulang' ? '' : prev)}
                 >
-                  🍽️ Makan di Tempat
+                  Makan di Tempat
                 </button>
               </div>
               <div className="flex gap-2">

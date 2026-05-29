@@ -264,20 +264,20 @@ export default function QrCodeMenu() {
 
   return (
     <div className="pt-4 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:items-stretch lg:h-[calc(100vh-180px)] lg:min-h-[600px]">
         
         {/* Kolom Kiri: Manajemen Meja */}
-        <div className="lg:col-span-5 space-y-6">
-          <Card className="shadow-sm border-border/50 bg-card text-card-foreground">
-            <CardHeader className="pb-4">
+        <div className="lg:col-span-5 flex flex-col h-full">
+          <Card className="shadow-sm border-border/50 bg-card text-card-foreground h-full flex flex-col overflow-hidden">
+            <CardHeader className="pb-4 shrink-0">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Store className="w-5 h-5 text-muted-foreground" />
                 Daftar Meja Anda
               </CardTitle>
               <CardDescription>Tambahkan nomor atau nama meja baru</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4 mb-6">
+            <CardContent className="flex-1 flex flex-col overflow-hidden pb-6">
+              <div className="flex flex-col gap-4 mb-6 shrink-0">
                 <div className="flex gap-3">
                   <Input 
                     type="text"
@@ -294,7 +294,7 @@ export default function QrCodeMenu() {
                 </div>
               </div>
 
-              <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-2.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 
                 {/* Take Away (Bawa Pulang) QR Code - Fixed at top */}
                 <div 
@@ -510,6 +510,16 @@ export default function QrCodeMenu() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03); border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.3); border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156, 163, 175, 0.5); }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.2); }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156, 163, 175, 0.4); }
+      `}} />
     </div>
   );
 }

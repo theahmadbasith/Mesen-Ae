@@ -185,7 +185,7 @@ export const CashierProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
   const [customerName, setCustomerName] = useState('');
-  const [tableNumber, setTableNumber] = useState('');
+  const [tableNumber, setTableNumber] = useState('Bawa Pulang');
   const [remarks, setRemarks] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [openBillsOpen, setOpenBillsOpen] = useState(false);
@@ -368,7 +368,7 @@ export const CashierProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPaymentAmount('');
     setPayments([]);
     setCustomerName('');
-    setTableNumber('');
+    setTableNumber('Bawa Pulang');
     setRemarks('');
     setIsQuickAdding(false);
   };
@@ -541,7 +541,7 @@ export const CashierProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTxDiscountValue(tx.discountType ? String(tx.discountValue) : '');
     setPayments(tx.payments || []);
     setCustomerName(tx.customerName || '');
-    setTableNumber(tx.tableNumber || '');
+    setTableNumber(tx.tableNumber || 'Bawa Pulang');
     setRemarks(tx.remarks || '');
     setOpenBillsOpen(false);
     setCartOpen(true);
