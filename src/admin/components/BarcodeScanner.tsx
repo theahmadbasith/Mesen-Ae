@@ -17,35 +17,74 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
   const [activeCameraIdx, setActiveCameraIdx] = useState(0);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   
   const scannerId = 'barcode-scanner-view';
+  const operationLock = useRef<Promise<void>>(Promise.resolve());
+
+  const runAtomicOperation = (op: () => Promise<void>) => {
+    operationLock.current = operationLock.current.then(op).catch(err => {
+      console.error("Kesalahan dalam operasi atomik pemindai:", err);
+    });
+  };
 
   // Bersihkan dan matikan scanner dengan aman
   const stopScanner = async () => {
+    setScanning(false);
+    setIsInitializing(false);
     if (scannerRef.current) {
       try {
-        if (scannerRef.current.getState() === 2) {
+        const state = scannerRef.current.getState();
+        // State 2 = SCANNING, State 3 = PAUSED
+        if (state === 2 || state === 3) {
           await scannerRef.current.stop();
         }
         scannerRef.current.clear();
       } catch (error) {
         console.warn("Kesalahan saat menghentikan pemindai:", error);
+      } finally {
+        scannerRef.current = null;
       }
-      scannerRef.current = null;
     }
-    setScanning(false);
-    setIsInitializing(false);
   };
 
-  // Inisialisasi pemindai khusus Barcode (1D)
+  // Inisialisasi pemindai khusus Barcode (1D) dengan fallback cerdas
   const startScanner = async (cameraId?: string) => {
-    await stopScanner();
     setIsInitializing(true);
+    setScanError(null);
 
-    // Jeda singkat untuk memastikan DOM siap
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Tunggu hingga element DOM benar-benar ada di halaman (mencegah error Dialog transitioning)
+    let element = document.getElementById(scannerId);
+    let attempts = 0;
+    while (!element && attempts < 20) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      element = document.getElementById(scannerId);
+      attempts++;
+    }
+
+    if (!element) {
+      const errMsg = "Elemen container pemindai tidak ditemukan di DOM.";
+      setScanError(errMsg);
+      toast.error(errMsg);
+      setIsInitializing(false);
+      return;
+    }
 
     try {
+      // Pastikan instansi sebelumnya benar-benar bersih
+      if (scannerRef.current) {
+        try {
+          const state = scannerRef.current.getState();
+          if (state === 2 || state === 3) {
+            await scannerRef.current.stop();
+          }
+          scannerRef.current.clear();
+        } catch (e) {
+          console.warn("Pembersihan instansi aktif sebelum start:", e);
+        }
+        scannerRef.current = null;
+      }
+
       const scanner = new Html5Qrcode(scannerId, {
         // HANYA mengaktifkan format 1D (Barcode batang) untuk kecepatan & akurasi maksimal
         formatsToSupport: [
@@ -62,95 +101,144 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
 
       scannerRef.current = scanner;
 
-      const cameraConstraint = cameraId
-        ? cameraId
-        : { facingMode: "environment" };
+      // Jalankan pemindai dengan strategi fallback yang cerdas & kuat
+      const tryStart = async (constraint: any): Promise<boolean> => {
+        try {
+          await scanner.start(
+            constraint,
+            {
+              fps: 30, // Frame rate maksimal untuk respon cepat
+              qrbox: { width: 340, height: 120 }, // Area scan persegi panjang khusus barcode
+              // Jangan paksa aspectRatio 1.0 agar tidak memicu OverconstrainedError di banyak perangkat
+              disableFlip: false,
+            },
+            (decodedText) => {
+              // Getaran pendek sebagai umpan balik sukses (jika didukung perangkat)
+              if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(100);
+              }
+              onScan(decodedText);
+              runAtomicOperation(async () => {
+                await stopScanner();
+              });
+            },
+            () => {} // Abaikan error frame untuk performa tinggi
+          );
+          return true;
+        } catch (err) {
+          console.warn("Gagal memulai dengan constraint:", constraint, err);
+          return false;
+        }
+      };
 
-      await scanner.start(
-        cameraConstraint as Parameters<typeof scanner.start>[0],
-        {
-          fps: 30, // Frame rate maksimal untuk respon cepat
-          qrbox: { width: 340, height: 120 }, // Area scan persegi panjang khusus barcode
-          aspectRatio: 1.0, 
-          disableFlip: false,
-        },
-        (decodedText) => {
-          // Getaran pendek sebagai umpan balik sukses (jika didukung perangkat)
-          if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(100);
+      let success = false;
+      if (cameraId) {
+        success = await tryStart(cameraId);
+      } else {
+        // Coba kamera belakang dahulu (facingMode: environment)
+        success = await tryStart({ facingMode: "environment" });
+        if (!success) {
+          // Fallback 1: Coba kamera depan (facingMode: user)
+          success = await tryStart({ facingMode: "user" });
+        }
+        if (!success) {
+          // Fallback 2: Coba dapatkan list kamera dan pakai kamera indeks aktif
+          try {
+            const devices = await Html5Qrcode.getCameras();
+            if (devices && devices.length > 0) {
+              setCameras(devices);
+              const rearIdx = devices.findIndex(d =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('environment')
+              );
+              const targetIdx = rearIdx >= 0 ? rearIdx : 0;
+              setActiveCameraIdx(targetIdx);
+              success = await tryStart(devices[targetIdx].id);
+            }
+          } catch (deviceErr) {
+            console.warn("Gagal enumerasi saat fallback start:", deviceErr);
           }
-          onScan(decodedText);
-          stopScanner();
-        },
-        () => {} // Abaikan log error frame untuk performa
-      );
+        }
+        if (!success) {
+          // Fallback 3: Coba tanpa constraint khusus sama sekali
+          success = await tryStart({});
+        }
+      }
+
+      if (!success) {
+        throw new Error("Semua kamera gagal diinisialisasi. Pastikan izin kamera diberikan.");
+      }
 
       setScanning(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+      console.error("Camera startup crashed:", err);
       
+      let errorMsg = 'Gagal memulai sistem kamera.';
       if (msg.includes('notallowed') || msg.includes('permission')) {
-        toast.error('Akses kamera ditolak. Izinkan kamera di pengaturan browser Anda.');
+        errorMsg = 'Akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser Anda.';
       } else if (msg.includes('notfound') || msg.includes('device not found')) {
-        toast.error('Kamera tidak ditemukan di perangkat ini.');
+        errorMsg = 'Kamera tidak ditemukan. Pastikan perangkat Anda memiliki kamera yang berfungsi.';
       } else if (msg.includes('notreadable') || msg.includes('in use')) {
-        toast.error('Kamera sedang digunakan aplikasi lain.');
+        errorMsg = 'Kamera sedang digunakan oleh aplikasi/tab lain.';
+      } else if (msg.includes('overconstrained')) {
+        errorMsg = 'Konfigurasi kamera tidak didukung oleh perangkat ini.';
       } else {
-        toast.error('Gagal memulai sistem kamera.');
+        errorMsg = `Gagal memulai sistem kamera: ${err instanceof Error ? err.message : String(err)}`;
       }
-      onClose();
+      
+      setScanError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsInitializing(false);
     }
   };
 
-  // Kelola siklus hidup kamera
+  // Kelola siklus hidup kamera dengan aman & bebas race condition
   useEffect(() => {
     let mounted = true;
 
-    const initSequence = async () => {
-      if (!open) {
-        await stopScanner();
-        return;
-      }
-
-      setIsInitializing(true);
-
-      // 1. Jalankan pemindai kamera secara instan dengan constraint default ideal
-      if (mounted) {
-        await startScanner();
-      }
-
-      // 2. Lakukan pencarian daftar kamera di background setelah jeda singkat agar hardware tidak bentrok
-      setTimeout(async () => {
+    if (open) {
+      runAtomicOperation(async () => {
         if (!mounted) return;
-        try {
-          const devices = await Html5Qrcode.getCameras();
-          if (mounted && devices && devices.length > 0) {
-            setCameras(devices);
-            
-            // Cari dan utamakan kamera belakang (environment)
-            const rearIdx = devices.findIndex(d =>
-              d.label.toLowerCase().includes('back') ||
-              d.label.toLowerCase().includes('rear') ||
-              d.label.toLowerCase().includes('environment') ||
-              d.label.toLowerCase().includes('0')
-            );
-            
-            const targetIdx = rearIdx >= 0 ? rearIdx : 0;
-            setActiveCameraIdx(targetIdx);
-          }
-        } catch (err) {
-          console.warn("Enumerasi kamera di background ditunda/gagal:", err);
-        }
-      }, 600);
-    };
+        await startScanner();
 
-    initSequence();
+        // Cari daftar kamera di background setelah scanner utama berhasil atau dicoba
+        setTimeout(async () => {
+          if (!mounted) return;
+          try {
+            const devices = await Html5Qrcode.getCameras();
+            if (mounted && devices && devices.length > 0) {
+              setCameras(devices);
+              
+              // Cari dan utamakan kamera belakang
+              const rearIdx = devices.findIndex(d =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('environment') ||
+                d.label.toLowerCase().includes('0')
+              );
+              
+              const targetIdx = rearIdx >= 0 ? rearIdx : 0;
+              setActiveCameraIdx(targetIdx);
+            }
+          } catch (err) {
+            console.warn("Enumerasi kamera di background ditunda/gagal:", err);
+          }
+        }, 800);
+      });
+    } else {
+      runAtomicOperation(async () => {
+        await stopScanner();
+      });
+    }
 
     return () => {
       mounted = false;
-      stopScanner();
+      runAtomicOperation(async () => {
+        await stopScanner();
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -159,11 +247,15 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
     if (cameras.length < 2 || isInitializing) return;
     const nextIdx = (activeCameraIdx + 1) % cameras.length;
     setActiveCameraIdx(nextIdx);
-    await startScanner(cameras[nextIdx].id);
+    runAtomicOperation(async () => {
+      await startScanner(cameras[nextIdx].id);
+    });
   };
 
   const handleClose = async () => {
-    await stopScanner();
+    runAtomicOperation(async () => {
+      await stopScanner();
+    });
     onClose();
   };
 
@@ -217,7 +309,37 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
             `} 
           />
 
-          {scanning ? (
+          {scanError ? (
+            // INDIKATOR ERROR: Sangat Indah, Profesional & Premium
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 px-6 text-center z-35 animate-in fade-in duration-300">
+              <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive border border-destructive/20 shadow-lg">
+                <CameraOff className="w-6 h-6" />
+              </div>
+              <h3 className="text-white text-[15px] font-bold mb-2">Gagal Memulai Kamera</h3>
+              <p className="text-zinc-400 text-[12px] leading-relaxed max-w-[280px] mb-6">
+                {scanError}
+              </p>
+              <div className="flex gap-3 w-full max-w-[280px]">
+                <Button
+                  type="button"
+                  onClick={() => runAtomicOperation(() => startScanner())}
+                  className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground font-semibold text-[13px] hover:bg-primary/95 active:scale-[0.98] transition-all"
+                >
+                  Coba Lagi
+                </Button>
+                {cameras.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSwitchCamera}
+                    className="flex-1 h-10 rounded-xl bg-transparent border-zinc-700 text-zinc-300 font-semibold text-[13px] hover:bg-zinc-800 hover:text-white"
+                  >
+                    Ganti Kamera
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : scanning ? (
             <>
               {/* Tombol Putar Kamera */}
               {cameras.length > 1 && (
