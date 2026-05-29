@@ -109,11 +109,33 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
           )}
 
           {/* Overlay stiker */}
-          {b.overlayImageUrl && (
-            <div style={{ position: 'absolute', left: `${overP.x}%`, top: `${overP.y}%`, transform: 'translate(-50%, -50%)', zIndex: 5 }}>
-              <img src={b.overlayImageUrl} style={{ transform: `scaleX(${b.overlayFlipX ? -1 : 1}) rotate(${b.overlayRotate ?? 0}deg)`, width: `calc(${b.overlayScale ?? 1} * 20cqw)`, height: 'auto', borderRadius: `${b.overlayBorderRadius ?? 0}%` }} alt="" className="object-contain" />
-            </div>
-          )}
+          {Array.isArray(b.overlays) && b.overlays.map((overlay: any, idx: number) => {
+            const overlayFilterStyle = `brightness(${overlay.filter?.brightness ?? 100}%) contrast(${overlay.filter?.contrast ?? 100}%) saturate(${overlay.filter?.saturate ?? 100}%) blur(${overlay.filter?.blur ?? 0}px)`;
+            return (
+              <div
+                key={overlay.id}
+                style={{
+                  position: 'absolute',
+                  left: `${overlay.x}%`,
+                  top: `${overlay.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 5 + idx,
+                  width: `calc(${overlay.scale ?? 1} * 20cqw)`,
+                }}
+              >
+                <img
+                  src={overlay.imageUrl}
+                  style={{
+                    transform: `scaleX(${overlay.flipX ? -1 : 1}) rotate(${overlay.rotate ?? 0}deg)`,
+                    filter: overlayFilterStyle,
+                    borderRadius: `${overlay.borderRadius ?? 0}%`,
+                  }}
+                  className="w-full h-auto object-contain drop-shadow-2xl pointer-events-none"
+                  alt="Overlay"
+                />
+              </div>
+            );
+          })}
 
           {/* Heading */}
           {b.heading && (
