@@ -191,7 +191,7 @@ export default React.memo(function BannerEditorCanvas() {
         style={{
           left: `${overlay.x}%`,
           top: `${overlay.y}%`,
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) rotate(${overlay.rotate ?? 0}deg)`,
           zIndex: isSelected ? 20 : baseZIndex, // bring to front when editing
           width: `calc(${overlay.scale} * 20cqw)`,
           cursor: 'grab',
@@ -247,7 +247,7 @@ export default React.memo(function BannerEditorCanvas() {
           src={overlay.imageUrl}
           draggable={false}
           style={{
-            transform: `scaleX(${overlay.flipX ? -1 : 1}) rotate(${overlay.rotate}deg)`,
+            transform: `scaleX(${overlay.flipX ? -1 : 1})`,
             width: '100%',
             height: 'auto',
             borderRadius: `${overlay.borderRadius}%`,
