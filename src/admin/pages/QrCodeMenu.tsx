@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import { useDbQuery, dbInsert, dbUpdate } from '@/hooks/db-hooks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
+// Transparent pixel untuk "melubangi" QR Code dengan rapi tanpa merender gambar kotak tajam bawaan SVG
+const transparentPixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 export default function QrCodeMenu() {
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
   const [tables, setTables] = useState<string[]>([]);
@@ -45,7 +48,6 @@ export default function QrCodeMenu() {
       return;
     }
     
-    // Case-insensitive duplicate check
     const isDuplicate = tables.some(t => t.toLowerCase() === newTableName.toLowerCase());
     
     if (isDuplicate) {
@@ -104,7 +106,6 @@ export default function QrCodeMenu() {
     }
   };
 
-  // Optimasi URL generation dengan useMemo
   const generatedUrl = useMemo(() => {
     let base = storeSettings?.customerUrl || window.location.origin;
     if (base.endsWith('/')) base = base.slice(0, -1);
@@ -120,7 +121,6 @@ export default function QrCodeMenu() {
   const downloadQrCode = async () => {
     if (!cardRef.current) return;
     try {
-      // Use html-to-image which provides flawless styling and font rendering compared to html2canvas
       const pngFile = await toPng(cardRef.current, {
         cacheBust: true,
         pixelRatio: 3,
@@ -142,109 +142,107 @@ export default function QrCodeMenu() {
     try {
       const dataUrl = await toPng(qrRef.current, { cacheBust: true, pixelRatio: 3, backgroundColor: '#ffffff' });
 
-    const storeName = storeSettings?.storeName || 'MesenAe Resto';
-    const printWindow = window.open('', '', 'width=800,height=900');
-    
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Cetak QR Code - Meja ${activeTable}</title>
-            <style>
-              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-              
-              body { 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                justify-content: center; 
-                min-height: 100vh; 
-                font-family: 'Inter', sans-serif; 
-                margin: 0;
-                background-color: #f8fafc;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              .print-container {
-                background: white;
-                border: 2px solid #e2e8f0;
-                border-radius: 24px;
-                padding: 40px;
-                text-align: center;
-                max-width: 400px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-              }
-              .store-name {
-                font-size: 24px;
-                font-weight: 800;
-                color: #0f172a;
-                margin-bottom: 8px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-              }
-              .instruction {
-                font-size: 15px;
-                color: #64748b;
-                margin-bottom: 32px;
-              }
-              .qr-wrapper {
-                background: #ffffff;
-                padding: 20px;
-                border-radius: 16px;
-                border: 2px dashed #cbd5e1;
-                display: inline-block;
-                margin-bottom: 24px;
-              }
-              .table-badge {
-                background: #0f172a;
-                color: white;
-                font-size: 32px;
-                font-weight: 800;
-                padding: 12px 40px;
-                border-radius: 100px;
-                display: inline-block;
-                margin-bottom: 20px;
-              }
-              .footer-text {
-                font-size: 12px;
-                color: #94a3b8;
-                margin-top: 24px;
-                border-top: 1px solid #f1f5f9;
-                padding-top: 16px;
-              }
-              @media print {
-                body { background-color: white; }
-                .print-container { border: 1px solid #000; box-shadow: none; }
-                .table-badge { background: #000; color: #fff; }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="print-container">
-              <div class="store-name">${storeName}</div>
-              <div class="instruction">Scan QR Code ini untuk melihat menu dan memesan langsung dari HP Anda.</div>
-              
-              <div class="qr-wrapper">
-                <img src="${dataUrl}" alt="QR Code" style="width:100%;height:auto;" />
-              </div>
-              
-              ${activeTable ? `<div class="table-badge">MEJA ${activeTable}</div>` : ''}
-              
-              <div class="footer-text">Powered by MesenAe Self-Order System</div>
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
+      const storeName = storeSettings?.storeName || 'MesenAe Resto';
+      const printWindow = window.open('', '', 'width=800,height=900');
       
-      // Delay untuk memastikan image ter-render sempurna sebelum print dialog muncul
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-    }
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Cetak QR Code - Meja ${activeTable}</title>
+              <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+                
+                body { 
+                  display: flex; 
+                  flex-direction: column; 
+                  align-items: center; 
+                  justify-content: center; 
+                  min-height: 100vh; 
+                  font-family: 'Inter', sans-serif; 
+                  margin: 0;
+                  background-color: #f8fafc;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+                .print-container {
+                  background: white;
+                  border: 1px solid #f1f5f9;
+                  border-radius: 32px;
+                  padding: 48px 40px;
+                  text-align: center;
+                  max-width: 420px;
+                  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+                }
+                .store-name {
+                  font-size: 26px;
+                  font-weight: 800;
+                  color: #0f172a;
+                  margin-bottom: 6px;
+                  text-transform: uppercase;
+                  letter-spacing: 1.5px;
+                }
+                .instruction {
+                  font-size: 15px;
+                  color: #64748b;
+                  margin-bottom: 36px;
+                  font-weight: 500;
+                }
+                .qr-wrapper {
+                  margin-bottom: 32px;
+                  display: inline-block;
+                }
+                .table-badge {
+                  background: #0f172a;
+                  color: white;
+                  font-size: 28px;
+                  font-weight: 800;
+                  padding: 14px 48px;
+                  border-radius: 20px;
+                  display: inline-block;
+                  margin-bottom: 24px;
+                  box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.2);
+                }
+                .footer-text {
+                  font-size: 13px;
+                  font-weight: 500;
+                  color: #94a3b8;
+                  margin-top: 32px;
+                  border-top: 2px dashed #f1f5f9;
+                  padding-top: 20px;
+                }
+                @media print {
+                  body { background-color: white; justify-content: flex-start; padding-top: 40px; }
+                  .print-container { border: none; box-shadow: none; }
+                  .table-badge { background: #000; color: #fff; box-shadow: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="print-container">
+                <div class="store-name">${storeName}</div>
+                <div class="instruction">Scan QR Code ini untuk melihat menu dan memesan dari HP Anda</div>
+                
+                <div class="qr-wrapper">
+                  <img src="${dataUrl}" alt="QR Code" style="width:280px;height:auto;" />
+                </div>
+                
+                ${activeTable ? `<div class="table-badge">${formatTableLabel(activeTable).toUpperCase()}</div>` : ''}
+                
+                <div class="footer-text">Powered by MesenAe Self-Order System</div>
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
+      }
     } catch {
       toast.error('Gagal memproses cetak');
     }
@@ -257,9 +255,7 @@ export default function QrCodeMenu() {
   };
 
   return (
-    <div className="pt- pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
-      {/* Page Content Grid */}
-
+    <div className="pt-4 pb-24 space-y-6 w-full mx-auto animate-in fade-in duration-300">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Kolom Kiri: Manajemen Meja */}
@@ -369,7 +365,7 @@ export default function QrCodeMenu() {
               </CardTitle>
             </div>
             
-            <CardContent className="p-8 flex-1 flex flex-col items-center justify-center relative">
+            <CardContent className="p-8 flex-1 flex flex-col items-center justify-center relative bg-slate-50/50">
               {!activeTable ? (
                 <div className="text-center space-y-3 opacity-50">
                   <LayoutGrid className="w-16 h-16 mx-auto text-muted-foreground" />
@@ -377,70 +373,99 @@ export default function QrCodeMenu() {
                 </div>
               ) : (
                 <>
-                  {/* Wrapper for layout and effects, keeping cardRef pristine for html-to-image */}
-                  <div className="mx-auto mb-8 transform transition-all hover:scale-[1.02] hover:shadow-2xl">
-                    {/* Full card yang akan di-capture untuk PNG */}
+                  {/* Wrapper animasi efek hover. cardRef diatur lebih padat dan presisi untuk hasil PNG */}
+                  <div className="mx-auto mb-10 transform transition-all hover:scale-[1.02] hover:shadow-2xl rounded-[32px]">
                     <div 
                       ref={cardRef}
-                      className="bg-white p-8 rounded-3xl shadow-xl shadow-primary/5 relative border border-border/50 flex flex-col items-center text-center"
-                      style={{ width: '340px', boxSizing: 'border-box' }}
+                      className="bg-white p-10 rounded-[32px] shadow-xl shadow-slate-200/50 relative flex flex-col items-center text-center"
+                      style={{ 
+                        width: '380px', 
+                        boxSizing: 'border-box',
+                        border: '1px solid #f1f5f9'
+                      }}
                     >
-                      <div className="w-full mb-6">
-                        <h4 className="font-bold text-gray-900 uppercase tracking-widest text-sm mb-1">
+                      {/* Header Card */}
+                      <div className="w-full mb-8">
+                        <h4 className="font-extrabold text-slate-900 uppercase tracking-[0.15em] text-lg mb-1.5">
                           {storeSettings?.storeName || 'Toko Kami'}
                         </h4>
-                        <p className="text-xs text-gray-500">Scan untuk memesan</p>
+                        <p className="text-sm text-slate-500 font-medium">Scan QR Code untuk memesan</p>
                       </div>
 
+                      {/* Area QR Code + Logo */}
                       <div 
                         ref={qrRef} 
-                        className="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-block"
+                        className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm inline-flex relative justify-center items-center"
                       >
                         <QRCodeSVG 
                           value={generatedUrl} 
                           size={240} 
-                          level={"H"}
+                          level={"H"} // Level H wajib untuk custom logo (error correction 30%)
                           includeMargin={false}
                           imageSettings={storeSettings?.logo ? {
-                            src: storeSettings.logo,
-                            height: 56,
-                            width: 56,
+                            src: transparentPixel, // Menghindari svg menggambar kotak tajam, cukup "melubangi" ruangnya
+                            height: 68,
+                            width: 68,
                             excavate: true,
-                            crossOrigin: "anonymous",
                           } : undefined}
                         />
+                        
+                        {/* Overlay Logo dengan Desain Rounded Premium */}
+                        {storeSettings?.logo && (
+                          <div 
+                            className="absolute bg-white flex items-center justify-center shadow-sm"
+                            style={{
+                              width: '68px',
+                              height: '68px',
+                              borderRadius: '18px',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                          >
+                            <img 
+                              src={storeSettings.logo} 
+                              alt="Logo" 
+                              className="w-[56px] h-[56px] object-cover" 
+                              style={{ borderRadius: '12px' }}
+                              crossOrigin="anonymous" 
+                            />
+                          </div>
+                        )}
                       </div>
                       
-                      <div className="mt-6 w-full">
-                        <div className="inline-block bg-gray-900 text-white font-bold px-6 py-2 rounded-full text-lg">
+                      {/* Footer Badge Meja */}
+                      <div className="mt-8 w-full flex flex-col items-center">
+                        <div className="inline-block bg-slate-900 text-white font-bold px-8 py-3 rounded-2xl text-xl tracking-wide shadow-md shadow-slate-900/20">
                           {formatTableLabel(activeTable)}
                         </div>
+                        <p className="text-[11px] text-slate-400 mt-5 font-semibold tracking-wider">POWERED BY MESENAE</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Actions Area */}
                   <div className="w-full max-w-md space-y-4">
-                    <div className="flex gap-2 p-1 bg-muted/50 rounded-lg border border-border/50">
+                    <div className="flex gap-2 p-1.5 bg-white rounded-xl border border-border/80 shadow-sm">
                       <Input 
                         readOnly 
                         value={generatedUrl} 
                         className="font-mono text-xs border-0 bg-transparent focus-visible:ring-0 truncate" 
                       />
-                      <Button variant="secondary" size="sm" onClick={copyToClipboard} className="shrink-0 gap-2">
+                      <Button variant="secondary" size="sm" onClick={copyToClipboard} className="shrink-0 gap-2 h-9 rounded-lg">
                         <Copy className="w-4 h-4" />
                         Salin
                       </Button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <Button onClick={downloadQrCode} className="w-full gap-2 font-medium" size="lg">
+                      <Button onClick={downloadQrCode} className="w-full gap-2 font-medium h-11 rounded-xl" size="lg">
                         <Download className="w-4 h-4" />
                         Simpan PNG
                       </Button>
-                      <Button onClick={printQrCode} variant="outline" className="w-full gap-2 font-medium border-primary/20 hover:bg-primary/5" size="lg">
+                      <Button onClick={printQrCode} variant="outline" className="w-full gap-2 font-medium border-primary/20 hover:bg-primary/5 h-11 rounded-xl" size="lg">
                         <Printer className="w-4 h-4" />
-                        Cetak Standee
+                        Cetak QR Meja
                       </Button>
                     </div>
                   </div>
@@ -453,21 +478,21 @@ export default function QrCodeMenu() {
       </div>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
+        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-3xl p-6">
           <AlertDialogHeader>
-            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2 mx-auto">
-              <Trash2 className="w-6 h-6 text-destructive" />
+            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-3 mx-auto">
+              <Trash2 className="w-7 h-7 text-destructive" />
             </div>
             <AlertDialogTitle className="text-center text-xl font-extrabold">Hapus Meja?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              Apakah Anda yakin ingin menghapus meja <strong>{tableToDelete}</strong> secara permanen?
+            <AlertDialogDescription className="text-center text-base">
+              Apakah Anda yakin ingin menghapus <strong>{tableToDelete}</strong> secara permanen?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-12 font-bold text-slate-600 border-slate-200 hover:bg-slate-50">Batal</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleRemoveTable} 
-              className="flex-1 rounded-xl h-11 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-md shadow-destructive/20"
+              className="flex-1 rounded-xl h-12 font-bold bg-destructive hover:bg-destructive/90 text-white shadow-lg shadow-destructive/20"
             >
               Ya, Hapus
             </AlertDialogAction>
