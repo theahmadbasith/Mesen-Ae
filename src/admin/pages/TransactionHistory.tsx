@@ -476,7 +476,7 @@ export default function TransactionHistory() {
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
                 {selectedTx.status === 'belum lunas' ? (
-                  <Button className="w-full h-12 rounded-xl font-bold shadow-md active:scale-[0.98] transition-all" onClick={() => { setDetailOpen(false); navigate('/admin/cashier'); }}>
+                  <Button className="w-full h-12 rounded-xl font-bold shadow-md active:scale-[0.98] transition-all" onClick={() => { setDetailOpen(false); navigate('/admin/orders?payTxId=' + selectedTx.id); }}>
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Lanjutkan Pembayaran di Kasir
                   </Button>
