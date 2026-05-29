@@ -471,14 +471,7 @@ export default function Pengaturan() {
   };
 
 
-  /* ── Storage ── */
-  const [storageUsage, setStorageUsage] = useState<{ usage: number; quota: number } | null>(null);
-  useEffect(() => {
-    navigator.storage?.estimate().then(est =>
-      setStorageUsage({ usage: est.usage ?? 0, quota: est.quota ?? 0 })
-    );
-  }, []);
-  const formatBytes = (b: number) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : b < 1073741824 ? `${(b/1048576).toFixed(1)} MB` : `${(b/1073741824).toFixed(1)} GB`;
+
 
 
 
@@ -816,21 +809,6 @@ export default function Pengaturan() {
               </SettingCard>
             </div>
 
-            <div className="mt-6">
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Database Firebase</p>
-              <SettingCard>
-                <div className="p-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">
-                    Semua data toko disimpan terpusat di Google Firebase (Firestore & Storage). Sinkronisasi berjalan secara real-time dan koleksi akan terbuat secara otomatis.
-                  </p>
-                  <div className="p-3 rounded-lg text-xs space-y-1.5 bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800">
-                    <div className="flex items-center gap-1.5 font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Firebase Terhubung & Aktif
-                    </div>
-                  </div>
-                </div>
-              </SettingCard>
-            </div>
           </Section>
         )}
 
@@ -858,32 +836,10 @@ export default function Pengaturan() {
                   </div>
                 </div>
               </div>
-              <SettingRow label="Dikembangkan oleh">
+              <SettingRow last label="Dikembangkan oleh">
                 <span className="text-sm font-medium flex items-center gap-1.5">
                   <Code2 className="w-3.5 h-3.5 text-muted-foreground" /> Ahmad Basith
                 </span>
-              </SettingRow>
-              <SettingRow last label="Penyimpanan">
-                {storageUsage ? (
-                  <div className="text-right">
-                    <p className="text-xs font-medium">
-                      {formatBytes(storageUsage.usage)}
-                      {storageUsage.quota > 0 && (
-                        <span className="text-muted-foreground font-normal"> / {formatBytes(storageUsage.quota)}</span>
-                      )}
-                    </p>
-                    <div className="w-24 h-1 bg-muted rounded-full mt-1 overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full"
-                        style={{ width: `${Math.min(100, storageUsage.quota > 0 ? (storageUsage.usage / storageUsage.quota) * 100 : 0)}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <HardDrive className="w-3.5 h-3.5" /> Memuat…
-                  </span>
-                )}
               </SettingRow>
             </SettingCard>
           </Section>
