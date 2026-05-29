@@ -1093,8 +1093,6 @@ export default function Kasir() {
                   </Button>
                 </div>
                 )}
-
-
               </div>
             </div>
           )}
