@@ -5,206 +5,157 @@ import { Button } from "@/components/ui/button";
 import { Check, Copy, Download, QrCode } from "lucide-react";
 
 interface Props {
-  qrisString: string;
+  qrisString: string;
 }
 
 export function QRISResult({ qrisString }: Props) {
-  const cardCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [copied, setCopied] = useState(false);
+  const cardCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [copied, setCopied] = useState(false);
   const [nmid, setNmid] = useState<string>("");
+  const [isRendered, setIsRendered] = useState(false);
 
-  const parsed = parseQRIS(qrisString);
+  const parsed = parseQRIS(qrisString);
 
-  // Fungsi untuk mengurai NMID (sering ditemukan di bawah tag 59 atau 62 di QRIS)
-  // Ini mungkin perlu disesuaikan tergantung pada pustaka parseQRIS Anda
+  // Fungsi untuk mengurai NMID (Tag 59)
   const extractNmid = (string: string): string => {
-    // Implementasi sederhana untuk mengurai NMID. 
-    // Dalam QRIS standar Indonesia, NMID seringkali berada di bawah tag 59
-    // dengan format IDxxxxxxxxxxx. Kita akan mencari tag 59
     const match = string.match(/59[0-9]{2}ID([0-9]+)/);
     return match ? `ID${match[1]}` : "";
   };
 
-  useEffect(() => {
+  useEffect(() => {
     const currentNmid = extractNmid(qrisString);
     setNmid(currentNmid);
+    setIsRendered(false);
 
-    if (cardCanvasRef.current && qrisString) {
-      const cardCanvas = cardCanvasRef.current;
-      const ctx = cardCanvas.getContext("2d");
+    if (cardCanvasRef.current && qrisString) {
+      const canvas = cardCanvasRef.current;
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Dimensi kartu kartu kartu kartu (meniru image_0.png)
-      const cardWidth = 360;
-      const cardHeight = 560;
-      const borderRadius = 24;
+      // Resolusi tinggi untuk hasil Download PNG (Skala 4x)
+      const scale = 4;
+      const width = 400; // Lebar logic
+      const height = 640; // Tinggi logic
+      const radius = 24;
 
-      cardCanvas.width = cardWidth;
-      cardCanvas.height = cardHeight;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      
+      // Reset transform dan bersihkan canvas
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
 
-      // Menggambar latar belakang putih dengan sudut membulat
+      // 1. Gambar Base Kartu Putih dengan Sudut Melengkung
       ctx.beginPath();
-      ctx.moveTo(borderRadius, 0);
-      ctx.lineTo(cardWidth - borderRadius, 0);
-      ctx.quadraticCurveTo(cardWidth, 0, cardWidth, borderRadius);
-      ctx.lineTo(cardWidth, cardHeight - borderRadius);
-      ctx.quadraticCurveTo(cardWidth, cardHeight, cardWidth - borderRadius, cardHeight);
-      ctx.lineTo(borderRadius, cardHeight);
-      ctx.quadraticCurveTo(0, cardHeight, 0, cardHeight - borderRadius);
-      ctx.lineTo(0, borderRadius);
-      ctx.quadraticCurveTo(0, 0, borderRadius, 0);
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(width - radius, 0);
+      ctx.quadraticCurveTo(width, 0, width, radius);
+      ctx.lineTo(width, height - radius);
+      ctx.quadraticCurveTo(width, height, width - radius, height);
+      ctx.lineTo(radius, height);
+      ctx.quadraticCurveTo(0, height, 0, height - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
       ctx.closePath();
+      
+      // Aplikasikan bayangan halus untuk base card
+      ctx.shadowColor = "rgba(0, 0, 0, 0.05)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
       ctx.fillStyle = "#FFFFFF";
       ctx.fill();
+      
+      // Matikan shadow agar elemen di dalamnya bersih
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
 
-      // Menggambar aksen merah (segitiga/poligon)
-      const redColor = "#DA291C"; // Warna merah QRIS standar
-      ctx.fillStyle = redColor;
+      // Buat mask (clipping path) agar warna merah tidak keluar dari sudut kartu
+      ctx.save();
+      ctx.clip();
 
-      // Aksen kiri atas (di belakang Pedagang)
+      // 2. Gambar Aksen Merah Khas QRIS
+      const qrisRed = "#D62128";
+      ctx.fillStyle = qrisRed;
+
+      // Merah Kiri (Segitiga sejajar dengan QR Code)
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(120, 0); // Atas
-      ctx.lineTo(70, 150); // Miring
-      ctx.lineTo(0, 150); // Kiri
+      ctx.moveTo(0, 230);
+      ctx.lineTo(65, 300);
+      ctx.lineTo(0, 370);
       ctx.closePath();
       ctx.fill();
 
-      // Aksen kanan bawah (di bawah QR Code)
+      // Merah Kanan Bawah (Poligon presisi seperti di gambar pertama)
       ctx.beginPath();
-      ctx.moveTo(cardWidth, cardHeight);
-      ctx.lineTo(cardWidth, cardHeight - 160); // Kanan
-      ctx.lineTo(cardWidth - 140, cardHeight - 100); // Miring
-      ctx.lineTo(cardWidth - 140, cardHeight); // Bawah
+      ctx.moveTo(250, 640);
+      ctx.lineTo(340, 520);
+      ctx.lineTo(400, 520);
+      ctx.lineTo(400, 640);
       ctx.closePath();
       ctx.fill();
 
-      // Menulis Header
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 20px 'Inter', sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText("QRIS", 30, 40);
+      // Lepaskan mask
+      ctx.restore();
 
-      ctx.fillStyle = "#5F6368"; // Abu-abu gelap
-      ctx.font = "12px 'Inter', sans-serif";
-      ctx.fillText("QR Code Standar", 30, 60);
-      ctx.fillText("Pembayaran Nasional", 30, 75);
-
-      // Menulis Detail Pedagang
+      // 3. Render Teks
+      // Nama Merchant
       ctx.fillStyle = "#000000";
-      ctx.font = "bold 28px 'Inter', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(parsed.merchantName, cardWidth / 2, 120);
+      ctx.font = "500 28px 'Inter', system-ui, sans-serif";
+      // Membatasi panjang teks agar tidak tumpah
+      const merchantName = parsed.merchantName.length > 25 
+        ? parsed.merchantName.substring(0, 23) + "..." 
+        : parsed.merchantName;
+      ctx.fillText(merchantName, width / 2, 180);
 
+      // NMID
       if (currentNmid) {
-        ctx.fillStyle = "#5F6368";
-        ctx.font = "14px 'Inter', sans-serif";
-        ctx.fillText(`NMID: ${currentNmid}`, cardWidth / 2, 145);
+        ctx.fillStyle = "#333333";
+        ctx.font = "400 14px 'Inter', system-ui, sans-serif";
+        ctx.fillText(`NMID: ${currentNmid}`, width / 2, 215);
       }
 
-      // Merender QR Code mentah ke kanvas sementara 200x200
-      const qrCanvas = document.createElement("canvas");
-      qrCanvas.width = 240;
-      qrCanvas.height = 240;
-      QRCode.toCanvas(qrCanvas, qrisString, {
-        width: 240,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
-        errorCorrectionLevel: "M",
-      });
+      // 4. Proses Render Async (Logo & QR Code)
+      const renderAssets = async () => {
+        try {
+          // A. Generate QR Code ke kanvas virtual
+          const qrCanvas = document.createElement("canvas");
+          await QRCode.toCanvas(qrCanvas, qrisString, {
+            width: 270,
+            margin: 1.5,
+            color: {
+              dark: "#000000",
+              light: "#FFFFFF",
+            },
+            errorCorrectionLevel: "M",
+          });
 
-      // Menyalin kanvas QR code mentah ke kanvas kartu lengkap, dipusatkan di area bawah
-      ctx.drawImage(qrCanvas, (cardWidth - 240) / 2, 220, 240, 240);
-    }
-  }, [qrisString]);
+          // Draw QR Code ke canvas utama
+          ctx.drawImage(qrCanvas, (width - 270) / 2, 245, 270, 270);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(qrisString);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+          // B. Load & Draw Logo
+          const logo = new Image();
+          logo.crossOrigin = "anonymous";
+          logo.src = "/ico/qris.png";
+          
+          await new Promise((resolve, reject) => {
+            logo.onload = resolve;
+            logo.onerror = reject;
+          });
 
-  const handleDownload = () => {
-    if (!cardCanvasRef.current) return;
-    const link = document.createElement("a");
-    link.download = `qris-dinamis-${parsed.merchantName.replace(/\s+/g, "-").toLowerCase()}.png`;
-    link.href = cardCanvasRef.current.toDataURL("image/png");
-    link.click();
-  };
+          // Menggambar logo dengan rasio yang tepat
+          ctx.drawImage(logo, 35, 45, 100, 32);
 
-  return (
-    <div className="rounded-xl border border-border/50 bg-background overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="px-5 py-4 border-b border-border/50 bg-muted/30">
-        <h2 className="text-sm font-semibold flex items-center gap-2">
-          <QrCode className="w-4 h-4 text-emerald-500" />
-          Hasil QRIS Dinamis
-        </h2>
-      </div>
+          // Teks di samping Logo
+          ctx.fillStyle = "#000000";
+          ctx.textAlign = "left";
+          ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QR Code Standar", 145, 55);
+          ctx.font = "400 12px 'Inter', system-ui, sans-serif";
+          ctx.fillText("Pembayaran Nasional", 145, 72);
 
-      <div className="p-6 flex flex-col items-center space-y-6">
-        {/* QR Code Card Preview */}
-        <div className="p-2 bg-muted/20 rounded-3xl border border-border/50">
-          <canvas ref={cardCanvasRef} className="w-[300px] h-[466px] rounded-3xl" />
-        </div>
-
-        {/* Info (Outside Canvas for accessibility) */}
-        <div className="text-center space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{parsed.merchantName}</p>
-          {nmid && <p className="text-xs text-muted-foreground">NMID: {nmid}</p>}
-          <p className="text-3xl font-bold text-primary mt-2">
-            Rp {Number(parsed.amount ?? 0).toLocaleString("id-ID")}
-          </p>
-          {parsed.tipIndicator === "fixed" && parsed.tipFixed && (
-            <p className="text-sm text-muted-foreground bg-muted inline-block px-3 py-1 rounded-full mt-2">
-              + Biaya Rp {Number(parsed.tipFixed).toLocaleString("id-ID")}
-                            </p>
-          )}
-          {parsed.tipIndicator === "percentage" && parsed.tipPercentage && (
-            <p className="text-sm text-muted-foreground bg-muted inline-block px-3 py-1 rounded-full mt-2">
-              + Biaya {parsed.tipPercentage}%
-            </p>
-          )}
-        </div>
-
-        {/* QRIS String */}
-        <div className="w-full">
-          <div className="bg-muted/50 border border-border/50 rounded-lg p-4 break-all font-mono text-xs text-muted-foreground max-h-32 overflow-y-auto">
-            {qrisString}
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-3 w-full">
-          <Button
-            variant="outline"
-            onClick={handleCopy}
-            className="gap-2"
-          >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4 text-emerald-500" />
-                Tersalin!
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                Salin String
-              </>
-            )}
-          </Button>
-
-          <Button
-            onClick={handleDownload}
-            className="gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Download QR
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
+          setIsRendered(true);
+        } catch (error) {
+          console.
