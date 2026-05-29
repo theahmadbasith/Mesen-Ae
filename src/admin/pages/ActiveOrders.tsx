@@ -82,8 +82,6 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
     }
   ).sort((a, b) => new Date(a.date || a.created_at || 0).getTime() - new Date(b.date || b.created_at || 0).getTime());
 
-
-
   // Handlers
 
   const confirmCancel = (bill: Transaction) => {
@@ -483,8 +481,6 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
           />
         );
       })()}
-
-
 
       <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
         <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
