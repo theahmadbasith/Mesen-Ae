@@ -4,7 +4,7 @@ import {
   useBannerEditor, cn, Button, Input, Label, Switch, PanelSection,
   ColorPicker, SliderRow, RichTextEditor, Wand2Icon, OverlayData
 } from './BannerEditorContext';
-import MagicWandModal from './MagicWandModal';
+import EraserBackgroundModal from './EraserBackgroundModal';
 
 // ============================================================================
 // SIDEBAR FORM CONTENT (shared between desktop sidebar and mobile bottom sheet)
@@ -23,7 +23,7 @@ const SidebarFormContent = React.memo(function SidebarFormContent() {
 
   return (
     <div className="space-y-6">
-      <MagicWandModal 
+      <EraserBackgroundModal 
         open={!!magicWandId} 
         onOpenChange={(open) => { if (!open) setMagicWandId(null); }}
         imageUrl={magicWandUrl}

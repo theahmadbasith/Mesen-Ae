@@ -876,7 +876,11 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
         titlePos: { x: Math.round(titleL.x), y: Math.round(titleL.y), w: Math.round(titleL.w ?? 60) },
         descPos: { x: Math.round(descL.x), y: Math.round(descL.y), w: Math.round(descL.w ?? 60) },
         buttonPos: { x: Math.round(buttonL.x), y: Math.round(buttonL.y) },
-        overlays
+        overlays,
+        // Clear legacy single-overlay fields to prevent ghost overlays in customer app
+        overlayImageUrl: null, overlayPos: null, overlayFlipX: null,
+        overlayRotate: null, overlayScale: null, overlayBorderRadius: null,
+        canvasOverlayFilter: null,
       };
       if (editBanner) {
         await dbUpdate('banners', editBanner.id, bannerData);

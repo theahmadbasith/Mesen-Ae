@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface MagicWandModalProps {
+interface EraserBackgroundModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   imageUrl: string | null;
@@ -23,7 +23,7 @@ interface HistoryState {
   height: number;
 }
 
-export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }: MagicWandModalProps) {
+export default function EraserBackgroundModal({ open, onOpenChange, imageUrl, onSave }: EraserBackgroundModalProps) {
   const [activeTool, setActiveTool] = useState<ToolMode>('wand');
   const [patternMode, setPatternMode] = useState<'light' | 'dark'>('light');
   
@@ -402,27 +402,24 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-background text-foreground overflow-hidden font-sans">
       
       {/* Header Panel - Diperbarui z-index */}
-      <div className="h-16 shrink-0 border-b border-border bg-white dark:bg-zinc-900 flex items-center justify-between px-4 shadow-sm z-[70]">
+      <div className="h-16 shrink-0 border-b border-border bg-card flex items-center justify-between px-4 shadow-sm z-[70]">
         <div className="flex items-center gap-3">
           <button onClick={() => onOpenChange(false)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
             <X className="w-5 h-5" />
           </button>
-          <div className="flex flex-col">
-            <span className="font-bold text-sm sm:text-base leading-tight">Hapus Latar Belakang</span>
-            <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">Editor Profesional</span>
-          </div>
+          <span className="font-bold text-sm sm:text-base">Hapus Latar Belakang</span>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
-            <button onClick={undo} disabled={historyIndex <= 0} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 transition-colors"><Undo2 className="w-4 h-4" /></button>
-            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 transition-colors"><Redo2 className="w-4 h-4" /></button>
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+            <button onClick={undo} disabled={historyIndex <= 0} className="w-8 h-8 flex items-center justify-center rounded hover:bg-accent disabled:opacity-30 transition-colors"><Undo2 className="w-4 h-4" /></button>
+            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="w-8 h-8 flex items-center justify-center rounded hover:bg-accent disabled:opacity-30 transition-colors"><Redo2 className="w-4 h-4" /></button>
           </div>
 
-          <button onClick={() => setPatternMode(p => p === 'light' ? 'dark' : 'light')} className="w-9 h-9 rounded-lg flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+          <button onClick={() => setPatternMode(p => p === 'light' ? 'dark' : 'light')} className="w-9 h-9 rounded-lg flex items-center justify-center bg-muted hover:bg-accent transition-colors">
             {patternMode === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
 
@@ -434,7 +431,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Floating Sidebar Tools - Diperbarui z-index ke 60 agar di atas shadow crop */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-2 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-xl border border-border">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-2 bg-card p-2 rounded-2xl shadow-xl border border-border">
           <ToolButton icon={<Wand2 />} label="Magic Wand" active={activeTool === 'wand'} onClick={() => setActiveTool('wand')} />
           <ToolButton icon={<Eraser />} label="Hapus Manual (Brush)" active={activeTool === 'brush'} onClick={() => setActiveTool('brush')} />
           <ToolButton icon={<Paintbrush />} label="Kembalikan (Repair)" active={activeTool === 'restore'} onClick={() => setActiveTool('restore')} />
@@ -444,7 +441,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
         </div>
 
         {/* Floating Top Options (Contextual Toolbar) - Diperbarui z-index ke 60 */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 bg-white dark:bg-zinc-900 px-5 py-2.5 rounded-full shadow-lg border border-border">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 bg-card px-5 py-2.5 rounded-full shadow-lg border border-border">
           
           {activeTool === 'wand' && (
             <div className="flex items-center gap-3">
@@ -497,7 +494,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
         {/* Workspace / Canvas Area - Diperbarui z-index agar shadow tetap di bawah Toolbars */}
         <div 
           ref={containerRef}
-          className={cn("flex-1 overflow-auto bg-zinc-200/50 dark:bg-zinc-950/50 touch-none z-10 relative", activeTool === 'pan' ? "cursor-grab active:cursor-grabbing" : "")}
+          className={cn("flex-1 overflow-auto bg-muted touch-none z-10 relative", activeTool === 'pan' ? "cursor-grab active:cursor-grabbing" : "")}
           onPointerDown={handleContainerPointerDown}
           onWheel={(e) => {
             if (e.ctrlKey || e.metaKey) {
