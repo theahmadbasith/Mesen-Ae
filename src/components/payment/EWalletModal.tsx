@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 // ==========================================
-// Tipe Data & Interfaces (TypeScript)
+// Tipe Data & Interfaces
 // ==========================================
 
 interface EWalletModalProps {
@@ -48,7 +48,6 @@ interface WalletOption {
 
 type Step = 'select' | 'loading' | 'success' | 'error';
 
-// Memperluas interface Window secara lokal untuk mendukung Midtrans Snap
 declare global {
   interface Window {
     snap?: {
@@ -58,7 +57,7 @@ declare global {
 }
 
 // ==========================================
-// Konfigurasi E-Wallet dengan Logo Resmi (SVG)
+// Konfigurasi E-Wallet
 // ==========================================
 
 const WALLETS: WalletOption[] = [
@@ -93,7 +92,7 @@ const WALLETS: WalletOption[] = [
   {
     id: 'dana',
     name: 'DANA',
-    snapKey: 'dana', // Dilempar ke QRIS otomatis oleh kode handler di bawah
+    snapKey: 'dana',
     bg: 'bg-[#118EEA]/10 dark:bg-[#118EEA]/20',
     borderColor: 'hover:border-[#118EEA] focus:ring-[#118EEA]/20',
     svg: <img src="/ico/dana.png" alt="DANA" className="w-full h-full object-contain p-1.5 drop-shadow-sm" />,
@@ -132,7 +131,6 @@ export function EWalletModal({
   
   const onSuccessRef = useRef(onSuccess);
   const onCloseRef = useRef(onClose);
-
   useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
@@ -160,7 +158,6 @@ export function EWalletModal({
         return;
       }
       (window as any).midtransSnapActive = true;
-
       setSelectedWallet(wallet);
       setStep('loading');
       setErrorMsg(null);
@@ -169,28 +166,16 @@ export function EWalletModal({
 
       try {
         const token = await MidtransService.createTransactionToken({
-          transaction_details: {
-            order_id: orderId,
-            gross_amount: Math.round(amount),
-          },
-          item_details: [
-            {
-              name: 'Total Belanja MesenAe',
-              price: Math.round(amount),
-              quantity: 1,
-            },
-          ],
-          customer_details: {
-            first_name: customerName || 'Pelanggan MesenAe',
-          },
-          // Route DANA via QRIS otomatis
+          transaction_details: { order_id: orderId, gross_amount: Math.round(amount) },
+          item_details: [{ name: 'Total Belanja MesenAe', price: Math.round(amount), quantity: 1 }],
+          customer_details: { first_name: customerName || 'Pelanggan MesenAe' },
           enabled_payments: wallet.id === 'dana' ? ['qris'] : [wallet.snapKey],
         });
 
         if (!window.snap) throw new Error('Sistem pembayaran Midtrans belum siap.');
 
         setSnapActive(true);
-        setStep('select'); // Kembalikan UI state dasar di latar belakang
+        setStep('select');
 
         window.snap.pay(token, {
           onSuccess: () => {
@@ -209,7 +194,7 @@ export function EWalletModal({
             setSnapActive(false);
             (window as any).midtransSnapActive = false;
             setStep('error');
-            setErrorMsg(`Pembayaran via ${wallet.name} gagal ditolak sistem. Silakan coba lagi.`);
+            setErrorMsg(`Pembayaran via ${wallet.name} gagal. Silakan coba lagi.`);
           },
           onClose: () => {
             setSnapActive(false);
@@ -233,17 +218,17 @@ export function EWalletModal({
     onClose();
   };
 
-  const dialogOpen = isOpen && !snapActive;
+  // Tutup dialog utama saat confirmOpen agar tidak stacking
+  const dialogOpen = isOpen && !snapActive && !confirmOpen;
 
   return (
     <>
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl">
+        <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:top-3 [&>button]:right-3">
           
-          {/* Header Compact */}
+          {/* Header */}
           <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-white relative overflow-hidden">
             <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
             <DialogHeader className="relative z-10">
               <DialogTitle className="text-white text-base font-bold flex items-center gap-2 tracking-tight">
                 {step === 'error' && (
@@ -261,28 +246,24 @@ export function EWalletModal({
                 Konfirmasi nominal tagihan & pilih metode dompet digital
               </DialogDescription>
             </DialogHeader>
-
-            {/* Card Info Tagihan */}
             <div className="mt-3 bg-white/15 backdrop-blur-md rounded-xl p-3 text-center border border-white/10">
               <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Total Tagihan</p>
               <p className="text-2xl font-black text-white mt-0.5 tracking-tight">
                 Rp {amount.toLocaleString('id-ID')}
               </p>
-              <p className="text-xs text-white/70 mt-1 truncate">
-                {customerName || 'Pelanggan'}
-              </p>
+              <p className="text-xs text-white/70 mt-1 truncate">{customerName || 'Pelanggan'}</p>
             </div>
           </div>
 
-          {/* Konten Utama */}
+          {/* Body */}
           <div className="p-4 overflow-y-auto max-h-[55vh] custom-scrollbar-hide">
             
-            {/* STEP 1: PILIH WALLET (MANUAL) */}
+            {/* Manual E-Wallet */}
             {step === 'select' && isManual && paymentMethod && (
               <div className="animate-in fade-in zoom-in duration-300">
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 font-medium text-center">Silakan transfer E-Wallet ke nomor berikut:</p>
                 
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 mb-3 flex flex-col items-center text-center gap-2 shadow-inner">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 mb-4 flex flex-col items-center text-center gap-2 shadow-inner">
                   {paymentMethod.iconName ? (
                     <img src={`/ico/${paymentMethod.iconName}.png`} alt={paymentMethod.bankName} className="h-10 object-contain mb-1 drop-shadow-sm" />
                   ) : (
@@ -295,19 +276,16 @@ export function EWalletModal({
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 rounded-xl h-10 font-semibold text-xs" onClick={handleClose}>Batalkan</Button>
-                  <Button
-                    className="flex-1 font-bold rounded-xl h-10 text-xs bg-primary hover:bg-primary/90 text-white"
-                    onClick={() => setConfirmOpen(true)}
-                  >
-                    Konfirmasi Pembayaran
-                  </Button>
-                </div>
+                <Button
+                  className="w-full font-bold rounded-xl h-11 text-sm bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  Konfirmasi Pembayaran
+                </Button>
               </div>
             )}
 
-            {/* STEP 1: PILIH WALLET (MIDTRANS) */}
+            {/* Midtrans Wallet Selection */}
             {step === 'select' && !isManual && (
               <>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold mb-3 uppercase tracking-wider">
@@ -320,12 +298,9 @@ export function EWalletModal({
                       onClick={() => handleWalletSelect(wallet)}
                       className={`group flex items-center gap-3.5 p-3 rounded-xl border-2 border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-900/80 transition-all duration-200 outline-none focus:ring-4 text-left shadow-sm hover:shadow-md ${wallet.borderColor}`}
                     >
-                      {/* Wadah Logo */}
                       <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-md border-2 border-white/80 dark:border-slate-800 bg-white overflow-hidden">
                         {wallet.svg}
                       </div>
-
-                      {/* Deskripsi & Teks */}
                       <div className="flex-1 min-w-0 pr-2">
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
@@ -355,7 +330,7 @@ export function EWalletModal({
               </>
             )}
 
-            {/* STEP 2: LOADING GATEWAY */}
+            {/* Loading */}
             {step === 'loading' && (
               <div className="flex flex-col items-center py-8 gap-4">
                 <div className="relative flex items-center justify-center">
@@ -367,30 +342,28 @@ export function EWalletModal({
                     Menghubungkan ke {selectedWallet?.name}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[240px]">
-                    Mohon tunggu sebentar, sistem sedang mengamankan token transaksi Anda...
+                    Mohon tunggu sebentar...
                   </p>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: SUKSES */}
+            {/* Sukses */}
             {step === 'success' && (
               <div className="flex flex-col items-center py-6 gap-4 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shadow-md animate-bounce">
                   <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
-                    Pembayaran Sukses!
-                  </p>
+                  <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">Pembayaran Sukses!</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[220px]">
-                    Sistem berhasil memverifikasi mutasi dana. Halaman akan segera dialihkan.
+                    Halaman akan segera dialihkan.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* STEP 4: ERROR */}
+            {/* Error */}
             {step === 'error' && (
               <div className="flex flex-col items-center py-4 gap-3 text-center">
                 <div className="w-14 h-14 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center shadow-sm">
@@ -398,16 +371,13 @@ export function EWalletModal({
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-rose-600 dark:text-rose-400">Gagal Memproses Pembayaran</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] leading-relaxed">
-                    {errorMsg}
-                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] leading-relaxed">{errorMsg}</p>
                 </div>
                 <div className="flex gap-2 w-full mt-1">
                   <Button
-                    size="sm"
-                    variant="outline"
+                    size="sm" variant="outline"
                     onClick={() => setStep('select')}
-                    className="flex-1 gap-1.5 rounded-xl text-xs font-bold h-10 border-slate-200 text-slate-700 dark:border-slate-800 dark:text-slate-300"
+                    className="flex-1 gap-1.5 rounded-xl text-xs font-bold h-10"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" /> Ganti Metode
                   </Button>
@@ -427,27 +397,23 @@ export function EWalletModal({
         </DialogContent>
       </Dialog>
 
-      {/* AlertDialog Konfirmasi Pembayaran Manual */}
+      {/* AlertDialog Konfirmasi — z-[200] agar di atas modal utama */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
+        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6 z-[200]">
           <AlertDialogHeader>
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2 mx-auto">
               <CheckCircle2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
-            <AlertDialogTitle className="text-center text-lg font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-sm leading-relaxed">
+            <AlertDialogTitle className="text-center text-xl font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
               Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan <strong>{orderId || '-'}</strong>?
               Tindakan ini akan menandai pesanan sebagai <strong>Lunas</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Belum</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                setConfirmOpen(false);
-                setStep('success');
-                setTimeout(() => onSuccessRef.current(), 1200);
-              }}
+              onClick={() => onSuccessRef.current()}
               className="flex-1 rounded-xl h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
             >
               Ya, Konfirmasi

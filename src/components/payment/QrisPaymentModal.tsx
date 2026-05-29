@@ -1,15 +1,8 @@
 /**
  * QrisPaymentModal — Buka Snap Midtrans dengan fokus QRIS
  *
- * Solusi untuk "no payment channel":
- *   - Buka Snap FULL (tanpa enabled_payments filter)
- *   - Ketika Snap terbuka, tutup Dialog kita agar tidak memblokir klik ke Snap
- *   - Snap menampilkan semua metode termasuk QRIS yang sudah terbukti aktif
- *
- * Cara kerja anti-blokir:
- *   - Saat snapActive=true, Dialog kita ditutup (open={false})
- *   - Snap popup bebas muncul dan bisa diklik oleh user
- *   - Setelah Snap selesai, baru kita tampilkan hasil sukses/error
+ * Manual QRIS: Tampilkan QrisCard dengan tombol perbesar & konfirmasi
+ * Midtrans QRIS: Buka Snap langsung ke halaman QRIS
  */
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -20,7 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, RefreshCw, QrCode, Maximize2, X } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Maximize2, X } from 'lucide-react';
 import { MidtransService } from '@/services/midtransService';
 import { PaymentMethod, useDbQuery } from '@/hooks/db-hooks';
 import { QrisCard } from '@/components/payment/QrisCard';
@@ -61,12 +54,11 @@ export function QrisPaymentModal({
   const storeSettingsList = useDbQuery<any>('storeSettings') || [];
   const storeSettings = storeSettingsList[0];
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // snapActive: saat true, Dialog kita ditutup agar tidak memblokir Snap
   const [snapActive, setSnapActive] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
-  // Refs untuk callbacks agar tidak stale saat dipakai Snap
+
   const onSuccessRef = useRef(onSuccess);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
@@ -84,7 +76,7 @@ export function QrisPaymentModal({
       try {
         const dynamicQRIS = convertQRIS(paymentMethod.qrisString!, { amount });
         setQrisData(dynamicQRIS);
-        setStatus('success'); // Show manual QR code
+        setStatus('success');
       } catch (err: any) {
         setStatus('error');
         setErrorMsg('Gagal membuat QRIS dinamis: ' + err.message);
@@ -92,7 +84,6 @@ export function QrisPaymentModal({
       return;
     }
 
-    // Midtrans: Proteksi double tap / double snap di mobile
     if ((window as any).midtransSnapActive) {
       console.warn('Midtrans Snap is already active. Ignoring request.');
       onCloseRef.current();
@@ -102,7 +93,6 @@ export function QrisPaymentModal({
 
     try {
       await MidtransService.loadSnapScript();
-
       const token = await MidtransService.createTransactionToken({
         transaction_details: {
           order_id: orderId || `MA-QRIS-${Date.now()}`,
@@ -117,7 +107,6 @@ export function QrisPaymentModal({
         enabled_payments: ['other_qris'],
       });
 
-      // Tutup Dialog kita terlebih dahulu agar tidak memblokir klik ke Snap
       setSnapActive(true);
       setStatus('snap_open');
 
@@ -132,7 +121,6 @@ export function QrisPaymentModal({
         onPending: () => {
           setSnapActive(false);
           (window as any).midtransSnapActive = false;
-          // Pending = mungkin sudah bayar tapi belum konfirmasi, tutup saja
           onCloseRef.current();
         },
         onError: (result: any) => {
@@ -144,7 +132,6 @@ export function QrisPaymentModal({
         onClose: () => {
           setSnapActive(false);
           (window as any).midtransSnapActive = false;
-          // User menutup Snap popup → kembali ke status awal
           onCloseRef.current();
         },
       });
@@ -170,20 +157,16 @@ export function QrisPaymentModal({
   };
 
   const isManual = paymentMethod?.provider === 'manual' && paymentMethod?.qrisString;
-
-  // Saat Snap aktif: Dialog kita DITUTUP agar tidak memblokir Snap
-  // Saat status lain: Dialog kita tampil normal
-  const dialogOpen = isOpen && !snapActive;
+  const dialogOpen = isOpen && !snapActive && !confirmOpen && !previewOpen;
 
   return (
     <>
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
         {isManual ? (
-          <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl">
-            {/* Header Compact */}
+          <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:top-3 [&>button]:right-3">
+            {/* Header */}
             <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-white relative overflow-hidden text-left">
               <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
               <DialogHeader className="relative z-10">
                 <DialogTitle className="text-white text-base font-bold flex items-center gap-2 tracking-tight">
                   <img src="/ico/qris.png" alt="QRIS" className="w-auto h-5 object-contain rounded bg-white px-1" />
@@ -193,22 +176,17 @@ export function QrisPaymentModal({
                   Scan menggunakan E-Wallet & Mobile Banking apa pun
                 </DialogDescription>
               </DialogHeader>
-
-              {/* Card Info Tagihan */}
               <div className="mt-3 bg-white/15 backdrop-blur-md rounded-xl p-3 text-center border border-white/10">
                 <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Total Tagihan</p>
                 <p className="text-2xl font-black text-white mt-0.5 tracking-tight">
                   Rp {amount.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-white/70 mt-1 truncate">
-                  {customerName || 'Pelanggan'}
-                </p>
+                <p className="text-xs text-white/70 mt-1 truncate">{customerName || 'Pelanggan'}</p>
               </div>
             </div>
 
-            {/* Konten Utama */}
+            {/* Body */}
             <div className="p-4 overflow-y-auto max-h-[55vh] custom-scrollbar-hide flex flex-col items-center gap-3">
-              {/* QR Card clickable for zoom */}
               <div className="w-full flex justify-center">
                 {qrisData && (
                   <div
@@ -232,25 +210,19 @@ export function QrisPaymentModal({
                 )}
               </div>
 
-              <div className="flex gap-2 w-full mt-1">
-                <Button variant="outline" className="flex-1 rounded-xl h-10 text-xs font-semibold" onClick={handleClose}>
-                  Batalkan
-                </Button>
-                <Button
-                  className="flex-1 font-bold rounded-xl h-10 text-xs bg-primary hover:bg-primary/90 text-white"
-                  onClick={() => setConfirmOpen(true)}
-                >
-                  Konfirmasi Pembayaran
-                </Button>
-              </div>
+              <Button
+                className="w-full font-bold rounded-xl h-11 text-sm bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+                onClick={() => setConfirmOpen(true)}
+              >
+                Konfirmasi Pembayaran
+              </Button>
             </div>
           </DialogContent>
         ) : (
-          <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-            {/* ── Header (Midtrans) ── */}
+          <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:top-3 [&>button]:right-3">
+            {/* Header (Midtrans) */}
             <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-white relative overflow-hidden">
               <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
               <DialogHeader className="relative z-10">
                 <DialogTitle className="text-white text-base font-bold flex items-center gap-2">
                   <img src="/ico/qris.png" alt="QRIS" className="w-auto h-5 object-contain rounded bg-white px-1" />
@@ -267,17 +239,14 @@ export function QrisPaymentModal({
               </div>
             </div>
 
-            {/* ── Body (Midtrans) ── */}
+            {/* Body (Midtrans) */}
             <div className="p-4 flex flex-col items-center gap-4">
-              {/* Loading: membuat token */}
               {status === 'loading' && (
                 <div className="flex flex-col items-center py-6 gap-3">
                   <Loader2 className="w-10 h-10 text-primary animate-spin" />
                   <p className="text-sm text-muted-foreground font-medium">Membuka halaman QRIS…</p>
                 </div>
               )}
-
-              {/* Sukses */}
               {status === 'success' && (
                 <div className="flex flex-col items-center py-2 gap-3">
                   <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -287,8 +256,6 @@ export function QrisPaymentModal({
                   <p className="text-xs text-muted-foreground">Transaksi sedang disimpan…</p>
                 </div>
               )}
-
-              {/* Error */}
               {status === 'error' && (
                 <div className="flex flex-col items-center py-4 gap-3 w-full">
                   <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
@@ -310,26 +277,23 @@ export function QrisPaymentModal({
         )}
       </Dialog>
 
-      {/* AlertDialog Konfirmasi Pembayaran Manual */}
+      {/* AlertDialog Konfirmasi — z-[200] agar di atas semua modal */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
+        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6 z-[200]">
           <AlertDialogHeader>
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2 mx-auto">
               <CheckCircle2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
-            <AlertDialogTitle className="text-center text-lg font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-sm leading-relaxed">
+            <AlertDialogTitle className="text-center text-xl font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
               Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan <strong>{orderId || '-'}</strong>?
               Tindakan ini akan menandai pesanan sebagai <strong>Lunas</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Belum</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                setConfirmOpen(false);
-                onSuccessRef.current();
-              }}
+              onClick={() => onSuccessRef.current()}
               className="flex-1 rounded-xl h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
             >
               Ya, Konfirmasi
@@ -338,13 +302,12 @@ export function QrisPaymentModal({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Modal Preview QR Perbesar */}
+      {/* Preview QR Perbesar — z-[200] agar di atas modal pembayaran */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[440px] w-[95vw] bg-transparent border-none shadow-none p-0 flex flex-col items-center justify-center outline-none [&>button]:hidden">
+        <DialogContent className="max-w-[440px] w-[95vw] bg-transparent border-none shadow-none p-0 z-[200] flex flex-col items-center justify-center outline-none [&>button]:hidden">
           <div className="sr-only">
             <DialogTitle>Preview Kartu QRIS</DialogTitle>
           </div>
-
           {imageUrl && (
             <div className="relative flex flex-col items-center gap-4 w-full">
               <img
@@ -352,11 +315,10 @@ export function QrisPaymentModal({
                 alt="QRIS Preview"
                 className="w-full h-auto max-h-[80vh] object-contain rounded-[24px] shadow-2xl animate-in zoom-in-95 duration-300"
               />
-
               <Button
                 variant="secondary"
                 onClick={() => setPreviewOpen(false)}
-                className="rounded-full px-6 h-11 shadow-xl bg-background/95 backdrop-blur-md border border-border/50 hover:bg-background text-foreground font-semibold gap-2 transition-all active:scale-95"
+                className="rounded-full px-6 h-12 shadow-xl bg-background/95 backdrop-blur-md border border-border/50 hover:bg-background text-foreground font-semibold gap-2 transition-all active:scale-95"
               >
                 <X className="w-4 h-4" />
                 Tutup Preview

@@ -33,7 +33,7 @@ interface BankTransferModalProps {
 interface BankOption {
   id: string;
   name: string;
-  snapKey: string; // nilai untuk enabled_payments
+  snapKey: string;
   color: string;
   abbr: string;
 }
@@ -75,7 +75,7 @@ export function BankTransferModal({
   useEffect(() => {
     if (isOpen) {
       if (isManual) {
-        setStep('select'); // for manual we just display details on select step
+        setStep('select');
       } else {
         setStep('select');
         setSelectedBank(null);
@@ -99,13 +99,8 @@ export function BankTransferModal({
 
     try {
       const token = await MidtransService.createTransactionToken({
-        transaction_details: {
-          order_id: orderId,
-          gross_amount: Math.round(amount),
-        },
-        item_details: [
-          { name: 'Total Belanja MesenAe', price: Math.round(amount), quantity: 1 },
-        ],
+        transaction_details: { order_id: orderId, gross_amount: Math.round(amount) },
+        item_details: [{ name: 'Total Belanja MesenAe', price: Math.round(amount), quantity: 1 }],
         customer_details: { first_name: customerName || 'Pelanggan MesenAe' },
         enabled_payments: [bank.snapKey],
       });
@@ -135,9 +130,6 @@ export function BankTransferModal({
           setStep('select');
         },
       });
-
-      // Set kembali ke select agar jika user tutup Snap, bisa pilih lagi
-      // Jangan set state di sini secara asinkron karena onClose akan menangani
     } catch (err: any) {
       (window as any).midtransSnapActive = false;
       console.error('Bank Transfer Error:', err);
@@ -151,14 +143,16 @@ export function BankTransferModal({
     onClose();
   };
 
+  // Tutup dialog utama saat confirmOpen agar tidak stacking
+  const dialogOpen = isOpen && !confirmOpen;
+
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl">
-          {/* Header Compact */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:top-3 [&>button]:right-3">
+          {/* Header */}
           <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-white relative overflow-hidden">
             <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
             <DialogHeader className="relative z-10">
               <DialogTitle className="text-white text-base font-bold flex items-center gap-2 tracking-tight">
                 {step === 'error' && (
@@ -181,11 +175,12 @@ export function BankTransferModal({
 
           {/* Body */}
           <div className="p-4 overflow-y-auto max-h-[55vh] custom-scrollbar-hide">
+            {/* Manual Transfer */}
             {step === 'select' && isManual && paymentMethod && (
               <div className="animate-in fade-in zoom-in duration-300">
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 font-medium text-center">Silakan transfer ke rekening berikut:</p>
                 
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 mb-3 flex flex-col items-center text-center gap-2 shadow-inner">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 mb-4 flex flex-col items-center text-center gap-2 shadow-inner">
                   {paymentMethod.iconName ? (
                     <img src={`/ico/${paymentMethod.iconName}.png`} alt={paymentMethod.bankName} className="h-10 object-contain mb-1" />
                   ) : (
@@ -198,18 +193,16 @@ export function BankTransferModal({
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 rounded-xl h-10 font-semibold text-xs" onClick={handleClose}>Batalkan</Button>
-                  <Button
-                    className="flex-1 font-bold rounded-xl h-10 text-xs bg-primary hover:bg-primary/90 text-white"
-                    onClick={() => setConfirmOpen(true)}
-                  >
-                    Konfirmasi Pembayaran
-                  </Button>
-                </div>
+                <Button
+                  className="w-full font-bold rounded-xl h-11 text-sm bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  Konfirmasi Pembayaran
+                </Button>
               </div>
             )}
 
+            {/* Midtrans Bank Selection */}
             {step === 'select' && !isManual && (
               <>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold mb-3 uppercase tracking-wider">Pilih Bank Tujuan</p>
@@ -283,27 +276,23 @@ export function BankTransferModal({
         </DialogContent>
       </Dialog>
 
-      {/* AlertDialog Konfirmasi Pembayaran Manual */}
+      {/* AlertDialog Konfirmasi — z-[200] agar di atas modal utama */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
+        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6 z-[200]">
           <AlertDialogHeader>
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2 mx-auto">
               <CheckCircle2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
-            <AlertDialogTitle className="text-center text-lg font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-sm leading-relaxed">
+            <AlertDialogTitle className="text-center text-xl font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
               Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan <strong>{orderId || '-'}</strong>?
               Tindakan ini akan menandai pesanan sebagai <strong>Lunas</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 sm:justify-center flex-row gap-3">
-            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Belum</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                setConfirmOpen(false);
-                setStep('success');
-                setTimeout(() => onSuccessRef.current(), 1200);
-              }}
+              onClick={() => onSuccessRef.current()}
               className="flex-1 rounded-xl h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
             >
               Ya, Konfirmasi
