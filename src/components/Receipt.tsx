@@ -461,18 +461,18 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                   {storeSettings?.address && <p className="text-[0.9em] leading-tight">{storeSettings.address.toUpperCase()}</p>}
                   {storeSettings?.phone && <p className="text-[0.9em] leading-tight">{storeSettings.phone}</p>}
                 </div>
-                <div className="mb-2 text-[0.95em]">
-                  <div className="flex gap-2 flex-wrap font-medium">
-                    <span>{format(new Date(transaction.date), 'dd.MM.yy-HH:mm')}</span>
-                    <span>Kasir: {String(transaction.cashierName || (transaction as any).cashier_name || 'Staff').toUpperCase()}</span>
-                    {tableVal && (
-                      <span>{isTakeAway ? 'Tipe: TAKE AWAY' : `Meja: ${String(tableVal).replace(/^(meja\s+)+/i, '')}`}</span>
-                    )}
+                <div className="mb-2 text-[0.95em] uppercase font-medium space-y-0.5">
+                  <div>No. Struk: {transaction.receiptNumber}</div>
+                  <div className="flex justify-between w-full">
+                    <span>TGL: {format(new Date(transaction.date), 'dd.MM.yy-HH:mm')}</span>
+                    <span>KASIR: {String(transaction.cashierName || (transaction as any).cashier_name || 'Staff').toUpperCase()}</span>
                   </div>
-                  {transaction.customerName && (
-                    <span>Pelanggan: {String(transaction.customerName).toUpperCase()}</span>
+                  {(transaction.customerName || tableVal) && (
+                    <div className="flex justify-between w-full">
+                      <span>PELANGGAN: {transaction.customerName ? String(transaction.customerName).toUpperCase() : '-'}</span>
+                      <span>{isTakeAway ? 'Tipe: TAKE AWAY' : `MEJA: ${tableVal ? String(tableVal).replace(/^(meja\s+)+/i, '').toUpperCase() : '-'}`}</span>
+                    </div>
                   )}
-                  <div className="mt-0.5 font-medium">No. Struk: {transaction.receiptNumber}</div>
                 </div>
                 <div className="border-t border-dashed border-black my-2" />
                 

@@ -601,12 +601,16 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                 <h2 className="font-extrabold">{storeSettings.storeName?.toUpperCase() || 'TOKO SUMBER BERKAH'}</h2>
                 <p className="text-[0.8em]">{storeSettings.address?.toUpperCase() || 'JL. DR SOETOMO NO. 93'}</p>
               </div>
-              <div className="mb-2 uppercase text-[0.85em] font-medium leading-relaxed">
-                <div>Tanggal: 29.05.26-17:08</div>
-                <div>Kasir: BASITH</div>
-                <div>Meja: 04</div>
-                <div>Pelanggan: AHMAD</div>
+              <div className="mb-2 uppercase text-[0.85em] font-medium leading-normal space-y-0.5">
                 <div>No. Struk: TX1780075515416</div>
+                <div className="flex justify-between w-full">
+                  <span>TGL: 29.05.26-17:08</span>
+                  <span>KASIR: BASITH</span>
+                </div>
+                <div className="flex justify-between w-full">
+                  <span>PELANGGAN: AHMAD</span>
+                  <span>MEJA: 04</span>
+                </div>
               </div>
               <div className="border-t border-dashed border-black my-2" />
               <div className="space-y-1 uppercase text-[0.85em]">
