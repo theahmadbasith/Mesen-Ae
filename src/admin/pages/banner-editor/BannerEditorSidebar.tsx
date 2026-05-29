@@ -208,74 +208,86 @@ const SidebarFormContent = React.memo(function SidebarFormContent() {
 
           {ctx.overlays.length > 0 && (
             <div className="space-y-3">
-              {ctx.overlays.map((overlay: OverlayData, idx: number) => (
-                <div key={overlay.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Overlay {idx + 1}</p>
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => setMagicWandId(overlay.id)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-400"
-                        title="Hapus Latar dengan Magic Wand">
-                        <Wand2Icon className="w-3.5 h-3.5" />
-                        Hapus Latar
-                      </button>
-                      <button onClick={() => {
-                        if (idx > 0) {
-                          const newArr = [...ctx.overlays];
-                          [newArr[idx-1], newArr[idx]] = [newArr[idx], newArr[idx-1]];
-                          ctx.setOverlays(newArr);
-                          setTimeout(() => ctx.pushHistory(), 50);
-                        }
-                      }} className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-md flex items-center justify-center hover:bg-zinc-200" disabled={idx === 0} title="Maju (Bring Forward)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                      </button>
-                      <button onClick={() => {
-                        if (idx < ctx.overlays.length - 1) {
-                          const newArr = [...ctx.overlays];
-                          [newArr[idx], newArr[idx+1]] = [newArr[idx+1], newArr[idx]];
-                          ctx.setOverlays(newArr);
-                          setTimeout(() => ctx.pushHistory(), 50);
-                        }
-                      }} className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-md flex items-center justify-center hover:bg-zinc-200" disabled={idx === ctx.overlays.length - 1} title="Mundur (Send Backward)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                      </button>
+              {ctx.overlays.map((overlay: OverlayData, idx: number) => {
+                const isExpanded = ctx.activeOverlayId === overlay.id;
+                return (
+                  <div key={overlay.id} className={cn("rounded-xl border transition-all bg-white dark:bg-zinc-900/30 overflow-hidden", isExpanded ? "border-blue-400 dark:border-blue-500/50 shadow-md ring-2 ring-blue-500/20" : "border-zinc-200 dark:border-zinc-800")}>
+                    {/* Header: Click to toggle expand */}
+                    <div 
+                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                      onClick={() => ctx.setActiveOverlayId(isExpanded ? null : overlay.id)}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">Overlay {idx + 1}</p>
+                      <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setMagicWandId(overlay.id)}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-400"
+                          title="Hapus Latar dengan Magic Wand">
+                          <Wand2Icon className="w-3.5 h-3.5" />
+                          Hapus Latar
+                        </button>
+                        <button onClick={() => {
+                          if (idx > 0) {
+                            const newArr = [...ctx.overlays];
+                            [newArr[idx-1], newArr[idx]] = [newArr[idx], newArr[idx-1]];
+                            ctx.setOverlays(newArr);
+                            setTimeout(() => ctx.pushHistory(), 50);
+                          }
+                        }} className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-md flex items-center justify-center hover:bg-zinc-200" disabled={idx === 0} title="Maju (Bring Forward)">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                        </button>
+                        <button onClick={() => {
+                          if (idx < ctx.overlays.length - 1) {
+                            const newArr = [...ctx.overlays];
+                            [newArr[idx], newArr[idx+1]] = [newArr[idx+1], newArr[idx]];
+                            ctx.setOverlays(newArr);
+                            setTimeout(() => ctx.pushHistory(), 50);
+                          }
+                        }} className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-md flex items-center justify-center hover:bg-zinc-200" disabled={idx === ctx.overlays.length - 1} title="Mundur (Send Backward)">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <SliderRow label="Skala (Lebar)" value={Math.round(overlay.scale * 100)} min={10} max={500} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, scale: v / 100 } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                  <SliderRow label="Rotasi" value={overlay.rotate} min={-180} max={180} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, rotate: v } : o))} onPointerUp={() => ctx.pushHistory()} unit="°" />
-                  
-                  <div className="flex gap-2">
-                    <button onClick={() => {
-                      ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, flipX: !o.flipX } : o));
-                      ctx.pushHistory();
-                    }}
-                      className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2 text-xs', overlay.flipX ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
-                      <FlipHorizontal className="w-4 h-4" /> Balik Horisontal
-                    </button>
-                  </div>
+                    
+                    {/* Collapsible Content */}
+                    {isExpanded && (
+                      <div className="p-4 pt-0 space-y-4 border-t border-zinc-100 dark:border-zinc-800 mt-2">
+                        <SliderRow label="Skala (Lebar)" value={Math.round(overlay.scale * 100)} min={10} max={500} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, scale: v / 100 } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                        <SliderRow label="Rotasi" value={overlay.rotate} min={-180} max={180} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, rotate: v } : o))} onPointerUp={() => ctx.pushHistory()} unit="°" />
+                        
+                        <div className="flex gap-2">
+                          <button onClick={() => {
+                            ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, flipX: !o.flipX } : o));
+                            ctx.pushHistory();
+                          }}
+                            className={cn('flex-1 h-10 rounded-xl border font-bold transition-all flex items-center justify-center gap-2 text-xs', overlay.flipX ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-zinc-200 dark:border-zinc-700')}>
+                            <FlipHorizontal className="w-4 h-4" /> Balik Horisontal
+                          </button>
+                        </div>
 
-                  <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
-                    <SliderRow label="Kecerahan" value={overlay.filter.brightness} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, brightness: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                    <SliderRow label="Kontras" value={overlay.filter.contrast} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, contrast: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                    <SliderRow label="Saturasi" value={overlay.filter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, saturate: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                    <SliderRow label="Blur" value={overlay.filter.blur} min={0} max={20} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, blur: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="px" />
-                  </div>
+                        <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Filter Stiker Overlay</p>
+                          <SliderRow label="Kecerahan" value={overlay.filter.brightness} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, brightness: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                          <SliderRow label="Kontras" value={overlay.filter.contrast} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, contrast: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                          <SliderRow label="Saturasi" value={overlay.filter.saturate ?? 100} min={0} max={200} defaultValue={100} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, saturate: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                          <SliderRow label="Blur" value={overlay.filter.blur} min={0} max={20} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, filter: { ...o.filter, blur: v } } : o))} onPointerUp={() => ctx.pushHistory()} unit="px" />
+                        </div>
 
-                  <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <SliderRow label="Sudut Bulat" value={overlay.borderRadius} min={0} max={50} step={1} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, borderRadius: v } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
-                  </div>
+                        <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                          <SliderRow label="Sudut Bulat" value={overlay.borderRadius} min={0} max={50} step={1} defaultValue={0} onChange={(v: number) => ctx.setOverlays((prev: any) => prev.map((o: any) => o.id === overlay.id ? { ...o, borderRadius: v } : o))} onPointerUp={() => ctx.pushHistory()} unit="%" />
+                        </div>
 
-                  <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => {
-                    ctx.setOverlays((prev: any) => prev.filter((o: any) => o.id !== overlay.id));
-                    if (ctx.activeOverlayId === overlay.id) ctx.setActiveOverlayId(null);
-                    setTimeout(() => ctx.pushHistory(), 50);
-                  }}>
-                    <Trash className="w-4 h-4 mr-2" /> Hapus Stiker Ini
-                  </Button>
-                </div>
-              ))}
+                        <Button variant="danger" className="w-full h-9 rounded-xl text-xs" onClick={() => {
+                          ctx.setOverlays((prev: any) => prev.filter((o: any) => o.id !== overlay.id));
+                          if (ctx.activeOverlayId === overlay.id) ctx.setActiveOverlayId(null);
+                          setTimeout(() => ctx.pushHistory(), 50);
+                        }}>
+                          <Trash className="w-4 h-4 mr-2" /> Hapus Stiker Ini
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

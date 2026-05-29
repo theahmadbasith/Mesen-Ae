@@ -921,7 +921,7 @@ export function BannerEditorProvider({ children }: { children: React.ReactNode }
     canvasRef, bgFileInputRef, overlayFileInputRef, dragState,
     getSnapshot, pushHistory, hexToRgb,
     handleProductSelect, handleBannerTypeChange,
-    onLayerPointerDown, onResizePointerDown,
+    onLayerPointerDown, onOverlayPointerDown, onResizePointerDown,
     handleBgImageSelect, handleBgCropSuccess, handleAddImageFile,
     handleSaveBanner, canvasBg, bgFilterStyle,
   };

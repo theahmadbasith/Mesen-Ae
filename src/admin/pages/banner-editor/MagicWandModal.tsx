@@ -21,6 +21,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [isEraseMode, setIsEraseMode] = useState(false);
+  const isDragging = useRef(false);
 
   useEffect(() => {
     if (open && imageUrl) {
@@ -58,6 +60,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   }, [open, imageUrl]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isEraseMode) return;
+    
     const cvs = canvasRef.current;
     if (!cvs) return;
     const ctx = cvs.getContext('2d', { willReadFrequently: true });
@@ -203,6 +207,17 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
             {patternMode === 'light' ? <Moon className="w-4 h-4 sm:w-5 sm:h-5" /> : <Sun className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
+          <button 
+            onClick={() => setIsEraseMode(prev => !prev)} 
+            className={cn("text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5", 
+              isEraseMode ? "bg-primary text-primary-foreground border-primary shadow-sm" : "border-border hover:bg-secondary"
+            )}
+            title="Aktifkan Mode Hapus Latar"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Mode Hapus
+          </button>
+
           <button onClick={undo} disabled={historyIndex <= 0} className={cn("text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg border", historyIndex <= 0 ? "opacity-50 cursor-not-allowed border-border" : "border-border hover:bg-secondary")}>
             Undo
           </button>
@@ -249,7 +264,42 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
         {/* Canvas area */}
         <div 
           ref={containerRef}
-          className="flex-1 overflow-auto flex items-center justify-center relative p-2 sm:p-8"
+          className={cn("flex-1 overflow-auto flex items-center justify-center relative p-2 sm:p-8 touch-none", !isEraseMode && "cursor-grab active:cursor-grabbing")}
+          onWheel={(e) => {
+            if (e.ctrlKey || e.metaKey) return; // let browser handle pinch
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -10 : 10;
+            setZoom(z => Math.max(10, Math.min(500, z + delta)));
+          }}
+          onPointerDown={(e) => {
+            if (isEraseMode) return;
+            const container = containerRef.current;
+            if (!container) return;
+            isDragging.current = true;
+            const startX = e.pageX - container.offsetLeft;
+            const startY = e.pageY - container.offsetTop;
+            const scrollLeft = container.scrollLeft;
+            const scrollTop = container.scrollTop;
+            
+            const onMove = (moveEvent: PointerEvent) => {
+              if (!isDragging.current) return;
+              const x = moveEvent.pageX - container.offsetLeft;
+              const y = moveEvent.pageY - container.offsetTop;
+              const walkX = (x - startX) * 1.5;
+              const walkY = (y - startY) * 1.5;
+              container.scrollLeft = scrollLeft - walkX;
+              container.scrollTop = scrollTop - walkY;
+            };
+            
+            const onUp = () => {
+              isDragging.current = false;
+              window.removeEventListener('pointermove', onMove);
+              window.removeEventListener('pointerup', onUp);
+            };
+            
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+          }}
         >
           <div 
             className="relative shadow-2xl transition-transform duration-200"
@@ -272,7 +322,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
             <canvas 
               ref={canvasRef}
               onPointerDown={handlePointerDown}
-              className="relative z-10 cursor-crosshair rounded max-w-none"
+              className={cn("relative z-10 rounded max-w-none", isEraseMode ? "cursor-crosshair" : "cursor-inherit")}
               style={{ touchAction: 'none' }}
             />
           </div>
