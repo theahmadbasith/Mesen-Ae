@@ -10,19 +10,15 @@ import { DashboardSkeleton } from '@/admin/components/SkeletonLoaders';
 export default function Dashboard() {
 
   const storeSettings = useDbQuery<any>('storeSettings')?.[0];
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const allTransactions = useDbQuery<any>('transactions') || [];
   const todayTransactions = allTransactions.filter(t => new Date(t.date) >= today && t.status === 'lunas');
   const openBillsCount = allTransactions.filter(t => t.status === 'belum lunas').length;
-
   const allProducts = useDbQuery<any>('products') || [];
   const lowStockProducts = allProducts.filter(p => p.stock <= 5);
-
   const recentTransactions = [...allTransactions].filter(t => t.status === 'lunas').sort((a:any,b:any)=>new Date(b.date).getTime()-new Date(a.date).getTime()).slice(0,5);
-
   const allTxItems = useDbQuery<any>('transactionItems') || [];
   const recentTxItems = (() => {
     if (!recentTransactions || recentTransactions.length === 0) return {};
@@ -44,9 +40,6 @@ export default function Dashboard() {
   const totalSales = todayTransactions?.reduce((sum, t) => sum + (Number(t.total) || 0), 0) ?? 0;
   const totalProfit = todayTransactions?.reduce((sum, t) => sum + (Number(t.profit) || 0), 0) ?? 0;
   const txCount = todayTransactions?.length ?? 0;
-
-
-
   const quickActions = [
     { to: '/admin/cashier', icon: ShoppingCart, label: 'Kasir', color: 'bg-primary/10 text-primary' },
     { to: '/admin/products', icon: Package, label: 'Produk', color: 'bg-accent/10 text-accent' },
@@ -61,8 +54,6 @@ export default function Dashboard() {
           {format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}
         </span>
       </div>
-
-
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
