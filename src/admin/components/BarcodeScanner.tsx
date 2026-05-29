@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { X, Camera, CameraOff, ZapIcon } from 'lucide-react';
+import { CameraOff, Zap, SwitchCamera, Barcode, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         }
         scannerRef.current.clear();
       } catch {
-        // ignore stop errors
+        // Abaikan error saat stop
       }
       scannerRef.current = null;
     }
@@ -40,7 +40,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
   const startScanner = async (cameraId?: string) => {
     await stopScanner();
 
-    // Small delay to let DOM settle after stop
+    // Jeda singkat agar DOM siap setelah stop sebelumnya
     await new Promise(r => setTimeout(r, 150));
 
     try {
@@ -70,7 +70,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         cameraConstraint as Parameters<typeof scanner.start>[0],
         {
           fps: 15,
-          qrbox: { width: 260, height: 160 },
+          qrbox: { width: 280, height: 160 }, // Proporsi ideal untuk Barcode & QR
           aspectRatio: 1.5,
           disableFlip: false,
         },
@@ -83,25 +83,25 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
 
       setScanning(true);
 
-      // Check torch capability
+      // Cek ketersediaan Flash (Torch)
       try {
         const track = scanner.getRunningTrackCameraCapabilities();
         if (track && 'torchFeature' in track) {
           setHasFlash(true);
         }
       } catch {
-        // torch not available
+        // Fitur flash tidak tersedia
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('NotAllowedError') || msg.includes('Permission')) {
-        toast.error('Izin kamera ditolak. Mohon izinkan akses kamera di pengaturan browser.');
+        toast.error('Izin kamera ditolak. Mohon izinkan akses kamera di pengaturan browser Anda.');
       } else if (msg.includes('NotFoundError') || msg.includes('Requested device not found')) {
         toast.error('Kamera tidak ditemukan di perangkat ini.');
       } else if (msg.includes('NotReadableError') || msg.includes('Could not start')) {
         toast.error('Kamera sedang digunakan aplikasi lain.');
       } else {
-        toast.error('Gagal memulai kamera. Coba izinkan akses kamera.');
+        toast.error('Gagal memulai kamera. Coba muat ulang dan izinkan akses kamera.');
       }
       onClose();
     }
@@ -113,12 +113,12 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
       return;
     }
 
-    // Enumerate cameras first
+    // Enumerasi daftar kamera yang tersedia
     Html5Qrcode.getCameras()
       .then((devices) => {
         if (devices && devices.length > 0) {
           setCameras(devices);
-          // Prefer rear camera (environment)
+          // Prioritaskan kamera belakang (environment)
           const rearIdx = devices.findIndex(d =>
             d.label.toLowerCase().includes('back') ||
             d.label.toLowerCase().includes('rear') ||
@@ -129,12 +129,11 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
           setActiveCameraIdx(idx);
           startScanner(devices[idx].id);
         } else {
-          // No enumerated cameras, try environment facing mode directly
+          // Jika tidak terdeteksi via getCameras, coba direct facingMode
           startScanner();
         }
       })
       .catch(() => {
-        // getCameras failed (e.g. permission not yet granted), try directly
         startScanner();
       });
 
@@ -161,7 +160,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         setFlashOn(!flashOn);
       }
     } catch {
-      toast.error('Flash tidak didukung di perangkat ini');
+      toast.error('Flash tidak didukung di perangkat/kamera ini');
     }
   };
 
@@ -170,107 +169,134 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
     onClose();
   };
 
+  // Cek jika kamera yang sedang aktif adalah kamera depan (untuk mirroring)
+  const isFrontCamera = cameras[activeCameraIdx]?.label.toLowerCase().includes('front') || 
+                        cameras[activeCameraIdx]?.label.toLowerCase().includes('depan') || 
+                        cameras[activeCameraIdx]?.label.toLowerCase().includes('user');
+
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
-      <DialogContent className="max-w-[92vw] sm:max-w-[480px] rounded-2xl p-0 overflow-hidden border border-border bg-background shadow-2xl z-[100] [&>button]:z-[115] [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:top-3 [&>button]:right-3">
+      <DialogContent className="max-w-[95vw] sm:max-w-[480px] rounded-[24px] p-0 overflow-hidden border border-border shadow-2xl z-[100] bg-background [&>button]:hidden">
+        
         <style dangerouslySetInnerHTML={{__html: `
-          @keyframes scan-animation {
+          @keyframes scan-laser {
             0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
             100% { top: 100%; opacity: 0; }
           }
-          .scanner-line {
-            animation: scan-animation 2s infinite linear;
+          .scanner-laser-line {
+            animation: scan-laser 2.5s infinite linear;
           }
         `}} />
 
         {/* ── Header ── */}
-        <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-white relative overflow-hidden text-left">
-          <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <DialogHeader className="relative z-10 text-left">
-            <DialogTitle className="text-white text-base font-bold flex items-center gap-2 tracking-tight">
-              <Camera className="w-5 h-5" />
-              Scan Barcode Produk
+        <div className="bg-background px-6 py-5 border-b border-border/60">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-foreground text-lg font-bold flex items-center gap-2">
+              <Barcode className="w-5 h-5 text-primary" />
+              Scan Barcode / QRIS
             </DialogTitle>
-            <DialogDescription className="text-white/80 text-xs mt-0.5">
-              Arahkan barcode / SKU barang ke dalam kotak kamera
+            <DialogDescription className="text-muted-foreground text-xs mt-1">
+              Arahkan barcode atau SKU produk ke dalam area pemindai. Sistem akan membaca secara otomatis.
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        {/* ── Camera Preview & Neon Cutout Overlay ── */}
-        <div className="relative bg-black aspect-[4/3] w-full overflow-hidden">
-          {/* Scanner viewport injected by html5-qrcode */}
-          <div id={scannerId} className="w-full h-full [&>video]:object-cover" />
+        {/* ── Camera Preview & Overlay Area ── */}
+        <div className="relative bg-black w-full h-[60vh] sm:h-[400px] overflow-hidden group">
+          
+          {/* Viewport dari Html5Qrcode */}
+          <div 
+            id={scannerId} 
+            className={`absolute inset-0 w-full h-full flex items-center justify-center [&>video]:object-cover [&>video]:w-full [&>video]:h-full transition-transform duration-300 ${isFrontCamera ? "scale-x-[-1]" : ""}`} 
+          />
 
-          {/* Action buttons (Top-Left) */}
-          <div className="absolute top-4 left-4 z-30 flex gap-2">
-            {hasFlash && (
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                onClick={toggleFlash}
-                className="rounded-full w-10 h-10 bg-black/45 hover:bg-black/60 backdrop-blur-md border border-white/10 text-white shadow-xl transition-all active:scale-95"
-              >
-                <ZapIcon className={`w-5 h-5 ${flashOn ? 'text-yellow-400' : 'text-white'}`} />
-              </Button>
-            )}
-            {cameras.length > 1 && (
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                onClick={switchCamera}
-                className="rounded-full w-10 h-10 bg-black/45 hover:bg-black/60 backdrop-blur-md border border-white/10 text-white shadow-xl transition-all active:scale-95"
-                title="Ganti Kamera"
-              >
-                <Camera className="w-5 h-5 text-white" />
-              </Button>
-            )}
-          </div>
+          {scanning ? (
+            <>
+              {/* Tombol Kiri Atas: Flash Toggle */}
+              {hasFlash && (
+                <div className="absolute top-4 left-4 z-30">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    onClick={toggleFlash}
+                    className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md border border-white/30 text-white shadow-xl transition-all"
+                    title="Nyalakan/Matikan Flash"
+                  >
+                    <Zap className={`w-5 h-5 ${flashOn ? 'text-yellow-400 fill-yellow-400' : 'text-white'}`} />
+                  </Button>
+                </div>
+              )}
 
-          {/* ── Premium Neon Laser Cutout Overlay ── */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            {/* Dark background overlay with light blur */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
-            
-            {/* Cutout box (Barcodes are wide, so we make it rectangular: 280x165) */}
-            <div className="relative w-[280px] h-[165px] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden">
-              {/* Sliding Neon Laser Line */}
-              <div className="absolute left-0 right-0 h-0.5 bg-primary/80 shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] scanner-line z-10" />
+              {/* Tombol Kanan Atas: Switch Camera (Gaya QRIS Input) */}
+              {cameras.length > 1 && (
+                <div className="absolute top-4 right-4 z-30">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    onClick={switchCamera}
+                    className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md border border-white/30 text-white shadow-xl transition-all"
+                    title="Ganti Kamera Depan/Belakang"
+                  >
+                    <SwitchCamera className="w-5 h-5" />
+                  </Button>
+                </div>
+              )}
 
-              {/* Corner Notches */}
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-2xl z-20" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-2xl z-20" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-2xl z-20" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-2xl z-20" />
-              
-              {/* Inner Pulsing Border */}
-              <div className="w-full h-full border border-white/10 rounded-2xl animate-pulse" />
+              {/* ── Premium Scan Area Cutout ── */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                {/* Background gelap dengan cutout transparan di tengah */}
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+                
+                {/* Kotak Scanner (Proporsi pas untuk Barcode & QR Code) */}
+                <div className="relative w-[280px] h-[160px] shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] rounded-[20px] overflow-hidden">
+                  
+                  {/* Laser Merah Menyala */}
+                  <div className="absolute left-0 right-0 h-0.5 bg-primary/90 shadow-[0_0_12px_3px_hsl(var(--primary)/0.7)] scanner-laser-line z-10" />
+
+                  {/* Siku Sudut (Corner Notches) */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-primary rounded-tl-[20px] z-20" />
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-primary rounded-tr-[20px] z-20" />
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] border-primary rounded-bl-[20px] z-20" />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] border-primary rounded-br-[20px] z-20" />
+                  
+                  {/* Border Putih Berkedip Halus */}
+                  <div className="w-full h-full border-[1.5px] border-white/20 rounded-[20px] animate-pulse" />
+                </div>
+              </div>
+
+              {/* Hint Mengambang di Bawah */}
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-20">
+                <span className="bg-black/70 backdrop-blur-md text-white text-xs font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 border border-white/10">
+                  <ScanLine className="w-4 h-4 text-primary" />
+                  Posisikan Barcode di tengah kotak
+                </span>
+              </div>
+            </>
+          ) : (
+            // Loading State Frame
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-20">
+              <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+              <p className="text-white/80 text-sm font-medium">Mengakses Kamera...</p>
             </div>
-          </div>
-
-          {/* Bottom Floating Hint */}
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-20">
-            <span className="bg-black/75 backdrop-blur-md text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg border border-white/10">
-              Posisikan Barcode di tengah kotak
-            </span>
-          </div>
+          )}
         </div>
 
-        {/* ── Footer Cancel Button ── */}
-        <div className="p-4 bg-muted/20 border-t border-border/50">
+        {/* ── Footer ── */}
+        <div className="p-4 bg-background border-t border-border/50">
           <Button 
-            variant="outline" 
-            className="w-full h-11 font-bold text-sm rounded-xl border-border/70 shadow-sm active:scale-95 transition-all" 
+            variant="secondary" 
+            className="w-full h-12 font-bold text-[13px] rounded-xl border-border hover:bg-muted active:scale-95 transition-all flex items-center justify-center text-foreground" 
             onClick={handleClose}
           >
-            <CameraOff className="w-4 h-4 mr-2" />
-            Batal Memindai
+            <CameraOff className="w-4 h-4 mr-2 text-muted-foreground" />
+            Tutup & Batal Memindai
           </Button>
         </div>
+        
       </DialogContent>
     </Dialog>
   );
