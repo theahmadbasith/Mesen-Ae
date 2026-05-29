@@ -73,11 +73,68 @@ export function QRISResult({ qrisString }: Props) {
       ctx.shadowOffsetY = 10;
       ctx.fill();
       
+      // Matikan shadow agar tidak menumpuk ke elemen selanjutnya
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
-      // 2. Aksen Merah
+      // ==============================================================
+      // 2. POLA BACKGROUND GEOMETRIS (KOTAK-KOTAK QRIS)
+      // ==============================================================
+      ctx.save();
+      drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
+      ctx.clip(); // Potong pattern agar tidak keluar dari border kartu melengkung
+
+      const patCanvas = document.createElement("canvas");
+      const pSize = 56; // Ukuran satu tile pola
+      patCanvas.width = pSize;
+      patCanvas.height = pSize;
+      const pCtx = patCanvas.getContext("2d");
+      
+      if (pCtx) {
+        // Warna garis yang sangat tipis dan pudar khas background QRIS
+        pCtx.strokeStyle = "rgba(100, 116, 139, 0.12)"; 
+        pCtx.lineWidth = 1.5;
+        pCtx.lineCap = "square";
+        
+        const half = pSize / 2;
+        const q = pSize / 4;
+        
+        // Kotak luar
+        pCtx.strokeRect(q, q, half, half); 
+        // Kotak dalam (nested square)
+        pCtx.strokeRect(q + 6, q + 6, half - 12, half - 12); 
+        
+        // Garis konektor yang menyambungkan antar kotak (menyilang/tumpang tindih)
+        pCtx.beginPath();
+        // Konektor vertikal
+        pCtx.moveTo(half, 0); pCtx.lineTo(half, q);
+        pCtx.moveTo(half, pSize - q); pCtx.lineTo(half, pSize);
+        // Konektor horizontal
+        pCtx.moveTo(0, half); pCtx.lineTo(q, half);
+        pCtx.moveTo(pSize - q, half); pCtx.lineTo(pSize, half);
+        
+        // Aksen kotak kecil di setiap sudut perpotongan ubin
+        const cornerSize = 8;
+        const offset = cornerSize / 2;
+        pCtx.strokeRect(-offset, -offset, cornerSize, cornerSize);
+        pCtx.strokeRect(pSize - offset, -offset, cornerSize, cornerSize);
+        pCtx.strokeRect(-offset, pSize - offset, cornerSize, cornerSize);
+        pCtx.strokeRect(pSize - offset, pSize - offset, cornerSize, cornerSize);
+        
+        pCtx.stroke();
+      }
+      
+      const pattern = ctx.createPattern(patCanvas, "repeat");
+      if (pattern) {
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, width, height);
+      }
+      ctx.restore();
+
+      // ==============================================================
+      // 3. Aksen Merah (Di atas pola background)
+      // ==============================================================
       ctx.save();
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.clip(); 
@@ -85,21 +142,23 @@ export function QRISResult({ qrisString }: Props) {
       const qrisRed = "#DA291C"; 
       ctx.fillStyle = qrisRed;
 
+      // Segitiga Merah Kiri
       ctx.beginPath();
-      ctx.moveTo(0, 180);
-      ctx.lineTo(100, 270);
-      ctx.lineTo(0, 400);
+      ctx.moveTo(0, 150);
+      ctx.lineTo(110, 250);
+      ctx.lineTo(0, 350);
       ctx.fill();
 
+      // Segitiga Merah Kanan Bawah
       ctx.beginPath();
-      ctx.moveTo(250, height);
-      ctx.lineTo(400, height - 160);
+      ctx.moveTo(230, height);
+      ctx.lineTo(400, height - 170);
       ctx.lineTo(400, height);
       ctx.fill();
 
       ctx.restore(); 
 
-      // 3. Footer
+      // 4. Footer
       const footerX = 25; 
       ctx.textAlign = "left";
       
@@ -111,7 +170,7 @@ export function QRISResult({ qrisString }: Props) {
       ctx.font = "500 12px 'Inter', system-ui, sans-serif";
       ctx.fillText("Powered by MesenAe", footerX, 560);
 
-      // 4. Proses Async (Logo Transparan, Nama Merchant, & Barcode)
+      // 5. Proses Async (Logo Transparan, Nama Merchant, & Barcode)
       const renderAssets = async () => {
         try {
           const logo = new Image();
@@ -139,7 +198,7 @@ export function QRISResult({ qrisString }: Props) {
           const logoRatio = logo.width / logo.height;
           const logoTargetWidth = logoTargetHeight * logoRatio;
           const logoX = 25;
-          const logoY = 10;
+          const logoY = 15;
 
           // ==============================================================
           // PEMBERSIHAN PIXEL PUTIH DARI LOGO QRIS (SMOOTH WHITE REMOVAL)
@@ -159,12 +218,9 @@ export function QRISResult({ qrisString }: Props) {
               const g = data[i + 1];
               const b = data[i + 2];
               
-              // Hitung rata-rata kecerahan pixel
               const avg = (r + g + b) / 3;
               
-              // Jika pixel berwarna terang (mendekati putih)
               if (avg > 210) {
-                // Algoritma gradasi alpha untuk mencegah pinggiran kasar (anti-aliasing)
                 const alpha = Math.max(0, 255 - (avg - 210) * (255 / 45)); 
                 data[i + 3] = Math.min(data[i + 3], alpha);
               }
@@ -172,7 +228,6 @@ export function QRISResult({ qrisString }: Props) {
             tempCtx.putImageData(imgData, 0, 0);
             ctx.drawImage(tempCanvas, logoX, logoY, logoTargetWidth, logoTargetHeight);
           } else {
-            // Fallback
             ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
           }
 
@@ -184,7 +239,7 @@ export function QRISResult({ qrisString }: Props) {
             const gpnRatio = gpn.width / gpn.height || 0.788;
             const gpnWidth = gpnHeight * gpnRatio;
             const gpnX = width - 25 - gpnWidth;
-            const gpnY = 23;
+            const gpnY = 28;
 
             const gpnCanvas = document.createElement("canvas");
             gpnCanvas.width = gpn.width;
@@ -212,29 +267,28 @@ export function QRISResult({ qrisString }: Props) {
               ctx.drawImage(gpn, gpnX, gpnY, gpnWidth, gpnHeight);
             }
           }
-          // ==============================================================
 
           // Teks di samping logo
           const textStartX = logoX + logoTargetWidth + 14;
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           
-          ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", textStartX, 40); 
+          ctx.font = "800 13px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QR Code Standar", textStartX, 44); 
           
           ctx.fillStyle = "#334155";
-          ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", textStartX, 58);
+          ctx.font = "600 12px 'Inter', system-ui, sans-serif";
+          ctx.fillText("Pembayaran Nasional", textStartX, 60);
 
           // Auto-scaling font size untuk Merchant Name
-          let fontSize = 28;
-          ctx.font = `700 ${fontSize}px 'Inter', system-ui, sans-serif`;
+          let fontSize = 24;
+          ctx.font = `800 ${fontSize}px 'Inter', system-ui, sans-serif`;
           let displayName = parsed.merchantName;
           const maxTextWidth = 340; 
 
           while (ctx.measureText(displayName).width > maxTextWidth && fontSize > 16) {
             fontSize -= 1;
-            ctx.font = `700 ${fontSize}px 'Inter', system-ui, sans-serif`;
+            ctx.font = `800 ${fontSize}px 'Inter', system-ui, sans-serif`;
           }
 
           if (ctx.measureText(displayName).width > maxTextWidth) {
@@ -246,19 +300,20 @@ export function QRISResult({ qrisString }: Props) {
 
           ctx.fillStyle = "#000000";
           ctx.textAlign = "center";
-          ctx.fillText(displayName, width / 2, 140);
+          ctx.fillText(displayName, width / 2, 135);
 
           if (currentNmid) {
-            ctx.fillStyle = "#1E293B"; 
-            ctx.font = "400 15px 'Inter', system-ui, sans-serif";
-            ctx.fillText(`NMID: ${currentNmid}`, width / 2, 165);
+            ctx.fillStyle = "#334155"; 
+            ctx.font = "500 14px 'Inter', system-ui, sans-serif";
+            ctx.fillText(`NMID: ${currentNmid}`, width / 2, 160);
           }
 
           // Cutout & QR Code
           const qrBoxSize = 310;
           const qrBoxX = (width - qrBoxSize) / 2; 
-          const qrBoxY = 195;
+          const qrBoxY = 190;
           
+          // Latar belakang putih solid untuk QR Code agar tidak terganggu pattern
           ctx.fillStyle = "#FFFFFF";
           drawRoundedRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 20);
           ctx.fill();
@@ -276,7 +331,6 @@ export function QRISResult({ qrisString }: Props) {
           const qrInnerY = qrBoxY + (qrBoxSize - qrInnerSize) / 2;
           ctx.drawImage(qrVirtualCanvas, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize);
 
-          // Simpan URL gambar untuk Modal Preview
           setImageUrl(canvas.toDataURL("image/png", 1.0));
           setIsRendered(true);
         } catch (error) {
