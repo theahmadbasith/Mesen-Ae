@@ -1,12 +1,13 @@
 import React from 'react';
 import { useCashier, getItemSubtotal } from './CashierContext';
 import { 
-  ShoppingCart, Plus, Minus, X, Pencil, User, Hash, Tag, Save, CreditCard 
+  ShoppingCart, Plus, Minus, X, Pencil, User, Hash, Tag, Save, CreditCard, Trash2 
 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const CashierCart: React.FC = React.memo(() => {
   const {
@@ -41,19 +42,43 @@ const CashierCart: React.FC = React.memo(() => {
     setIsQuickAdding,
     cartOpen,
     setCartOpen,
-    rp
+    rp,
+    setCart
   } = useCashier();
+
+  const handleResetCart = () => {
+    if (cart.length === 0) return;
+    const oldCart = [...cart];
+    setCart([]);
+    toast.success("Keranjang dikosongkan", {
+      action: {
+        label: "Batal (Undo)",
+        onClick: () => setCart(oldCart)
+      }
+    });
+  };
 
   return (
     <React.Fragment>
       {/* Desktop Cart Panel */}
       <div className="hidden md:flex md:w-80 lg:w-96 flex-col bg-card rounded-xl border border-border shrink-0 h-fit min-h-[450px] self-start shadow-sm mt-4">
-        <div className="p-4 border-b border-border shrink-0">
+        <div className="p-4 border-b border-border shrink-0 flex items-center justify-between">
           <h3 className="text-base font-bold flex items-center gap-2">
             <ShoppingCart className="w-4 h-4 text-primary" />
             Keranjang ({cartCount} item)
             {editingTxId && <span className="text-xs font-normal text-muted-foreground">— edit</span>}
           </h3>
+          {cart.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2.5 rounded-lg shrink-0 gap-1"
+              onClick={handleResetCart}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Reset
+            </Button>
+          )}
         </div>
         {cart.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
@@ -237,9 +262,22 @@ const CashierCart: React.FC = React.memo(() => {
         <Sheet open={cartOpen} onOpenChange={(open) => { setCartOpen(open); if (!open) setEditingItemNotes(null); }}>
           <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl max-w-lg mx-auto">
             <SheetHeader>
-              <SheetTitle className="text-left">
-                Keranjang ({cartCount} item)
-                {editingTxId && <span className="text-xs font-normal text-muted-foreground ml-2">— edit open bill</span>}
+              <SheetTitle className="text-left flex items-center justify-between pr-6">
+                <span>
+                  Keranjang ({cartCount} item)
+                  {editingTxId && <span className="text-xs font-normal text-muted-foreground ml-2">— edit open bill</span>}
+                </span>
+                {cart.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2.5 rounded-lg gap-1"
+                    onClick={handleResetCart}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Reset
+                  </Button>
+                )}
               </SheetTitle>
             </SheetHeader>
             <div className="flex flex-col h-full mt-4">
