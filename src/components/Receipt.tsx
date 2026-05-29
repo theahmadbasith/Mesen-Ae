@@ -121,8 +121,35 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const template = rawTemplate === 'finedining' ? 'classic' : rawTemplate;
   const showLogo = (storeSettings as any)?.receiptShowLogo ?? true;
 
+  // Custom Styles
+  const footerStyles = (storeSettings as any)?.receiptFooterStyles || {};
+  const line1Bold = footerStyles.line1?.bold ?? false;
+  const line1Italic = footerStyles.line1?.italic ?? false;
+  const line1Underline = footerStyles.line1?.underline ?? false;
+  const line2Bold = footerStyles.line2?.bold ?? false;
+  const line2Italic = footerStyles.line2?.italic ?? false;
+  const line2Underline = footerStyles.line2?.underline ?? false;
+
+  const getFooterStyle = (block: string) => {
+    const isLine1 = block === 'line1';
+    const bold = isLine1 ? line1Bold : line2Bold;
+    const italic = isLine1 ? line1Italic : line2Italic;
+    const underline = isLine1 ? line1Underline : line2Underline;
+    return {
+      fontWeight: bold ? 'bold' : 'normal',
+      fontStyle: italic ? 'italic' : 'normal',
+      textDecoration: underline ? 'underline' : 'none'
+    };
+  };
+
   if (!transaction) return null;
   const safeItems = Array.isArray(items) ? items : [];
+  const tableVal = transaction.tableNumber || (transaction as any).table_number;
+  const isTakeAway = tableVal && (
+    String(tableVal).toLowerCase() === 'bawa pulang' ||
+    String(tableVal).toLowerCase() === 'take away' ||
+    String(tableVal).toLowerCase() === 'ambil sendiri'
+  );
 
   const isPaidTx = transaction.status === 'lunas' || transaction.status === 'completed';
 
@@ -437,9 +464,9 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div className="mb-2 text-[0.95em]">
                   <div className="flex gap-2 flex-wrap font-medium">
                     <span>{format(new Date(transaction.date), 'dd.MM.yy-HH:mm')}</span>
-                    <span>K:{String(transaction.cashierName || (transaction as any).cashier_name || 'Staff').toUpperCase()}</span>
-                    {transaction.tableNumber && (
-                      <span>Meja:{String(transaction.tableNumber).replace(/^(meja\s+)+/i, '')}</span>
+                    <span>Kasir: {String(transaction.cashierName || (transaction as any).cashier_name || 'Staff').toUpperCase()}</span>
+                    {tableVal && (
+                      <span>{isTakeAway ? 'Tipe: TAKE AWAY' : `Meja: ${String(tableVal).replace(/^(meja\s+)+/i, '')}`}</span>
                     )}
                   </div>
                   {transaction.customerName && (
@@ -450,15 +477,15 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div className="border-t border-dashed border-black my-2" />
                 
                 {/* Items */}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {safeItems.map((item: any, i: number) => {
                     const pName = item.productName || item.product_name || 'Produk';
                     return (
-                      <div key={i} className="flex justify-between leading-tight font-medium">
-                        <span className="flex-1 pr-1 truncate">{pName.toUpperCase()}</span>
-                        <span className="w-4 text-center">{item.quantity}</span>
-                        <span className="w-14 text-right">{rp(item.price)}</span>
-                        <span className="w-14 text-right">{rp(item.subtotal)}</span>
+                      <div key={i} className="flex leading-tight font-medium py-0.5">
+                        <span className="flex-1 pr-1 break-words whitespace-normal text-left">{pName.toUpperCase()}</span>
+                        <span className="w-4 text-center shrink-0">{item.quantity}</span>
+                        <span className="w-14 text-right shrink-0">{rp(item.price)}</span>
+                        <span className="w-14 text-right shrink-0">{rp(item.subtotal)}</span>
                       </div>
                     );
                   })}
@@ -514,13 +541,13 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                     {transaction.customerName && (
                       <><span>Nama</span><span>: {transaction.customerName}</span></>
                     )}
-                    {transaction.tableNumber && (
+                    {tableVal && (
                       <>
-                        <span>Tipe/Meja</span>
+                        <span>{isTakeAway ? 'Tipe' : 'Meja'}</span>
                         <span>: {
-                          String(transaction.tableNumber).toLowerCase() === 'bawa pulang' || String(transaction.tableNumber).toLowerCase() === 'take away'
-                            ? 'Bawa Pulang'
-                            : 'Dine In (Meja ' + String(transaction.tableNumber).replace(/^(meja\s+)+/i, '') + ')'
+                          isTakeAway
+                            ? 'Take Away'
+                            : String(tableVal).replace(/^(meja\s+)+/i, '')
                         }</span>
                       </>
                     )}
@@ -538,8 +565,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                     }
                     return (
                       <div key={i} className="leading-tight font-medium">
-                        <div className="font-bold">{pName}</div>
-                        <div className="flex justify-between text-[0.95em]">
+                        <div className="font-bold break-words whitespace-normal text-left">{pName}</div>
+                        <div className="flex justify-between text-[0.95em] mt-0.5">
                           <span>{item.quantity} x {rp(item.price)}</span>
                           <span>{rp(item.subtotal)}</span>
                         </div>
@@ -595,12 +622,15 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                   {transaction.customerName && (
                     <div className="flex justify-between"><span className="text-gray-500">Pelanggan:</span><span className="font-semibold">{transaction.customerName}</span></div>
                   )}
-                  {transaction.tableNumber && (
-                    <div className="flex justify-between"><span className="text-gray-500">Meja / Tipe:</span><span className="font-bold">{
-                      String(transaction.tableNumber).toLowerCase() === 'bawa pulang' || String(transaction.tableNumber).toLowerCase() === 'take away'
-                        ? 'Bawa Pulang'
-                        : 'Meja ' + String(transaction.tableNumber).replace(/^(meja\s+)+/i, '')
-                    }</span></div>
+                  {tableVal && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">{isTakeAway ? 'Tipe' : 'Meja / Tipe'}:</span>
+                      <span className="font-bold">{
+                        isTakeAway
+                          ? 'Take Away'
+                          : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '')
+                      }</span>
+                    </div>
                   )}
                 </div>
                 <div className="border-t border-dashed border-black/60 my-2" />
@@ -615,8 +645,11 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                     }
                     return (
                       <div key={i}>
-                        <div className="flex justify-between font-semibold"><span>{pName}</span><span>{rp(item.subtotal)}</span></div>
-                        <div className="text-[0.9em] text-gray-500 pl-2">
+                        <div className="flex justify-between font-semibold">
+                          <span className="break-words whitespace-normal text-left">{pName}</span>
+                          <span>{rp(item.subtotal)}</span>
+                        </div>
+                        <div className="text-[0.9em] text-gray-500 pl-2 text-left">
                           {item.quantity} x {rp(item.price)}
                           {Array.isArray(variants) && variants.length > 0 && ` (+ ${variants.map((v: any) => v.optionName || v.option_name).join(', ')})`}
                           {item.notes && ` (Catatan: ${item.notes})`}
@@ -664,14 +697,21 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                   {transaction.customerName && (
                     <div className="flex justify-between"><span className="opacity-60">Pelanggan</span><span>{transaction.customerName}</span></div>
                   )}
-                  {transaction.tableNumber && (
-                    <div className="flex justify-between"><span className="opacity-60">Meja</span><span>{String(transaction.tableNumber).replace(/^(meja\s+)+/i, '')}</span></div>
+                  {tableVal && (
+                    <div className="flex justify-between">
+                      <span className="opacity-60">{isTakeAway ? 'Tipe' : 'Meja'}</span>
+                      <span>{
+                        isTakeAway
+                          ? 'Take Away'
+                          : String(tableVal).replace(/^(meja\s+)+/i, '')
+                      }</span>
+                    </div>
                   )}
                 </div>
                 <div className="border-t border-solid border-black/20 my-3" />
                 
                 {/* Items */}
-                <div className="space-y-1 text-left font-medium">
+                <div className="space-y-1.5 text-left font-medium">
                   {safeItems.map((item: any, i: number) => {
                     const pName = item.productName || item.product_name || 'Produk';
                     let variants = item.selectedVariants || item.selected_variants || [];
@@ -680,12 +720,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                     }
                     return (
                       <div key={i} className="flex justify-between">
-                        <span>
+                        <span className="break-words whitespace-normal text-left pr-2">
                           {item.quantity}x {pName}
                           {Array.isArray(variants) && variants.length > 0 && ` (+${variants.map((v: any) => v.optionName || v.option_name).join(', ')})`}
                           {item.notes && ` (*${item.notes})`}
                         </span>
-                        <span>{rp(item.subtotal)}</span>
+                        <span className="shrink-0">{rp(item.subtotal)}</span>
                       </div>
                     );
                   })}
@@ -724,10 +764,26 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             <div className="relative z-10 pt-1 pb-3 space-y-2 text-gray-500 text-[0.85em] text-center">
               {footerOrder.map((block: string, idx: number) => {
                 if (block === 'line1' && footerLinesData[0]?.trim()) {
-                  return <p key={idx} className="font-medium whitespace-pre-wrap leading-relaxed">{footerLinesData[0].trim()}</p>;
+                  return (
+                    <p 
+                      key={idx} 
+                      className="whitespace-pre-wrap leading-relaxed" 
+                      style={getFooterStyle('line1')}
+                    >
+                      {footerLinesData[0].trim()}
+                    </p>
+                  );
                 }
                 if (block === 'line2' && footerLinesData[1]?.trim()) {
-                  return <p key={idx} className="font-medium whitespace-pre-wrap leading-relaxed">{footerLinesData[1].trim()}</p>;
+                  return (
+                    <p 
+                      key={idx} 
+                      className="whitespace-pre-wrap leading-relaxed" 
+                      style={getFooterStyle('line2')}
+                    >
+                      {footerLinesData[1].trim()}
+                    </p>
+                  );
                 }
                 if (block === 'image' && footerImgData) {
                   return (

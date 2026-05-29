@@ -80,6 +80,14 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   const [footerImg, setFooterImg] = useState<string | undefined>();
   const [footerOrder, setFooterOrder] = useState<FooterBlock[]>(['line1', 'line2', 'image']);
 
+  // Bold, Italic, Underline for Footer lines
+  const [line1Bold, setLine1Bold] = useState(false);
+  const [line1Italic, setLine1Italic] = useState(false);
+  const [line1Underline, setLine1Underline] = useState(false);
+  const [line2Bold, setLine2Bold] = useState(false);
+  const [line2Italic, setLine2Italic] = useState(false);
+  const [line2Underline, setLine2Underline] = useState(false);
+
   // Lightbox Preview Modal State
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -139,6 +147,15 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
         setFooterLine2('Layanan Konsumen: 0812-xxxx-xxxx');
       }
 
+      // Styles
+      const styles = s.receiptFooterStyles || {};
+      setLine1Bold(styles.line1?.bold ?? false);
+      setLine1Italic(styles.line1?.italic ?? false);
+      setLine1Underline(styles.line1?.underline ?? false);
+      setLine2Bold(styles.line2?.bold ?? false);
+      setLine2Italic(styles.line2?.italic ?? false);
+      setLine2Underline(styles.line2?.underline ?? false);
+
       setHasInitialized(true);
     }
   }, [storeSettings, hasInitialized]);
@@ -146,7 +163,9 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   const executeSave = async (
     tmpl = template, img = footerImg, l1 = footerLine1, l2 = footerLine2,
     order = footerOrder, font = fontFamily, size = fontSize,
-    lh = lineHeight, logo = showLogo
+    lh = lineHeight, logo = showLogo,
+    l1B = line1Bold, l1I = line1Italic, l1U = line1Underline,
+    l2B = line2Bold, l2I = line2Italic, l2U = line2Underline
   ) => {
     if (!storeSettings?.id) return;
 
@@ -185,6 +204,10 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       receiptFooterImg: finalImgUrl || null,
       receiptFooterLines: [l1.trim(), l2.trim()],
       receiptFooterOrder: order,
+      receiptFooterStyles: {
+        line1: { bold: l1B, italic: l1I, underline: l1U },
+        line2: { bold: l2B, italic: l2I, underline: l2U }
+      }
     });
   };
 
@@ -246,25 +269,37 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   // ─── Mock Data (Bahasa Indonesia) ──────────────────────────────────
   const mockItems = {
     minimarket: [
-      { name: 'KOPI SUSU GULA AREN', qty: 2, price: 15000, total: 30000 },
-      { name: 'ROTI BAKAR COKELAT', qty: 1, price: 12000, total: 12000 },
-      { name: 'TEH BOTOL SOSRO', qty: 1, price: 5000, total: 5000 },
+      { name: 'KOPI SUSU GULA AREN DINGIN', qty: 2, price: 15000, total: 30000 },
+      { name: 'ROTI BAKAR COKELAT SPESIAL KEJU MELELEH', qty: 1, price: 12000, total: 12000 },
+      { name: 'TEH BOTOL SOSRO KOTAK', qty: 1, price: 5000, total: 5000 },
     ],
     fnb: [
-      { name: 'Nasi Goreng Ayam', notes: 'Pedas', qty: 1, price: 25000, total: 25000 },
-      { name: 'Es Teh Manis', notes: 'Gula Sedikit', qty: 2, price: 5000, total: 10000 },
+      { name: 'Nasi Goreng Ayam Spesial Telur Ceplok', notes: 'Pedas Gila', qty: 1, price: 25000, total: 25000 },
+      { name: 'Es Teh Manis Selasih', notes: 'Gula Sedikit', qty: 2, price: 5000, total: 10000 },
     ],
     classic: [
-      { name: 'Mie Goreng Spesial', qty: 1, price: 18000, total: 18000 },
-      { name: 'Es Jeruk', qty: 1, price: 8000, total: 8000 },
+      { name: 'Mie Goreng Spesial Komplit Extra Bakso', qty: 1, price: 18000, total: 18000 },
+      { name: 'Es Jeruk Nipis Madu', qty: 1, price: 8000, total: 8000 },
     ],
     minimalis: [
-      { name: 'Kopi Hitam', qty: 2, price: 12000, total: 24000 },
-      { name: 'Kentang Goreng', qty: 1, price: 15000, total: 15000 },
+      { name: 'Kopi Hitam Gayo Arabica', qty: 2, price: 12000, total: 24000 },
+      { name: 'Kentang Goreng Mentega', qty: 1, price: 15000, total: 15000 },
     ],
   };
 
   const rp = (n: number) => n.toLocaleString('id-ID');
+
+  const getFooterStyle = (block: string) => {
+    const isLine1 = block === 'line1';
+    const bold = isLine1 ? line1Bold : line2Bold;
+    const italic = isLine1 ? line1Italic : line2Italic;
+    const underline = isLine1 ? line1Underline : line2Underline;
+    return {
+      fontWeight: bold ? 'bold' : 'normal',
+      fontStyle: italic ? 'italic' : 'normal',
+      textDecoration: underline ? 'underline' : 'none'
+    };
+  };
 
   // ─── Template configs ──────────────────────────────────────────────
   const templates: { key: TemplateType; label: string; icon: React.ReactNode }[] = [
@@ -300,22 +335,34 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             </div>
           </div>
 
-          {/* §Logo Toggle */}
-          <div className="flex items-center space-x-2 pt-1 pb-2">
-            <input
-              type="checkbox"
+          {/* iOS Toggle Switch (Premium Toggle) */}
+          <div className="flex items-center justify-between pt-1 pb-3 px-1 border-b border-border/50">
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="showLogo" className="text-xs font-bold text-foreground cursor-pointer select-none">
+                Tampilkan Logo Toko
+              </Label>
+              <span className="text-[10px] text-muted-foreground">Menampilkan logo utama toko di bagian paling atas struk</span>
+            </div>
+            <button
+              type="button"
               id="showLogo"
-              checked={showLogo}
-              onChange={e => setShowLogo(e.target.checked)}
-              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer accent-primary"
-            />
-            <Label htmlFor="showLogo" className="text-xs font-semibold text-foreground cursor-pointer select-none">
-              Tampilkan Logo Toko
-            </Label>
+              onClick={() => setShowLogo(!showLogo)}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20",
+                showLogo ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
+                  showLogo ? "translate-x-4" : "translate-x-0"
+                )}
+              />
+            </button>
           </div>
 
           {/* §1 — Template Selection */}
-          <div className="space-y-3 pt-3 border-t border-border/50">
+          <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
               <Sliders className="w-3.5 h-3.5 text-primary/70" /> Tema Struk
             </div>
@@ -400,33 +447,100 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   {footerOrder.map(block => (
                     <SortableFooterItem key={block} id={block}>
                       {block === 'line1' && (
-                        <div className="flex items-center gap-3 w-full">
-                          <span className="text-[10px] font-bold uppercase text-primary/80 shrink-0 w-20">Teks Utama</span>
+                        <div className="flex items-center gap-2 w-full">
                           <input
                             type="text"
                             value={footerLine1}
                             onChange={e => setFooterLine1(e.target.value)}
-                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30"
+                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30 font-medium"
                             placeholder="Terima Kasih Atas Kunjungan Anda"
                           />
+                          <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/30 shrink-0 h-8">
+                            <button
+                              type="button"
+                              onClick={() => setLine1Bold(!line1Bold)}
+                              className={cn(
+                                "p-1 rounded text-xs font-black w-6 h-6 flex items-center justify-center transition-colors",
+                                line1Bold ? "bg-primary text-primary-foreground font-black" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title="Tebal"
+                            >
+                              B
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLine1Italic(!line1Italic)}
+                              className={cn(
+                                "p-1 rounded text-xs italic font-serif w-6 h-6 flex items-center justify-center transition-colors",
+                                line1Italic ? "bg-primary text-primary-foreground font-black" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title="Miring"
+                            >
+                              I
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLine1Underline(!line1Underline)}
+                              className={cn(
+                                "p-1 rounded text-xs underline w-6 h-6 flex items-center justify-center transition-colors",
+                                line1Underline ? "bg-primary text-primary-foreground font-black" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title="Garis Bawah"
+                            >
+                              U
+                            </button>
+                          </div>
                         </div>
                       )}
                       {block === 'line2' && (
-                        <div className="flex items-center gap-3 w-full">
-                          <span className="text-[10px] font-bold uppercase text-primary/80 shrink-0 w-20">Info Tambahan</span>
+                        <div className="flex items-center gap-2 w-full">
                           <input
                             type="text"
                             value={footerLine2}
                             onChange={e => setFooterLine2(e.target.value)}
-                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30"
-                            placeholder="Kritik & Saran: 0812-xxxx-xxxx"
+                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30 font-medium"
+                            placeholder="Layanan Konsumen: 0812-xxxx-xxxx"
                           />
+                          <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/30 shrink-0 h-8">
+                            <button
+                              type="button"
+                              onClick={() => setLine2Bold(!line2Bold)}
+                              className={cn(
+                                "p-1 rounded text-xs font-black w-6 h-6 flex items-center justify-center transition-colors",
+                                line2Bold ? "bg-primary text-primary-foreground font-black" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title="Tebal"
+                            >
+                              B
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLine2Italic(!line2Italic)}
+                              className={cn(
+                                "p-1 rounded text-xs italic font-serif w-6 h-6 flex items-center justify-center transition-colors",
+                                line2Italic ? "bg-primary text-primary-foreground font-black" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title="Miring"
+                            >
+                              I
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLine2Underline(!line2Underline)}
+                              className={cn(
+                                "p-1 rounded text-xs underline w-6 h-6 flex items-center justify-center transition-colors",
+                                line2Underline ? "bg-primary text-primary-foreground font-black" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                              )}
+                              title="Garis Bawah"
+                            >
+                              U
+                            </button>
+                          </div>
                         </div>
                       )}
                       {block === 'image' && (
                         <div className="flex items-center justify-between gap-3 w-full">
                           <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-bold uppercase text-primary/80 shrink-0 w-20">Gambar Footer</span>
                             <div 
                               onClick={() => footerImg && setLightboxOpen(true)}
                               className={cn(
@@ -436,6 +550,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                             >
                               {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-3.5 h-3.5 text-muted-foreground/30" />}
                             </div>
+                            <span className="text-xs text-muted-foreground font-medium">Gambar Struk Footer</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-[10px] px-2.5 rounded-lg bg-background">
@@ -460,226 +575,234 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
       </div>
 
       {/* ═══ RIGHT: Live Preview ═══ */}
-      <div className="lg:col-span-5 flex justify-center sticky top-20">
-        <div className="flex flex-col items-center w-full">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Printer className="w-4 h-4 text-primary" />
-            <h4 className="text-xs font-bold text-foreground uppercase tracking-widest">Preview Struk</h4>
-          </div>
+      <div className="lg:col-span-5 flex flex-col items-center sticky top-6">
+        <div
+          className={cn(
+            "bg-white text-black p-5 sm:p-6 shadow-2xl border border-gray-200 transition-all duration-500 select-none w-[280px]",
+            previewFontClass
+          )}
+          style={{
+            fontSize: `${fontSize}px`,
+            lineHeight: lineHeight === 'tight' ? '1.15' : lineHeight === 'relaxed' ? '1.5' : '1.3',
+            clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), 98% 100%, 96% calc(100% - 6px), 94% 100%, 92% calc(100% - 6px), 90% 100%, 88% calc(100% - 6px), 86% 100%, 84% calc(100% - 6px), 82% 100%, 80% calc(100% - 6px), 78% 100%, 76% calc(100% - 6px), 74% 100%, 72% calc(100% - 6px), 70% 100%, 68% calc(100% - 6px), 66% 100%, 64% calc(100% - 6px), 62% 100%, 60% calc(100% - 6px), 58% 100%, 56% calc(100% - 6px), 54% 100%, 52% calc(100% - 6px), 50% 100%, 48% calc(100% - 6px), 46% 100%, 44% calc(100% - 6px), 42% 100%, 40% calc(100% - 6px), 38% 100%, 36% calc(100% - 6px), 34% 100%, 32% calc(100% - 6px), 30% 100%, 28% calc(100% - 6px), 26% 100%, 24% calc(100% - 6px), 22% 100%, 20% calc(100% - 6px), 18% 100%, 16% calc(100% - 6px), 14% 100%, 12% calc(100% - 6px), 10% 100%, 8% calc(100% - 6px), 6% 100%, 4% calc(100% - 6px), 2% 100%, 0 calc(100% - 6px))'
+          }}
+        >
+          {/* ── MINIMARKET ── */}
+          {template === 'minimarket' && (
+            <div className="w-full text-left uppercase text-[0.85em] relative z-10">
+              {showLogo && storeSettings.logo && (
+                <div className="mb-3">
+                  <div className="w-28 h-8 mb-2 grayscale">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain object-left" />
+                  </div>
+                </div>
+              )}
+              <div className="mb-2">
+                <h2 className="font-extrabold">{storeSettings.storeName?.toUpperCase() || 'TOKO SUMBER BERKAH'}</h2>
+                <p className="text-[0.8em]">{storeSettings.address?.toUpperCase() || 'JL. DR SOETOMO NO. 93'}</p>
+              </div>
+              <div className="mb-2 uppercase text-[0.85em] font-medium leading-relaxed">
+                <div>Tanggal: 29.05.26-17:08</div>
+                <div>Kasir: BASITH</div>
+                <div>Meja: 04</div>
+                <div>Pelanggan: AHMAD</div>
+                <div>No. Struk: TX1780075515416</div>
+              </div>
+              <div className="border-t border-dashed border-black my-2" />
+              <div className="space-y-1 uppercase text-[0.85em]">
+                {mockItems.minimarket.map((item, i) => (
+                  <div key={i} className="flex leading-tight font-medium py-0.5">
+                    <span className="flex-1 pr-1 break-words whitespace-normal">{item.name}</span>
+                    <span className="w-4 text-center shrink-0">{item.qty}</span>
+                    <span className="w-14 text-right shrink-0">{rp(item.price)}</span>
+                    <span className="w-14 text-right shrink-0">{rp(item.total)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-dashed border-black my-2" />
+              <div className="space-y-0.5 uppercase text-[0.85em]">
+                <div className="flex justify-end gap-4">
+                  <span>HARGA JUAL :</span><span className="w-20 text-right">{rp(47000)}</span>
+                </div>
+                <div className="border-t border-dashed border-black my-1" />
+                <div className="flex justify-end gap-4 font-extrabold text-[1.05em]">
+                  <span>TOTAL :</span><span className="w-20 text-right">{rp(47000)}</span>
+                </div>
+                <div className="flex justify-end gap-4">
+                  <span>TUNAI :</span><span className="w-20 text-right">{rp(50000)}</span>
+                </div>
+                <div className="flex justify-end gap-4">
+                  <span>KEMBALI :</span><span className="w-20 text-right">{rp(3000)}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-          <div
-            className={cn(
-              "bg-white text-black p-5 sm:p-6 shadow-2xl border border-gray-200 transition-all duration-500 select-none w-[280px]",
-              previewFontClass
-            )}
-            style={{
-              fontSize: `${fontSize}px`,
-              lineHeight: lineHeight === 'tight' ? '1.15' : lineHeight === 'relaxed' ? '1.5' : '1.3',
-              clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), 98% 100%, 96% calc(100% - 6px), 94% 100%, 92% calc(100% - 6px), 90% 100%, 88% calc(100% - 6px), 86% 100%, 84% calc(100% - 6px), 82% 100%, 80% calc(100% - 6px), 78% 100%, 76% calc(100% - 6px), 74% 100%, 72% calc(100% - 6px), 70% 100%, 68% calc(100% - 6px), 66% 100%, 64% calc(100% - 6px), 62% 100%, 60% calc(100% - 6px), 58% 100%, 56% calc(100% - 6px), 54% 100%, 52% calc(100% - 6px), 50% 100%, 48% calc(100% - 6px), 46% 100%, 44% calc(100% - 6px), 42% 100%, 40% calc(100% - 6px), 38% 100%, 36% calc(100% - 6px), 34% 100%, 32% calc(100% - 6px), 30% 100%, 28% calc(100% - 6px), 26% 100%, 24% calc(100% - 6px), 22% 100%, 20% calc(100% - 6px), 18% 100%, 16% calc(100% - 6px), 14% 100%, 12% calc(100% - 6px), 10% 100%, 8% calc(100% - 6px), 6% 100%, 4% calc(100% - 6px), 2% 100%, 0 calc(100% - 6px))'
-            }}
-          >
-            {/* ── MINIMARKET ── */}
-            {template === 'minimarket' && (
-              <div className="w-full text-left">
+          {/* ── FNB (Kafe/Resto) ── */}
+          {template === 'fnb' && (
+            <div className="w-full text-left text-[0.85em] relative z-10">
+              <div className="text-center mb-4">
                 {showLogo && storeSettings.logo && (
-                  <div className="mb-3">
-                    <div className="w-28 h-8 mb-2 grayscale">
-                      <img src={storeSettings.logo} className="w-full h-full object-contain object-left" />
-                    </div>
+                  <div className="w-14 h-14 mx-auto mb-2 grayscale">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain" />
                   </div>
                 )}
-                <div className="mb-2">
-                  <h2 className="font-extrabold">{storeSettings.storeName?.toUpperCase() || 'TOKO SUMBER BERKAH'}</h2>
-                  <p className="text-[0.8em]">{storeSettings.address?.toUpperCase() || 'JL. KEBANGSAAN NO. 12'}</p>
-                </div>
-                <div className="mb-2 uppercase text-[0.85em]">
-                  <div className="flex gap-2 flex-wrap">
-                    <span>29.05.26-17:08</span>
-                    <span>K:BASITH</span>
-                    <span>Meja:01</span>
-                  </div>
-                  <span>Pelanggan: Ahmad</span>
-                </div>
-                <div className="border-t border-dashed border-black my-2" />
-                <div className="space-y-0.5 uppercase text-[0.85em]">
-                  {mockItems.minimarket.map((item, i) => (
-                    <div key={i} className="flex justify-between leading-tight">
-                      <span className="flex-1 pr-1">{item.name}</span>
-                      <span className="w-4 text-center">{item.qty}</span>
-                      <span className="w-14 text-right">{rp(item.price)}</span>
-                      <span className="w-14 text-right">{rp(item.total)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-dashed border-black my-2" />
-                <div className="space-y-0.5 uppercase text-[0.85em]">
-                  <div className="flex justify-end gap-4">
-                    <span>HARGA JUAL :</span><span className="w-16 text-right">{rp(47000)}</span>
-                  </div>
-                  <div className="border-t border-dashed border-black my-1" />
-                  <div className="flex justify-end gap-4 font-extrabold text-[1.05em]">
-                    <span>TOTAL :</span><span className="w-16 text-right">{rp(47000)}</span>
-                  </div>
-                  <div className="flex justify-end gap-4">
-                    <span>TUNAI :</span><span className="w-16 text-right">{rp(50000)}</span>
-                  </div>
-                  <div className="flex justify-end gap-4">
-                    <span>KEMBALI :</span><span className="w-16 text-right">{rp(3000)}</span>
-                  </div>
+                <h2 className="font-bold text-[1.2em]">{storeSettings.storeName?.toUpperCase() || 'KOPI NUSANTARA'}</h2>
+                <p className="text-[0.8em] opacity-90">{storeSettings.address || 'Jl. Dr Soetomo No. 93'}</p>
+              </div>
+              <div className="mb-2 text-[0.85em] font-medium leading-relaxed">
+                <div className="grid grid-cols-[65px_auto] gap-x-1">
+                  <span>No Struk</span><span>: TX1780075515416</span>
+                  <span>Tanggal</span><span>: 29 Mei 2026, 19.14</span>
+                  <span>Kasir</span><span>: Basith</span>
+                  <span>Nama</span><span>: Ahmad</span>
+                  <span>Tipe</span><span>: Dine In (Meja 04)</span>
                 </div>
               </div>
-            )}
-
-            {/* ── FNB (Kafe/Resto) ── */}
-            {template === 'fnb' && (
-              <div className="w-full text-left">
-                <div className="text-center mb-4">
-                  {showLogo && storeSettings.logo && (
-                    <div className="w-14 h-14 mx-auto mb-2 grayscale">
-                      <img src={storeSettings.logo} className="w-full h-full object-contain" />
-                    </div>
-                  )}
-                  <h2 className="font-bold text-[1.2em]">{storeSettings.storeName?.toUpperCase() || 'KOPI NUSANTARA'}</h2>
-                  <p className="text-[0.8em] opacity-90">{storeSettings.address || 'Jl. Dr Soetomo No. 93'}</p>
-                </div>
-                <div className="mb-2 text-[0.85em]">
-                  <div className="grid grid-cols-[65px_auto] gap-x-1">
-                    <span>No</span><span>: SI-MN4KU-106</span>
-                    <span>Tanggal</span><span>: 29 Mei 2026, 19.14</span>
-                    <span>Kasir</span><span>: Basith</span>
-                    <span>Nama</span><span>: Ahmad</span>
-                    <span>Tipe</span><span>: Dine In (Meja 04)</span>
-                  </div>
-                </div>
-                <div className="border-t border-dashed border-black my-2" />
-                <div className="space-y-2 text-[0.85em]">
-                  {mockItems.fnb.map((item: any, i) => (
-                    <div key={i} className="leading-tight">
-                      <div className="font-bold">{item.name}</div>
-                      <div className="flex justify-between text-[0.95em]">
-                        <span>{item.qty} x {rp(item.price)}</span>
-                        <span>{rp(item.total)}</span>
-                      </div>
-                      {item.notes && <div className="opacity-80 text-[0.9em]">Catatan: {item.notes}</div>}
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-dashed border-black my-2" />
-                <div className="grid grid-cols-[75px_auto] gap-x-1 ml-auto max-w-[200px] text-[0.85em]">
-                  <span>Subtotal</span><span>: {rp(35000)}</span>
-                  <span className="font-extrabold text-[1.05em]">Total</span><span className="font-extrabold text-[1.05em]">: {rp(35000)}</span>
-                  <span>Bayar</span><span>: QRIS</span>
-                </div>
-              </div>
-            )}
-
-            {/* ── CLASSIC ── */}
-            {template === 'classic' && (
-              <div className="w-full">
-                <div className="text-center mb-3">
-                  {showLogo && storeSettings.logo && (
-                    <div className="w-16 h-16 mx-auto mb-2 grayscale">
-                      <img src={storeSettings.logo} className="w-full h-full object-contain" />
-                    </div>
-                  )}
-                  <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings.storeName || 'TOKO SAYA'}</h2>
-                  {storeSettings.address && <p className="text-[0.8em] mt-1 leading-tight">{storeSettings.address}</p>}
-                  {storeSettings.phone && <p className="text-[0.8em] leading-tight">{storeSettings.phone}</p>}
-                </div>
-                <div className="border-t border-dashed border-black/60 my-2" />
-                <div className="text-[0.85em] space-y-0.5">
-                  <div className="flex justify-between"><span>No. Struk: SI-CL-042</span><span>Tunai</span></div>
-                  <div className="flex justify-between"><span>29/05/2026</span><span>19:30</span></div>
-                </div>
-                <div className="border-t border-dashed border-black/40 my-2" />
-                <div className="space-y-0.5 text-[0.85em] text-left">
-                  <div className="flex justify-between"><span className="text-gray-500">Kasir:</span><span className="font-semibold">Basith</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Pelanggan:</span><span className="font-semibold">Ahmad</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Meja / Tipe:</span><span className="font-bold">Meja 03</span></div>
-                </div>
-                <div className="border-t border-dashed border-black/60 my-2" />
-                <div className="space-y-1.5 text-[0.85em]">
-                  {mockItems.classic.map((item, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between font-semibold"><span>{item.name}</span><span>{rp(item.total)}</span></div>
-                      <div className="text-[0.9em] text-gray-500 pl-2">{item.qty} x {rp(item.price)}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-dashed border-black/60 my-2" />
-                <div className="space-y-1 text-[0.85em]">
-                  <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{rp(26000)}</span></div>
-                  <div className="flex justify-between font-black text-[1.05em] border-t border-gray-300 pt-1.5 mt-1.5"><span>Total</span><span>{rp(26000)}</span></div>
-                  <div className="flex justify-between mt-1"><span className="text-gray-600">Bayar</span><span>{rp(30000)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Kembali</span><span>{rp(4000)}</span></div>
-                </div>
-              </div>
-            )}
-
-            {/* ── MINIMALIS ── */}
-            {template === 'minimalis' && (
-              <div className="w-full text-center">
-                <div className="mb-4">
-                  {showLogo && storeSettings.logo && (
-                    <div className="w-10 h-10 mx-auto mb-2 grayscale">
-                      <img src={storeSettings.logo} className="w-full h-full object-contain" />
-                    </div>
-                  )}
-                  <h2 className="font-bold text-[1.1em]">{storeSettings.storeName || 'Toko'}</h2>
-                </div>
-                <div className="border-t border-solid border-black/20 my-3" />
-                <div className="text-[0.85em] opacity-80 flex justify-between">
-                  <span>29/05/2026</span><span>SI-MN-099</span>
-                </div>
-                <div className="text-[0.8em] text-left space-y-0.5 mt-1 mb-2">
-                  <div className="flex justify-between"><span className="opacity-60">Kasir</span><span>Basith</span></div>
-                  <div className="flex justify-between"><span className="opacity-60">Pelanggan</span><span>Ahmad</span></div>
-                  <div className="flex justify-between"><span className="opacity-60">Meja</span><span>05</span></div>
-                </div>
-                <div className="border-t border-solid border-black/20 my-3" />
-                <div className="space-y-1 text-left text-[0.85em]">
-                  {mockItems.minimalis.map((item, i) => (
-                    <div key={i} className="flex justify-between">
-                      <span>{item.qty}x {item.name}</span>
+              <div className="border-t border-dashed border-black my-2" />
+              <div className="space-y-2 text-[0.85em]">
+                {mockItems.fnb.map((item: any, i) => (
+                  <div key={i} className="leading-tight font-medium">
+                    <div className="font-bold break-words whitespace-normal">{item.name}</div>
+                    <div className="flex justify-between text-[0.95em] mt-0.5">
+                      <span>{item.qty} x {rp(item.price)}</span>
                       <span>{rp(item.total)}</span>
                     </div>
-                  ))}
-                </div>
-                <div className="border-t border-solid border-black/20 my-3" />
-                <div className="flex justify-between font-bold text-[1.05em] text-[0.85em]">
-                  <span>Total</span><span>{rp(39000)}</span>
-                </div>
-                <div className="flex justify-between text-[0.85em] opacity-80 mt-1">
-                  <span>Pembayaran</span><span>QRIS</span>
-                </div>
+                    {item.notes && <div className="opacity-80 text-[0.9em] pl-1">Catatan: {item.notes}</div>}
+                  </div>
+                ))}
               </div>
-            )}
-
-            {/* ── Dynamic Footer ── */}
-            <div className="border-t border-black mt-4 mb-3 opacity-40" />
-            <div className="text-center space-y-2 pb-8 text-[0.85em]">
-              {footerOrder.map((block, idx) => {
-                if (block === 'line1' && footerLine1) {
-                  return <p key={idx} className="whitespace-pre-wrap leading-relaxed font-semibold">{footerLine1}</p>;
-                }
-                if (block === 'line2' && footerLine2) {
-                  return <p key={idx} className="whitespace-pre-wrap opacity-75 leading-snug">{footerLine2}</p>;
-                }
-                if (block === 'image' && footerImg) {
-                  return (
-                    <div key={idx} className="my-2">
-                      <img
-                        src={footerImg}
-                        className="max-w-20 h-auto mx-auto object-contain grayscale rounded-xl mix-blend-multiply"
-                        style={{ filter: 'grayscale(1) contrast(1.2) brightness(0.9)' }}
-                        alt="Footer"
-                      />
-                    </div>
-                  );
-                }
-                return null;
-              })}
+              <div className="border-t border-dashed border-black my-2" />
+              <div className="grid grid-cols-[75px_auto] gap-x-1 ml-auto max-w-[200px] text-[0.85em] font-medium">
+                <span>Subtotal</span><span>: {rp(35000)}</span>
+                <span className="font-extrabold text-[1.05em]">Total</span><span className="font-extrabold text-[1.05em]">: {rp(35000)}</span>
+                <span>Bayar</span><span>: QRIS</span>
+              </div>
             </div>
+          )}
+
+          {/* ── CLASSIC ── */}
+          {template === 'classic' && (
+            <div className="w-full text-[0.85em] relative z-10">
+              <div className="text-center mb-3">
+                {showLogo && storeSettings.logo && (
+                  <div className="w-16 h-16 mx-auto mb-2 grayscale">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                  </div>
+                )}
+                <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings.storeName || 'TOKO SAYA'}</h2>
+                {storeSettings.address && <p className="text-[0.8em] mt-1 leading-tight">{storeSettings.address}</p>}
+                {storeSettings.phone && <p className="text-[0.8em] leading-tight">{storeSettings.phone}</p>}
+              </div>
+              <div className="border-t border-dashed border-black/60 my-2" />
+              <div className="text-[0.85em] space-y-0.5 font-medium leading-relaxed">
+                <div className="flex justify-between"><span>No. Struk: TX1780075515416</span><span>Tunai</span></div>
+                <div className="flex justify-between"><span>29/05/2026</span><span>19:30</span></div>
+              </div>
+              <div className="border-t border-dashed border-black/40 my-2" />
+              <div className="space-y-0.5 text-left font-medium leading-relaxed">
+                <div className="flex justify-between"><span className="text-gray-500">Kasir:</span><span className="font-semibold">Basith</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Pelanggan:</span><span className="font-semibold">Ahmad</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Meja / Tipe:</span><span className="font-bold">Meja 03</span></div>
+              </div>
+              <div className="border-t border-dashed border-black/60 my-2" />
+              <div className="space-y-2 text-[0.85em]">
+                {mockItems.classic.map((item, i) => (
+                  <div key={i} className="font-medium">
+                    <div className="flex justify-between font-semibold"><span className="break-words whitespace-normal">{item.name}</span><span>{rp(item.total)}</span></div>
+                    <div className="text-[0.9em] text-gray-500 pl-2 mt-0.5">{item.qty} x {rp(item.price)}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-dashed border-black/60 my-2" />
+              <div className="space-y-1 text-[0.85em] font-medium">
+                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{rp(26000)}</span></div>
+                <div className="flex justify-between font-black text-[1.05em] border-t border-gray-300 pt-1.5 mt-1.5"><span>Total</span><span>{rp(26000)}</span></div>
+                <div className="flex justify-between mt-1"><span className="text-gray-600">Bayar</span><span>{rp(30000)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Kembali</span><span>{rp(4000)}</span></div>
+              </div>
+            </div>
+          )}
+
+          {/* ── MINIMALIS ── */}
+          {template === 'minimalis' && (
+            <div className="w-full text-center text-[0.85em] relative z-10">
+              <div className="mb-4">
+                {showLogo && storeSettings.logo && (
+                  <div className="w-10 h-10 mx-auto mb-2 grayscale">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                  </div>
+                )}
+                <h2 className="font-bold text-[1.1em]">{storeSettings.storeName || 'Toko'}</h2>
+              </div>
+              <div className="border-t border-solid border-black/20 my-3" />
+              <div className="opacity-80 flex justify-between font-medium">
+                <span>29/05/2026</span><span>TX1780075515416</span>
+              </div>
+              <div className="text-left space-y-0.5 mt-1 mb-2 font-medium leading-relaxed">
+                <div className="flex justify-between"><span className="opacity-60">Kasir</span><span>Basith</span></div>
+                <div className="flex justify-between"><span className="opacity-60">Pelanggan</span><span>Ahmad</span></div>
+                <div className="flex justify-between"><span className="opacity-60">Meja</span><span>05</span></div>
+              </div>
+              <div className="border-t border-solid border-black/20 my-3" />
+              <div className="space-y-1.5 text-left text-[0.85em]">
+                {mockItems.minimalis.map((item, i) => (
+                  <div key={i} className="flex justify-between font-medium">
+                    <span className="break-words whitespace-normal">{item.qty}x {item.name}</span>
+                    <span>{rp(item.total)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-solid border-black/20 my-3" />
+              <div className="flex justify-between font-bold text-[1.05em] text-[0.85em] font-medium">
+                <span>Total</span><span>{rp(39000)}</span>
+              </div>
+              <div className="flex justify-between text-[0.85em] opacity-80 mt-1 font-medium">
+                <span>Pembayaran</span><span>QRIS</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Dynamic Footer ── */}
+          <div className="border-t border-black mt-4 mb-3 opacity-40" />
+          <div className="text-center space-y-2 pb-8 text-[0.85em]">
+            {footerOrder.map((block, idx) => {
+              if (block === 'line1' && footerLine1) {
+                return (
+                  <p 
+                    key={idx} 
+                    className="whitespace-pre-wrap leading-relaxed" 
+                    style={getFooterStyle('line1')}
+                  >
+                    {footerLine1}
+                  </p>
+                );
+              }
+              if (block === 'line2' && footerLine2) {
+                return (
+                  <p 
+                    key={idx} 
+                    className="whitespace-pre-wrap leading-snug" 
+                    style={getFooterStyle('line2')}
+                  >
+                    {footerLine2}
+                  </p>
+                );
+              }
+              if (block === 'image' && footerImg) {
+                return (
+                  <div key={idx} className="my-2">
+                    <img
+                      src={footerImg}
+                      className="max-w-20 h-auto mx-auto object-contain grayscale rounded-xl mix-blend-multiply"
+                      style={{ filter: 'grayscale(1) contrast(1.2) brightness(0.9)' }}
+                      alt="Footer"
+                    />
+                  </div>
+                );
+              }
+              return null;
+            })}
           </div>
         </div>
       </div>
