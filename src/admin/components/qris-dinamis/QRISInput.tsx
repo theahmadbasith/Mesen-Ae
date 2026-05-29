@@ -36,7 +36,8 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
+          // Optimasi untuk sering membaca data piksel
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (!ctx) return;
           ctx.drawImage(img, 0, 0);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -98,7 +99,9 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    cancelAnimationFrame(animationRef.current);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
     setScanning(false);
   }, []);
 
@@ -113,21 +116,29 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       const video = videoRef.current;
       if (!video) return;
       video.srcObject = stream;
+      video.setAttribute("playsinline", "true"); // Penting untuk iOS
       await video.play();
 
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const ctx = canvas.getContext("2d");
+      // Gunakan willReadFrequently karena kita memanggil getImageData di setiap frame
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
       const scan = () => {
         if (!streamRef.current) return;
+        
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, canvas.width, canvas.height);
+          // dontInvert mempercepat proses pemindaian secara signifikan
+          const code = jsQR(imageData.data, canvas.width, canvas.height, {
+            inversionAttempts: "dontInvert",
+          });
+          
           if (code) {
             onChange(code.data);
             stopCamera();
@@ -136,9 +147,13 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
         }
         animationRef.current = requestAnimationFrame(scan);
       };
-      scan();
-    } catch {
-      showAlert("Akses Ditolak", "Kamera tidak dapat diakses atau diblokir oleh browser Anda.");
+      
+      // Mulai loop pemindaian
+      animationRef.current = requestAnimationFrame(scan);
+    } catch (err) {
+      console.error("Camera access error:", err);
+      showAlert("Akses Ditolak", "Kamera tidak dapat diakses. Pastikan Anda telah memberikan izin dan perangkat memiliki kamera yang berfungsi.");
+      setScanning(false);
     }
   };
 
@@ -151,6 +166,19 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Animasi Scanner Khusus */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes scan-animation {
+          0% { top: 0; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        .scanner-line {
+          animation: scan-animation 2s infinite linear;
+        }
+      `}} />
+
       {/* Textarea Area */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -254,9 +282,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
           variant={scanning ? "destructive" : "default"}
           size="lg"
           onClick={scanning ? stopCamera : startCamera}
-          className={`gap-2 h-11 w-full text-sm font-semibold rounded-xl transition-all ${
-            scanning ? "" : ""
-          }`}
+          className="gap-2 h-11 w-full text-sm font-semibold rounded-xl transition-all"
         >
           <Scan className="w-4 h-4" />
           {scanning ? "Stop Kamera" : "Scan Kamera"}
@@ -273,29 +299,41 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
       {/* Camera view */}
       {scanning && (
-        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg bg-black animate-in fade-in slide-in-from-top-4 duration-300">
           <video
             ref={videoRef}
-            className="w-full object-cover"
-            style={{ maxHeight: "60vh" }}
+            className="w-full h-[60vh] object-cover"
             playsInline
             muted
           />
           <canvas ref={canvasRef} className="hidden" />
 
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
-            <div className="w-56 h-56 border-2 border-white rounded-3xl relative">
-              <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-xl" />
-              <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-xl" />
-              <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-xl" />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-xl" />
-              <div className="w-full h-full border border-white/20 rounded-2xl animate-pulse" />
+          {/* Overlay & Scan Area */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {/* Dark overlay around the scan area */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+            
+            {/* The transparent cutout area for scanning */}
+            <div className="relative w-64 h-64 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] rounded-2xl overflow-hidden">
+              
+              {/* Animated Scan Line */}
+              <div className="absolute left-0 right-0 h-0.5 bg-primary/80 shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] scanner-line z-10" />
+
+              {/* Corner brackets */}
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-2xl z-20" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-2xl z-20" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-2xl z-20" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-2xl z-20" />
+              
+              {/* Subtle inner grid/pulse effect */}
+              <div className="w-full h-full border-2 border-white/10 rounded-2xl animate-pulse" />
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-0 right-0 text-center">
-            <span className="bg-black/60 backdrop-blur-md text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg">
-              Arahkan kamera ke kode QRIS
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
+            <span className="bg-black/70 backdrop-blur-md text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+              <Scan className="w-4 h-4 text-primary" />
+              Arahkan ke kode QRIS
             </span>
           </div>
         </div>
@@ -317,7 +355,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
             <Button
               type="button"
               onClick={() => setAlertModal(prev => ({ ...prev, open: false }))}
-              className="w-full sm:w-auto min-w-[120px] rounded-xl"
+              className="w-full sm:w-auto min-w-[120px] rounded-xl font-semibold"
             >
               Mengerti
             </Button>
