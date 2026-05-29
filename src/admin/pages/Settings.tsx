@@ -209,7 +209,6 @@ export default function Pengaturan() {
   const { canEdit } = usePermissions();
   const hasEditAccess = canEdit('settings');
 
-
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'toko';
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
@@ -470,13 +469,6 @@ export default function Pengaturan() {
     toast.success('Pengguna dihapus');
   };
 
-
-
-
-
-
-
-
   /* ═══════════════════════════════════════════════════════════════════════════
      RENDER
   ═══════════════════════════════════════════════════════════════════════════ */
@@ -704,8 +696,6 @@ export default function Pengaturan() {
             )}
           </Section>
         )}
-
-
 
         {/* ══════════════ TAMPILAN ══════════════ */}
         {activeTab === 'tampilan' && (
@@ -948,7 +938,6 @@ export default function Pengaturan() {
                 </button>
               </div>
             </div>
-
 
             <Button className="w-full" onClick={saveStore} disabled={isSavingStore}>
               {isSavingStore ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : 'Simpan Info Toko'}
@@ -1226,8 +1215,6 @@ export default function Pengaturan() {
           </div>
         </DialogContent>
       </Dialog>
-
-
 
       <PhotoCropModal
         open={!!cropFile}
