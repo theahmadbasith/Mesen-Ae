@@ -234,7 +234,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push('--------------------------------\n');
       lines.push('\x1B\x61\x01'); // Center align
       lines.push('\x1B\x45\x01'); // Bold ON
-      lines.push(`${(storeSettings as any)?.receiptHeaderTitle || 'STRUK PEMBELIAN'}\n`);
+      lines.push(`${(storeSettings as any)?.receiptHeaderTitle || 'Struk Pembelian'}\n`);
       lines.push('\x1B\x45\x00'); // Bold OFF
       lines.push('--------------------------------\n');
       
@@ -243,25 +243,31 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       lines.push(`${format(new Date(transaction.date), 'dd/MM/yyyy HH:mm')}\n`);
       
       // Metadata Struk
-      const cashierLabel = (storeSettings as any)?.receiptLabelCashier || 'Kasir';
-      const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name;
-      if (cashierNameVal) {
-        lines.push(`${cashierLabel}: ${cashierNameVal}\n`);
+      const showCashier = (storeSettings as any)?.receiptShowCashier ?? true;
+      if (showCashier) {
+        const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name;
+        if (cashierNameVal) {
+          lines.push(`Kasir: ${cashierNameVal}\n`);
+        }
       }
       
-      const customerLabel = (storeSettings as any)?.receiptLabelCustomer || 'Pelanggan';
-      const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
-      if (buyerNameVal) {
-        lines.push(`${customerLabel}: ${buyerNameVal}\n`);
+      const showCustomer = (storeSettings as any)?.receiptShowCustomer ?? true;
+      if (showCustomer) {
+        const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
+        if (buyerNameVal) {
+          lines.push(`Pelanggan: ${buyerNameVal}\n`);
+        }
       }
       
-      const tableLabel = (storeSettings as any)?.receiptLabelTable || 'Meja / Tipe';
-      const tableVal = transaction.tableNumber || (transaction as any).table_number;
-      if (tableVal) {
-        const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
-          ? 'Bawa Pulang'
-          : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
-        lines.push(`${tableLabel}: ${displayTable}\n`);
+      const showTable = (storeSettings as any)?.receiptShowTable ?? true;
+      if (showTable) {
+        const tableVal = transaction.tableNumber || (transaction as any).table_number;
+        if (tableVal) {
+          const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
+            ? 'Bawa Pulang'
+            : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
+          lines.push(`Meja/Tipe: ${displayTable}\n`);
+        }
       }
       lines.push('--------------------------------\n');
 
@@ -316,37 +322,33 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       
       // Render footer items
       lines.push('\x1B\x61\x01'); // Center align
-      const footerItems = (storeSettings as any)?.receiptFooterItems || [];
-      if (footerItems && Array.isArray(footerItems) && footerItems.length > 0) {
-        for (const item of footerItems) {
-          if (!item.visible) continue;
-          
-          if (item.type === 'image') {
-            if (item.url) {
-              try {
-                const rasterData = await convertImageUrlToEscPosRaster(item.url);
-                if (rasterData) {
-                  lines.push('\x1B\x61\x01'); // Center align image
-                  lines.push(rasterData);
-                  lines.push('\n');
-                }
-              } catch (e) {
-                console.warn('Gagal memformat gambar footer ke printer:', e);
+      const footerLines = (storeSettings as any)?.receiptFooterLines || [];
+      if (footerLines && Array.isArray(footerLines) && footerLines.length > 0) {
+        footerLines.forEach((lineText: string) => {
+          if (lineText && lineText.trim()) {
+            const subLines = lineText.split('\n');
+            subLines.forEach(sub => {
+              if (sub.trim()) {
+                lines.push(`${sub}\n`);
               }
-            }
-          } else if (item.text) {
-            const alignCmd = item.alignment === 'left' ? '\x1B\x61\x00' : item.alignment === 'right' ? '\x1B\x61\x02' : '\x1B\x61\x01';
-            lines.push(`${alignCmd}${item.text}\n`);
+            });
           }
-        }
+        });
       } else {
-        // Fallback
-        if (storeSettings?.receiptFooterLines && storeSettings.receiptFooterLines.length > 0) {
-          storeSettings.receiptFooterLines.forEach((line: string) => {
-            if (line.trim()) lines.push(`${line}\n`);
-          });
-        } else {
-          lines.push(`${storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}\n`);
+        lines.push(`${storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}\n`);
+      }
+      
+      const footerImgUrl = (storeSettings as any)?.receiptFooterImg;
+      if (footerImgUrl) {
+        try {
+          const rasterData = await convertImageUrlToEscPosRaster(footerImgUrl);
+          if (rasterData) {
+            lines.push('\x1B\x61\x01'); // Center align image
+            lines.push(rasterData);
+            lines.push('\n');
+          }
+        } catch (e) {
+          console.warn('Gagal memformat gambar footer ke printer:', e);
         }
       }
       lines.push('\n\n\n');
@@ -415,92 +417,91 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             paperWidthVal === '58mm' ? "w-full max-w-[280px]" : "w-full max-w-[360px]"
           )}
           style={{ 
-            fontFamily: fontFamilyVal === 'monospace' ? 'monospace' : fontFamilyVal === 'sans-serif' ? 'sans-serif' : "'Courier New', Courier, monospace",
+            fontFamily: fontFamilyVal === 'monospace' ? 'monospace' : fontFamilyVal === 'sans-serif' ? 'sans-serif' : fontFamilyVal === 'receipt-font' ? 'monospace' : "'Courier New', Courier, monospace",
             fontSize: fontSizeVal === 'xs' ? '10px' : fontSizeVal === 'sm' ? '12px' : fontSizeVal === 'md' ? '14px' : fontSizeVal === 'lg' ? '16px' : '18px',
             lineHeight: lineHeightVal === 'tight' ? '1.15' : lineHeightVal === 'relaxed' ? '1.5' : '1.3',
+            letterSpacing: fontFamilyVal === 'receipt-font' ? '-0.05em' : 'normal',
             clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), 98% 100%, 96% calc(100% - 6px), 94% 100%, 92% calc(100% - 6px), 90% 100%, 88% calc(100% - 6px), 86% 100%, 84% calc(100% - 6px), 82% 100%, 80% calc(100% - 6px), 78% 100%, 76% calc(100% - 6px), 74% 100%, 72% calc(100% - 6px), 70% 100%, 68% calc(100% - 6px), 66% 100%, 64% calc(100% - 6px), 62% 100%, 60% calc(100% - 6px), 58% 100%, 56% calc(100% - 6px), 54% 100%, 52% calc(100% - 6px), 50% 100%, 48% calc(100% - 6px), 46% 100%, 44% calc(100% - 6px), 42% 100%, 40% calc(100% - 6px), 38% 100%, 36% calc(100% - 6px), 34% 100%, 32% calc(100% - 6px), 30% 100%, 28% calc(100% - 6px), 26% 100%, 24% calc(100% - 6px), 22% 100%, 20% calc(100% - 6px), 18% 100%, 16% calc(100% - 6px), 14% 100%, 12% calc(100% - 6px), 10% 100%, 8% calc(100% - 6px), 6% 100%, 4% calc(100% - 6px), 2% 100%, 0 calc(100% - 6px))'
           }}
         >
           
-          <div ref={receiptRef} className="relative z-10 bg-white">
-
+          <div ref={receiptRef} className="relative z-10 bg-white text-black">
 
             {/* Header Toko */}
             <div className={cn("text-center relative z-10", compactModeVal ? "mb-2.5" : "mb-4.5")}>
               {((storeSettings as any)?.receiptShowLogo ?? true) && storeSettings?.logo && (
                 <img src={storeSettings.logo} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-2 grayscale" />
               )}
-              <h2 className="font-bold text-base uppercase tracking-wider">{storeSettings?.storeName || 'Toko'}</h2>
-              {storeSettings?.address && <p className="text-[10px] mt-1">{storeSettings.address}</p>}
-              {storeSettings?.phone && <p className="text-[10px]">{storeSettings.phone}</p>}
+              <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings?.storeName || 'Toko'}</h2>
+              {storeSettings?.address && <p className="text-[0.85em] mt-1 leading-tight">{storeSettings.address}</p>}
+              {storeSettings?.phone && <p className="text-[0.85em] leading-tight">{storeSettings.phone}</p>}
               
-              <div className="border-t-[1.5px] border-dashed border-border/50 my-2.5" />
+              <div className="border-t-[1.5px] border-dashed border-gray-400 my-2.5" />
               
-              <h3 className="font-bold text-xs tracking-widest uppercase">{(storeSettings as any)?.receiptHeaderTitle || 'STRUK PEMBELIAN'}</h3>
+              <h3 className="font-bold text-[1em] tracking-widest">{(storeSettings as any)?.receiptHeaderTitle || 'Struk Pembelian'}</h3>
             </div>
 
-            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
 
             {/* Info Transaksi */}
-            <div className="flex justify-between text-[10px] relative z-10">
-              <span>No: {transaction.receiptNumber}</span>
-              <span className="text-right">{paymentMethodName}</span>
+            <div className="flex justify-between text-[0.9em] relative z-10">
+              <span>No. Struk: {transaction.receiptNumber}</span>
+              <span className="text-right font-medium">{paymentMethodName}</span>
             </div>
-            <div className="flex justify-between text-[10px] mb-2 relative z-10">
+            <div className="flex justify-between text-[0.9em] mb-2 relative z-10">
               <span>{format(new Date(transaction.date), 'dd/MM/yyyy', { locale: id })}</span>
               <span>{format(new Date(transaction.date), 'HH:mm', { locale: id })}</span>
             </div>
 
             {/* Rincian Tambahan: Kasir, Pelanggan, Meja/Tipe */}
-            <div className="space-y-1 text-[10px] mb-2 relative z-10 text-left border-t border-dashed border-border/30 pt-2">
-              {(() => {
-                const cashierLabel = (storeSettings as any)?.receiptLabelCashier || 'Kasir';
-                const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name;
-                if (cashierNameVal) {
-                  return (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{cashierLabel}:</span>
-                      <span className="font-semibold uppercase">{cashierNameVal}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {(() => {
-                const customerLabel = (storeSettings as any)?.receiptLabelCustomer || 'Pelanggan';
-                const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
-                if (buyerNameVal) {
-                  return (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{customerLabel}:</span>
-                      <span className="font-semibold uppercase truncate max-w-[150px]">{buyerNameVal}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {(() => {
-                const tableLabel = (storeSettings as any)?.receiptLabelTable || 'Meja / Tipe';
-                const tableVal = transaction.tableNumber || (transaction as any).table_number;
-                if (tableVal) {
-                  const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
-                    ? 'Bawa Pulang'
-                    : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
-                  return (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{tableLabel}:</span>
-                      <span className="font-semibold uppercase">{displayTable}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
+            {(((storeSettings as any)?.receiptShowCashier ?? true) || ((storeSettings as any)?.receiptShowCustomer ?? true) || ((storeSettings as any)?.receiptShowTable ?? true)) && (
+              <div className="space-y-1 text-[0.85em] mb-2 relative z-10 text-left border-t border-dashed border-gray-300 pt-2">
+                {((storeSettings as any)?.receiptShowCashier ?? true) && (() => {
+                  const cashierNameVal = transaction.cashierName || (transaction as any).cashier_name || transaction.confirmedBy;
+                  if (cashierNameVal) {
+                    return (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Kasir:</span>
+                        <span className="font-semibold">{cashierNameVal}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {((storeSettings as any)?.receiptShowCustomer ?? true) && (() => {
+                  const buyerNameVal = transaction.customerName || (transaction as any).customer_name;
+                  if (buyerNameVal) {
+                    return (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Pelanggan:</span>
+                        <span className="font-semibold truncate max-w-[150px]">{buyerNameVal}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {((storeSettings as any)?.receiptShowTable ?? true) && (() => {
+                  const tableVal = transaction.tableNumber || (transaction as any).table_number;
+                  if (tableVal) {
+                    const displayTable = String(tableVal).toLowerCase() === 'bawa pulang' || String(tableVal).toLowerCase() === 'take away'
+                      ? 'Bawa Pulang'
+                      : 'Meja ' + String(tableVal).replace(/^(meja\s+)+/i, '');
+                    return (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Meja / Tipe:</span>
+                        <span className="font-bold">{displayTable}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
 
-            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
 
             {/* Daftar Item */}
-            <div className="relative z-10 min-h-[80px]">
+            <div className="relative z-10 min-h-[60px] space-y-2">
               {safeItems.map((item: any, i: number) => {
                 const pName = item.productName || item.product_name || 'Produk';
                 let variants = item.selectedVariants || item.selected_variants || [];
@@ -512,30 +513,33 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 const discAmt = item.discountAmount || item.discount_amount || 0;
                 
                 return (
-                <div key={i} className="mb-2.5">
-                  <p className="text-[11px] font-bold uppercase">{pName}</p>
-                  {variants.length > 0 && (
-                    <p className="text-[9px] text-gray-500">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
-                  )}
-                  {item.notes && <p className="text-[9px] text-gray-500 italic">  Catatan: {item.notes}</p>}
-                  <div className="flex justify-between text-[10px] mt-0.5">
-                    <span>{item.quantity} x {rp(item.price)}</span>
-                    <span className="font-medium">{rp(item.subtotal)}</span>
-                  </div>
-                  {discAmt > 0 && (
-                    <div className="flex justify-between text-[10px] text-gray-500">
-                      <span>  Diskon</span>
-                      <span>-{rp(discAmt)}</span>
+                  <div key={i} className="text-[0.95em]">
+                    <div className="flex justify-between font-semibold">
+                      <span>{pName}</span>
+                      <span>{rp(item.subtotal)}</span>
                     </div>
-                  )}
-                </div>
-              )})}
+                    {variants.length > 0 && (
+                      <p className="text-[0.8em] text-gray-500 pl-2">  + {variants.map((v: any) => v.optionName || v.option_name).join(', ')}</p>
+                    )}
+                    {item.notes && <p className="text-[0.8em] text-gray-500 italic pl-2">  Catatan: {item.notes}</p>}
+                    <div className="flex justify-between text-[0.85em] text-gray-500 pl-2 mt-0.5">
+                      <span>{item.quantity} x {rp(item.price)}</span>
+                    </div>
+                    {discAmt > 0 && (
+                      <div className="flex justify-between text-[0.85em] text-gray-500 pl-2">
+                        <span>  Diskon</span>
+                        <span>-{rp(discAmt)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
 
             {/* Kalkulasi Total */}
-            <div className="space-y-1 text-[11px] relative z-10">
+            <div className="space-y-1 text-[0.9em] relative z-10">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
                 <span>{rp(transaction.subtotal)}</span>
@@ -553,8 +557,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 </div>
               )}
               
-              <div className="flex justify-between font-black text-[13px] border-t border-gray-300 pt-1.5 mt-1.5">
-                <span>TOTAL</span>
+              <div className="flex justify-between font-black text-[1.15em] border-t border-gray-300 pt-1.5 mt-1.5">
+                <span>Total Tagihan</span>
                 <span>{rp(transaction.total)}</span>
               </div>
               
@@ -567,11 +571,11 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
                 if (paymentsList.length > 0) {
                   return (
-                    <div className="mt-2 pt-2 border-t border-gray-300">
-                      <span className="text-gray-600 mb-1 block">Rincian Pembayaran:</span>
+                    <div className="mt-2 pt-2 border-t border-gray-300 space-y-1">
+                      <span className="text-gray-600 block">Rincian Pembayaran:</span>
                       {paymentsList.map((p, idx) => (
-                        <div key={idx} className="flex justify-between pl-2 mb-0.5">
-                          <span className="text-gray-500 uppercase">{p.method_name || p.methodName || 'Pembayaran'}</span>
+                        <div key={idx} className="flex justify-between pl-2">
+                          <span className="text-gray-500">{p.method_name || p.methodName || 'Pembayaran'}</span>
                           <span>{rp(p.amount)}</span>
                         </div>
                       ))}
@@ -593,30 +597,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               </div>
             </div>
 
-            <div className="border-t-[1.5px] border-dashed border-border/50 my-3" />
+            <div className="border-t-[1.5px] border-dashed border-gray-400 my-3" />
 
-            {/* Footer Builder dynamic rendering */}
+            {/* Dynamic Textarea/Cropped Image Footer rendering */}
             <div 
               className={cn(
-                "relative z-10 pt-1 pb-3 space-y-1.5 text-gray-500",
-                {
-                  'font-mono tracking-tighter': fontFamilyVal === 'receipt-font',
-                  'font-mono': fontFamilyVal === 'monospace',
-                  'font-sans': fontFamilyVal === 'sans-serif',
-                  'font-serif': fontFamilyVal === 'courier'
-                },
-                {
-                  'text-[9px]': fontSizeVal === 'xs',
-                  'text-[10px]': fontSizeVal === 'sm',
-                  'text-[11px]': fontSizeVal === 'md',
-                  'text-[12px]': fontSizeVal === 'lg',
-                  'text-[13px]': fontSizeVal === 'xl'
-                },
-                {
-                  'leading-tight': lineHeightVal === 'tight',
-                  'leading-normal': lineHeightVal === 'normal',
-                  'leading-relaxed': lineHeightVal === 'relaxed'
-                },
+                "relative z-10 pt-1 pb-3 space-y-2 text-gray-500 text-[0.85em]",
                 {
                   'text-left': alignmentVal === 'left',
                   'text-center': alignmentVal === 'center',
@@ -625,46 +611,31 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               )}
             >
               {(() => {
-                const footerItems = (storeSettings as any)?.receiptFooterItems || [];
-                if (footerItems && Array.isArray(footerItems) && footerItems.length > 0) {
-                  return footerItems.map((item: any) => {
-                    if (!item.visible) return null;
-                    if (item.type === 'image') {
-                      return item.url ? (
-                        <div key={item.id} className="my-2 text-center">
-                          <img 
-                            src={item.url} 
-                            alt="Footer Logo" 
-                            className="h-16 w-auto mx-auto object-contain rounded-xl grayscale contrast-125 select-none print:grayscale print:contrast-125" 
-                            style={{ filter: 'grayscale(1) contrast(1.3)' }}
-                          />
-                        </div>
-                      ) : null;
-                    }
-                    return item.text ? (
-                      <p 
-                        key={item.id}
-                        className={cn("font-medium", {
-                          'text-left': item.alignment === 'left',
-                          'text-center': item.alignment === 'center',
-                          'text-right': item.alignment === 'right',
-                        })}
-                      >
-                        {item.text}
-                      </p>
-                    ) : null;
-                  });
+                const footerLines = (storeSettings as any)?.receiptFooterLines || [];
+                if (footerLines && Array.isArray(footerLines) && footerLines.length > 0) {
+                  return footerLines.map((line: string, idx: number) => (
+                    line && line.trim() && <p key={idx} className="font-medium whitespace-pre-wrap leading-relaxed">{line.trim()}</p>
+                  ));
                 }
                 
                 // Fallback
-                return storeSettings?.receiptFooterLines && storeSettings.receiptFooterLines.length > 0 ? (
-                  storeSettings.receiptFooterLines.map((line: string, idx: number) => (
-                    line.trim() && <p key={idx} className="font-medium text-center">{line}</p>
-                  ))
-                ) : (
-                  <p className="font-medium text-center">{storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
+                return (
+                  <p className="font-medium whitespace-pre-wrap leading-relaxed">
+                    {storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}
+                  </p>
                 );
               })()}
+
+              {((storeSettings as any)?.receiptFooterImg || (storeSettings as any)?.receiptFooterImage) && (
+                <div className="my-2.5 text-center">
+                  <img 
+                    src={(storeSettings as any).receiptFooterImg || (storeSettings as any).receiptFooterImage} 
+                    alt="Footer Logo" 
+                    className="h-16 w-auto mx-auto object-contain rounded-2xl grayscale opacity-75 shadow-sm bg-neutral-50/50 border border-neutral-200/40 select-none print:grayscale" 
+                    style={{ filter: 'grayscale(1) contrast(1.2)' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
