@@ -133,7 +133,7 @@ export default function BarcodePrint() {
                 onChange={() => setPaperSize('thermal')} 
                 className="accent-primary"
               />
-              <span className="text-sm font-bold">Thermal 50mm</span>
+              <span className="text-sm font-bold">Thermal 58mm</span>
             </label>
           </div>
         </Card>
@@ -268,8 +268,10 @@ export default function BarcodePrint() {
             <div 
               ref={printRef}
               className={cn(
-                "bg-white shadow-xl flex",
-                paperSize === 'a4' ? "w-[210mm] min-h-[297mm] p-6 flex-wrap content-start gap-4" : "w-[50mm] flex-col gap-2 p-2"
+                "bg-white shadow-xl",
+                paperSize === 'a4' 
+                  ? "w-[210mm] min-h-[297mm] p-6 grid grid-cols-4 gap-3 content-start" 
+                  : "w-[58mm] flex flex-col gap-2 p-2"
               )}
             >
               {renderItems.map((item, i) => (
@@ -278,7 +280,7 @@ export default function BarcodePrint() {
                   className={cn(
                     "flex flex-col items-center justify-center bg-white text-black overflow-hidden border border-dashed border-gray-300",
                     paperSize === 'a4' 
-                      ? "w-[48mm] h-[25mm] p-1" // Layout A4 (grid)
+                      ? "w-full h-[25mm] p-1" // Layout A4 (grid)
                       : "w-full h-[30mm] p-1 shrink-0" // Layout Thermal (single column)
                   )}
                 >
@@ -308,7 +310,7 @@ export default function BarcodePrint() {
               
               <style type="text/css" media="print">
                 {`
-                  @page { size: ${paperSize === 'a4' ? 'A4' : '50mm 30mm'}; margin: 0; }
+                  @page { size: ${paperSize === 'a4' ? 'A4' : '58mm 30mm'}; margin: 0; }
                   body { -webkit-print-color-adjust: exact; background: white; }
                 `}
               </style>

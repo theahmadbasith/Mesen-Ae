@@ -135,22 +135,7 @@ export default function Vouchers() {
                   <div className="absolute left-[30%] sm:left-[25%] top-[-10px] w-5 h-5 bg-background rounded-full border-b-2 border-primary/20 dark:border-primary/30 z-10 -translate-x-1/2 shadow-inner" />
                   <div className="absolute left-[30%] sm:left-[25%] bottom-[-10px] w-5 h-5 bg-background rounded-full border-t-2 border-primary/20 dark:border-primary/30 z-10 -translate-x-1/2 shadow-inner" />
 
-                  {/* Active Toggle Switch Floating at Top-Right */}
-                  <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-background/80 dark:bg-card/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-border/40 shadow-sm">
-                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Aktif</span>
-                    <Switch 
-                      checked={v.isActive} 
-                      onCheckedChange={async (checked) => {
-                        try {
-                          await dbUpdate('vouchers', v.id!, { isActive: checked });
-                          toast.success(`Voucher ${v.code} ${checked ? 'diaktifkan' : 'dinonaktifkan'}`);
-                        } catch (err: any) {
-                          toast.error('Gagal memperbarui status: ' + (err.message || err));
-                        }
-                      }}
-                      className="data-[state=checked]:bg-green-500 scale-75"
-                    />
-                  </div>
+
 
                   {/* Shine Effect */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[100%] group-hover:animate-shimmer z-0 pointer-events-none" />
@@ -178,7 +163,7 @@ export default function Vouchers() {
                     </div>
 
                     {/* Bagian Kanan Tiket (Detail & Aksi) */}
-                    <div className="flex-1 p-5 pl-8 pr-16 flex flex-col relative z-20">
+                    <div className="flex-1 p-5 pl-8 pr-5 flex flex-col relative z-20">
                       <div className="flex justify-between items-start gap-4">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
@@ -203,13 +188,35 @@ export default function Vouchers() {
                         </div>
                       </div>
 
-                      <div className="mt-auto pt-4 flex gap-2 justify-end opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg shadow-sm hover:bg-primary hover:text-white transition-colors" onClick={() => openEdit(v)}>
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg shadow-sm hover:bg-destructive hover:text-white transition-colors" onClick={() => setDeleteId(v.id!)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                      <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/30">
+                        {/* Toggle Aktif on the left ("mepet kiri") */}
+                        <div className="flex items-center gap-2">
+                          <Switch 
+                            checked={v.isActive} 
+                            onCheckedChange={async (checked) => {
+                              try {
+                                await dbUpdate('vouchers', v.id!, { isActive: checked });
+                                toast.success(`Voucher ${v.code} ${checked ? 'diaktifkan' : 'dinonaktifkan'}`);
+                              } catch (err: any) {
+                                toast.error('Gagal memperbarui status: ' + (err.message || err));
+                              }
+                            }}
+                            className="data-[state=checked]:bg-primary scale-75"
+                          />
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider select-none">
+                            Aktif
+                          </span>
+                        </div>
+
+                        {/* Edit and Delete Buttons on the right ("mepet kanan") */}
+                        <div className="flex gap-2">
+                          <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg shadow-sm hover:bg-primary hover:text-white transition-colors" onClick={() => openEdit(v)}>
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg shadow-sm hover:bg-destructive hover:text-white transition-colors" onClick={() => setDeleteId(v.id!)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -317,13 +324,7 @@ export default function Vouchers() {
               <p className="text-[10px] text-muted-foreground font-medium">Jika tidak ada yang dipilih, voucher berlaku untuk total tagihan seluruh produk.</p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-muted/30 border border-border/50 rounded-xl">
-              <div>
-                <Label htmlFor="active-toggle" className="text-sm font-bold cursor-pointer">Status Aktif</Label>
-                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Voucher dapat digunakan oleh pelanggan saat ini.</p>
-              </div>
-              <Switch id="active-toggle" checked={isActive} onCheckedChange={setIsActive} className="data-[state=checked]:bg-green-500" />
-            </div>
+
           </div>
           
           <DialogFooter className="px-6 py-4 border-t border-border/50 bg-muted/10 gap-2 sm:gap-0 shrink-0">
