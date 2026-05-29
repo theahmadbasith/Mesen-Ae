@@ -64,7 +64,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
 
       const cameraConstraint = cameraId
         ? cameraId
-        : { facingMode: { ideal: 'environment' } };
+        : { facingMode: "environment" };
 
       await scanner.start(
         cameraConstraint as Parameters<typeof scanner.start>[0],
@@ -121,26 +121,29 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         await startScanner();
       }
 
-      // 2. Lakukan pencarian daftar kamera di background agar pemindai terbuka langsung
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        if (mounted && devices && devices.length > 0) {
-          setCameras(devices);
-          
-          // Cari dan utamakan kamera belakang (environment)
-          const rearIdx = devices.findIndex(d =>
-            d.label.toLowerCase().includes('back') ||
-            d.label.toLowerCase().includes('rear') ||
-            d.label.toLowerCase().includes('environment') ||
-            d.label.toLowerCase().includes('0')
-          );
-          
-          const targetIdx = rearIdx >= 0 ? rearIdx : 0;
-          setActiveCameraIdx(targetIdx);
+      // 2. Lakukan pencarian daftar kamera di background setelah jeda singkat agar hardware tidak bentrok
+      setTimeout(async () => {
+        if (!mounted) return;
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (mounted && devices && devices.length > 0) {
+            setCameras(devices);
+            
+            // Cari dan utamakan kamera belakang (environment)
+            const rearIdx = devices.findIndex(d =>
+              d.label.toLowerCase().includes('back') ||
+              d.label.toLowerCase().includes('rear') ||
+              d.label.toLowerCase().includes('environment') ||
+              d.label.toLowerCase().includes('0')
+            );
+            
+            const targetIdx = rearIdx >= 0 ? rearIdx : 0;
+            setActiveCameraIdx(targetIdx);
+          }
+        } catch (err) {
+          console.warn("Enumerasi kamera di background ditunda/gagal:", err);
         }
-      } catch (err) {
-        console.warn("Enumerasi kamera di background gagal:", err);
-      }
+      }, 600);
     };
 
     initSequence();
