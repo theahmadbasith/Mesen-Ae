@@ -13,46 +13,81 @@ interface BarcodeScannerProps {
 
 export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  
   const [scanning, setScanning] = useState(false);
-  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [activeCameraIdx, setActiveCameraIdx] = useState(0);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [alertModal, setAlertModal] = useState({ open: false, title: "", message: "" });
+  const [scanError, setScanError] = useState<string | null>(null);
   
   const scannerId = 'barcode-scanner-view';
+  const operationLock = useRef<Promise<void>>(Promise.resolve());
 
-  const showAlert = (title: string, message: string) => {
-    setAlertModal({ open: true, title, message });
+  const runAtomicOperation = (op: () => Promise<void>) => {
+    operationLock.current = operationLock.current.then(op).catch(err => {
+      console.error("Kesalahan dalam operasi atomik pemindai:", err);
+    });
   };
 
+  // Bersihkan dan matikan scanner dengan aman
   const stopScanner = async () => {
+    setScanning(false);
+    setIsInitializing(false);
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        // Hanya stop jika statusnya sedang SCANNING (2) atau PAUSED (3)
+        // State 2 = SCANNING, State 3 = PAUSED
         if (state === 2 || state === 3) {
           await scannerRef.current.stop();
         }
         scannerRef.current.clear();
       } catch (error) {
-        console.warn("Pembersihan internal scanner gagal:", error);
+        console.warn("Kesalahan saat menghentikan pemindai:", error);
+      } finally {
+        scannerRef.current = null;
       }
-      scannerRef.current = null;
     }
-    setScanning(false);
-    setIsInitializing(false);
   };
 
-  const startCamera = async (mode: "environment" | "user" = facingMode) => {
+  // Inisialisasi pemindai khusus Barcode (1D) dengan fallback cerdas
+  const startScanner = async (cameraId?: string, customFacingMode?: 'environment' | 'user') => {
     setIsInitializing(true);
-    await stopScanner();
+    setScanError(null);
 
-    // Jeda DOM settling untuk transisi modal & pembersihan canvas
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Tunggu hingga element DOM benar-benar ada di halaman (mencegah error Dialog transitioning)
+    let element = document.getElementById(scannerId);
+    let attempts = 0;
+    while (!element && attempts < 20) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      element = document.getElementById(scannerId);
+      attempts++;
+    }
+
+    if (!element) {
+      const errMsg = "Elemen container pemindai tidak ditemukan di DOM.";
+      setScanError(errMsg);
+      toast.error(errMsg);
+      setIsInitializing(false);
+      return;
+    }
 
     try {
+      // Pastikan instansi sebelumnya benar-benar bersih
+      if (scannerRef.current) {
+        try {
+          const state = scannerRef.current.getState();
+          if (state === 2 || state === 3) {
+            await scannerRef.current.stop();
+          }
+          scannerRef.current.clear();
+        } catch (e) {
+          console.warn("Pembersihan instansi aktif sebelum start:", e);
+        }
+        scannerRef.current = null;
+      }
+
       const scanner = new Html5Qrcode(scannerId, {
-        // HANYA DUKUNG BARCODE (1D) agar kecepatan deteksi dan akurasi naik 1000%
+        // HANYA mengaktifkan format 1D (Barcode) untuk kecepatan & akurasi maksimal
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
@@ -66,220 +101,335 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
       });
 
       scannerRef.current = scanner;
-      setFacingMode(mode);
 
-      await scanner.start(
-        { facingMode: mode },
-        {
-          fps: 30, // Frame rate maksimal untuk tangkapan super cepat
-          qrbox: { width: 340, height: 120 }, // Area pembacaan khusus persegi panjang
-          aspectRatio: 1.0, 
-          disableFlip: false,
-        },
-        (decodedText) => {
-          // Haptic Feedback / Getaran jika HP mendukung (seperti scanner fisik)
-          if (typeof window !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate(100);
+      // Jalankan pemindai dengan strategi fallback yang cerdas & kuat
+      const tryStart = async (constraint: any): Promise<boolean> => {
+        try {
+          await scanner.start(
+            constraint,
+            {
+              fps: 30, // Frame rate maksimal untuk respon cepat
+              // Tanpa batasan internal qrbox agar library memproses frame penuh (jauh lebih cepat & hilangkan box putih)
+              disableFlip: false,
+            },
+            (decodedText) => {
+              // Getaran pendek sebagai umpan balik sukses (jika didukung perangkat)
+              if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(100);
+              }
+              onScan(decodedText);
+              runAtomicOperation(async () => {
+                await stopScanner();
+              });
+            },
+            () => {} // Abaikan error frame untuk performa tinggi
+          );
+          return true;
+        } catch (err) {
+          console.warn("Gagal memulai dengan constraint:", constraint, err);
+          return false;
+        }
+      };
+
+      let success = false;
+      if (cameraId) {
+        success = await tryStart(cameraId);
+      } else {
+        const targetMode = customFacingMode || facingMode;
+        success = await tryStart({ facingMode: targetMode });
+        if (!success) {
+          // Fallback 1: Coba mode sebaliknya
+          const altMode = targetMode === 'environment' ? 'user' : 'environment';
+          success = await tryStart({ facingMode: altMode });
+        }
+        if (!success) {
+          // Fallback 2: Coba dapatkan list kamera dan pakai kamera indeks aktif
+          try {
+            const devices = await Html5Qrcode.getCameras();
+            if (devices && devices.length > 0) {
+              setCameras(devices);
+              const rearIdx = devices.findIndex(d =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('environment')
+              );
+              const targetIdx = rearIdx >= 0 ? rearIdx : 0;
+              setActiveCameraIdx(targetIdx);
+              success = await tryStart(devices[targetIdx].id);
+            }
+          } catch (deviceErr) {
+            console.warn("Gagal enumerasi saat fallback start:", deviceErr);
           }
-          onScan(decodedText);
-          stopScanner();
-        },
-        () => {} // Abaikan log error frame untuk performa maksimal
-      );
+        }
+        if (!success) {
+          // Fallback 3: Coba tanpa constraint khusus sama sekali
+          success = await tryStart({});
+        }
+      }
+
+      if (!success) {
+        throw new Error("Semua kamera gagal diinisialisasi. Pastikan izin kamera diberikan.");
+      }
 
       setScanning(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+      console.error("Camera startup crashed:", err);
       
-      let errorTitle = "Kamera Gagal";
-      let errorMsg = "Terjadi kesalahan saat memulai sistem kamera.";
-      
+      let errorMsg = 'Gagal memulai sistem kamera.';
       if (msg.includes('notallowed') || msg.includes('permission')) {
-        errorTitle = "Akses Ditolak";
-        errorMsg = "Akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser Anda.";
+        errorMsg = 'Akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser Anda.';
       } else if (msg.includes('notfound') || msg.includes('device not found')) {
-        errorTitle = "Kamera Tidak Ditemukan";
-        errorMsg = "Perangkat Anda tidak memiliki kamera yang didukung/berfungsi.";
+        errorMsg = 'Kamera tidak ditemukan. Pastikan perangkat Anda memiliki kamera yang berfungsi.';
       } else if (msg.includes('notreadable') || msg.includes('in use')) {
-        errorTitle = "Kamera Sedang Digunakan";
-        errorMsg = "Kamera sedang digunakan oleh aplikasi atau tab lain. Tutup lalu coba lagi.";
+        errorMsg = 'Kamera sedang digunakan oleh aplikasi/tab lain.';
+      } else if (msg.includes('overconstrained')) {
+        errorMsg = 'Konfigurasi kamera tidak didukung oleh perangkat ini.';
+      } else {
+        errorMsg = `Gagal memulai sistem kamera: ${err instanceof Error ? err.message : String(err)}`;
       }
-
-      toast.error(errorTitle);
-      showAlert(errorTitle, errorMsg);
-      onClose();
+      
+      setScanError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsInitializing(false);
     }
   };
 
+  // Kelola siklus hidup kamera dengan aman & bebas race condition
   useEffect(() => {
+    let mounted = true;
+
     if (open) {
-      startCamera(facingMode);
+      runAtomicOperation(async () => {
+        if (!mounted) return;
+        await startScanner();
+
+        // Cari daftar kamera di background setelah scanner utama berhasil atau dicoba
+        setTimeout(async () => {
+          if (!mounted) return;
+          try {
+            const devices = await Html5Qrcode.getCameras();
+            if (mounted && devices && devices.length > 0) {
+              setCameras(devices);
+              
+              // Cari dan utamakan kamera belakang
+              const rearIdx = devices.findIndex(d =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('environment') ||
+                d.label.toLowerCase().includes('0')
+              );
+              
+              const targetIdx = rearIdx >= 0 ? rearIdx : 0;
+              setActiveCameraIdx(targetIdx);
+            }
+          } catch (err) {
+            console.warn("Enumerasi kamera di background ditunda/gagal:", err);
+          }
+        }, 800);
+      });
     } else {
-      stopScanner();
+      runAtomicOperation(async () => {
+        await stopScanner();
+      });
     }
-    
+
     return () => {
-      stopScanner();
+      mounted = false;
+      runAtomicOperation(async () => {
+        await stopScanner();
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const toggleCameraMode = () => {
+  const handleSwitchCamera = async () => {
     if (isInitializing) return;
-    const newMode = facingMode === "environment" ? "user" : "environment";
-    // Gunakan setTimeout kecil untuk menghindari race condition API Kamera
-    stopScanner().then(() => {
-      setTimeout(() => startCamera(newMode), 100);
+    const newMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newMode);
+    runAtomicOperation(async () => {
+      await startScanner(undefined, newMode);
     });
   };
 
   const handleClose = async () => {
-    await stopScanner();
+    runAtomicOperation(async () => {
+      await stopScanner();
+    });
     onClose();
   };
 
-  // Efek cermin jika menggunakan kamera depan
-  const isFrontCamera = facingMode === "user";
+  // Identifikasi kamera depan untuk memberikan efek cermin (mirroring)
+  const activeLabel = cameras[activeCameraIdx]?.label.toLowerCase() || "";
+  const isFrontCamera = facingMode === 'user' || activeLabel.includes('front') || activeLabel.includes('depan') || activeLabel.includes('user');
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[480px] rounded-2xl p-0 overflow-hidden border border-border shadow-2xl z-[100] bg-background [&>button]:hidden">
+    <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
+      {/* Container utama dibuat responsif, rapi, dengan sudut rounded-2xl persis gaya QRIS Input */}
+      <DialogContent className="max-w-[95vw] sm:max-w-[480px] rounded-2xl p-0 overflow-hidden border border-border shadow-2xl z-[100] bg-background [&>button]:hidden">
+        
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes barcode-laser {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+          }
+          .animate-barcode-laser {
+            animation: barcode-laser 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
+          /* Hapus elemen watermark bawaan library */
+          #${scannerId} img[alt="Info icon"], #${scannerId} a { display: none !important; }
           
-          <style dangerouslySetInnerHTML={{__html: `
-            @keyframes barcode-laser {
-              0% { top: 0%; opacity: 0; }
-              10% { opacity: 1; }
-              90% { opacity: 1; }
-              100% { top: 100%; opacity: 0; }
-            }
-            .animate-barcode-laser {
-              animation: barcode-laser 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            }
-            
-            /* CSS Reset untuk Html5Qrcode agar menyatu bersih seperti raw getUserMedia */
-            #${scannerId} { width: 100% !important; height: 100% !important; display: flex; align-items: center; justify-content: center; }
-            #${scannerId} video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: inherit; }
-            
-            /* Sembunyikan elemen, watermark, dan box bawaan html5-qrcode */
-            #${scannerId} img[alt="Info icon"], #${scannerId} a { display: none !important; }
-            #${scannerId} canvas { display: none !important; }
-            #${scannerId} div { border: none !important; outline: none !important; }
-          `}} />
+          /* Hapus canvas overlay bawaan html5-qrcode agar tidak ada kotak putih ganda */
+          #${scannerId} canvas { display: none !important; }
 
-          {/* ── HEADER ── */}
-          <div className="bg-background px-5 py-4 border-b border-border/50 relative z-20">
-            <DialogHeader className="text-left space-y-1">
-              <DialogTitle className="text-foreground text-[16px] font-bold flex items-center gap-2">
-                <Barcode className="w-5 h-5 text-foreground" />
-                Scan Barcode Produk
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-[12px] font-medium">
-                Posisikan barcode sejajar dengan garis laser merah.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
+          /* Hapus border kotak putih/outlines bawaan library html5-qrcode secara total */
+          #${scannerId} div, #${scannerId} span { border: none !important; outline: none !important; }
+        `}} />
 
-          {/* ── AREA KAMERA (Responsif & Tepat seperti QRIS Input) ── */}
-          <div className="relative bg-black w-full h-[60vh] max-h-[400px] overflow-hidden group">
-            
-            {/* Viewport Render Kamera Html5Qrcode */}
-            <div 
-              id={scannerId} 
-              className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isFrontCamera ? "scale-x-[-1]" : ""}`} 
-            />
-
-            {scanning ? (
-              <>
-                {/* Tombol Putar Kamera Depan/Belakang */}
-                <div className="absolute top-4 right-4 z-40">
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="secondary"
-                    onClick={toggleCameraMode}
-                    disabled={isInitializing}
-                    className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md border border-white/30 text-white shadow-xl transition-all"
-                  >
-                    <SwitchCamera className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} />
-                  </Button>
-                </div>
-
-                {/* Overlay & Scan Area Jendela Presisi */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-                  
-                  {/* Zona Scan Persegi Panjang Khusus Barcode */}
-                  <div className="relative w-[85%] max-w-[340px] h-[120px] shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] rounded-2xl overflow-hidden">
-                    
-                    {/* Siku Sudut Minimalis & Rapi */}
-                    <div className="absolute top-0 left-0 w-6 h-6 border-t-[3px] border-l-[3px] border-primary rounded-tl-2xl z-20" />
-                    <div className="absolute top-0 right-0 w-6 h-6 border-t-[3px] border-r-[3px] border-primary rounded-tr-2xl z-20" />
-                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-[3px] border-l-[3px] border-primary rounded-bl-2xl z-20" />
-                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-[3px] border-r-[3px] border-primary rounded-br-2xl z-20" />
-                    
-                    {/* Laser Merah Dinamis */}
-                    <div className="absolute left-[2%] right-[2%] h-[2px] bg-red-500 shadow-[0_0_12px_2px_rgba(239,68,68,0.8)] animate-barcode-laser z-30" />
-                  </div>
-                </div>
-
-                {/* Floating Hint Bawah */}
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
-                  <span className="bg-black/70 backdrop-blur-md text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2">
-                    <ScanLine className="w-4 h-4 text-primary" />
-                    Arahkan ke barcode
-                  </span>
-                </div>
-              </>
-            ) : (
-              // Indikator Loading Saat Menyiapkan Kamera
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-30">
-                <div className="w-10 h-10 border-[3px] border-white/10 border-t-white rounded-full animate-spin mb-4" />
-                <p className="text-white/80 text-sm font-medium">Mempersiapkan Kamera...</p>
-              </div>
-            )}
-          </div>
-
-          {/* ── FOOTER ── */}
-          <div className="p-4 bg-background border-t border-border/50">
-            <Button 
-              variant="ghost" 
-              className="w-full h-11 font-bold text-[13px] rounded-xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all flex items-center justify-center text-foreground" 
-              onClick={handleClose}
-            >
-              <CameraOff className="w-4 h-4 mr-2 opacity-70" />
-              Tutup Kamera
-            </Button>
-          </div>
-          
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Alert Modal (Penanganan Error) ── */}
-      <Dialog open={alertModal.open} onOpenChange={(open) => setAlertModal(prev => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-md text-center flex flex-col items-center rounded-2xl z-[110]">
-          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
-            <AlertTriangle className="w-6 h-6 text-destructive" />
-          </div>
-          <DialogHeader>
-            <DialogTitle className="text-center text-lg">{alertModal.title}</DialogTitle>
-            <DialogDescription className="text-center pt-2">
-              {alertModal.message}
+        {/* ── HEADER ── */}
+        <div className="bg-background px-5 py-4 border-b border-border/50 relative z-20">
+          <DialogHeader className="text-left space-y-1">
+            <DialogTitle className="text-foreground text-[16px] font-bold flex items-center gap-2">
+              <Barcode className="w-5 h-5 text-foreground" />
+              Scan Barcode Produk
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-[12px] font-medium">
+              Posisikan barcode sejajar dengan garis laser biru.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center w-full mt-4">
-            <Button
-              type="button"
-              onClick={() => setAlertModal(prev => ({ ...prev, open: false }))}
-              className="w-full sm:w-auto min-w-[120px] rounded-xl font-semibold"
-            >
-              Mengerti
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+
+        {/* ── AREA KAMERA ── */}
+        <div className="relative bg-black w-full h-[55vh] max-h-[420px] overflow-hidden">
+          
+          <div 
+            id={scannerId} 
+            className={`absolute inset-0 w-full h-full flex items-center justify-center bg-black
+              [&>video]:object-cover [&>video]:w-full [&>video]:h-full transition-transform duration-300
+              ${isFrontCamera ? "scale-x-[-1]" : ""}
+            `} 
+          />
+
+          {scanError ? (
+            // INDIKATOR ERROR: Sangat Indah, Profesional & Premium
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 px-6 text-center z-35 animate-in fade-in duration-300">
+              <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive border border-destructive/20 shadow-lg">
+                <CameraOff className="w-6 h-6" />
+              </div>
+              <h3 className="text-white text-[15px] font-bold mb-2">Gagal Memulai Kamera</h3>
+              <p className="text-zinc-400 text-[12px] leading-relaxed max-w-[280px] mb-6">
+                {scanError}
+              </p>
+              <div className="flex gap-3 w-full max-w-[280px]">
+                <Button
+                  type="button"
+                  onClick={() => runAtomicOperation(() => startScanner())}
+                  className="flex-1 h-10 rounded-xl bg-blue-600 text-white font-semibold text-[13px] hover:bg-blue-700 active:scale-[0.98] transition-all"
+                >
+                  Coba Lagi
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSwitchCamera}
+                  className="flex-1 h-10 rounded-xl bg-transparent border-zinc-700 text-zinc-300 font-semibold text-[13px] hover:bg-zinc-800 hover:text-white"
+                >
+                  Ganti Kamera
+                </Button>
+              </div>
+            </div>
+          ) : scanning ? (
+            <>
+              {/* Tombol Putar Kamera */}
+              <div className="absolute top-4 right-4 z-40">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={handleSwitchCamera}
+                  disabled={isInitializing}
+                  className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 text-white shadow-lg transition-all"
+                >
+                  <SwitchCamera className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              {/* Area Cutout Pemindai Khusus Barcode */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]" />
+                
+                {/* Zona Scan Persegi Panjang */}
+                <div className="relative w-[85%] max-w-[340px] h-[120px] shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] rounded-xl overflow-hidden">
+                  
+                  {/* Siku Sudut yang Bersih, Fungsional & Menyesuaikan Tema (Biru) */}
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-[3px] border-l-[3px] border-blue-500 rounded-tl-xl z-20" />
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-[3px] border-r-[3px] border-blue-500 rounded-tr-xl z-20" />
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-[3px] border-l-[3px] border-blue-500 rounded-bl-xl z-20" />
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-[3px] border-r-[3px] border-blue-500 rounded-br-xl z-20" />
+                  
+                  {/* Garis Laser Biru yang Menyala Indah */}
+                  <div className="absolute left-[2%] right-[2%] h-[2px] bg-blue-500 shadow-[0_0_12px_2px_rgba(59,130,246,0.85)] animate-barcode-laser z-30" />
+                </div>
+              </div>
+
+              {/* Floating Hint Bawah */}
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
+                <span className="bg-black/70 backdrop-blur-md text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+                  <ScanLine className="w-4 h-4 text-blue-500" />
+                  Arahkan ke Barcode
+                </span>
+              </div>
+            </>
+          ) : (
+            // Indikator Loading Saat Menyiapkan Kamera
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-30">
+              <div className="w-8 h-8 border-[3px] border-white/10 border-t-white rounded-full animate-spin mb-3" />
+              <p className="text-white/80 text-sm font-medium">Memuat Kamera...</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── FOOTER ── */}
+        <div className="p-4 bg-background border-t border-border/50">
+          <Button 
+            variant="ghost" 
+            className="w-full h-11 font-semibold text-[13px] rounded-xl bg-muted/40 hover:bg-muted/80 active:scale-[0.98] transition-all flex items-center justify-center text-foreground" 
+            onClick={handleClose}
+          >
+            <CameraOff className="w-4 h-4 mr-2 opacity-70" />
+            Batal & Tutup
+          </Button>
+        </div>
+        
+      </DialogContent>
+    </Dialog>
+
+    {/* ── Alert Modal (Penanganan Error) ── */}
+    <Dialog open={alertModal.open} onOpenChange={(open) => setAlertModal(prev => ({ ...prev, open }))}>
+      <DialogContent className="sm:max-w-md text-center flex flex-col items-center rounded-2xl z-[110]">
+        <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+          <AlertTriangle className="w-6 h-6 text-destructive" />
+        </div>
+        <DialogHeader>
+          <DialogTitle className="text-center text-lg">{alertModal.title}</DialogTitle>
+          <DialogDescription className="text-center pt-2">
+            {alertModal.message}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="sm:justify-center w-full mt-4">
+          <Button
+            type="button"
+            onClick={() => setAlertModal(prev => ({ ...prev, open: false }))}
+            className="w-full sm:w-auto min-w-[120px] rounded-xl font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Mengerti
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
