@@ -7,10 +7,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface Props {
   qrisString: string;
-  hideExtras?: boolean;
 }
 
-export function QRISResult({ qrisString, hideExtras }: Props) {
+export function QRISResult({ qrisString }: Props) {
   const cardCanvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
   const [nmid, setNmid] = useState<string>("");
@@ -378,16 +377,6 @@ export function QRISResult({ qrisString, hideExtras }: Props) {
     link.href = imageUrl;
     link.click();
   };
-  if (hideExtras) {
-    return (
-      <div className="flex flex-col items-center justify-center">
-        <canvas 
-          ref={cardCanvasRef} 
-          className="w-full max-w-[300px] h-auto rounded-[20px] shadow-sm pointer-events-none" 
-        />
-      </div>
-    );
-  }
 
   return (
     <>

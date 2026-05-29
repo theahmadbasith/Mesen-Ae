@@ -24,8 +24,8 @@ import { Loader2, CheckCircle2, XCircle, RefreshCw, QrCode } from 'lucide-react'
 import { MidtransService } from '@/services/midtransService';
 import { PaymentMethod } from '@/hooks/db-hooks';
 import { QRCodeSVG } from 'qrcode.react';
+import { QrisCard } from '@/admin/components/qris-dinamis/QrisCard';
 import { convertQRIS } from '@/lib/qris-dinamis';
-import { QRISResult } from '@/admin/components/qris-dinamis/QRISResult';
 
 interface QrisPaymentModalProps {
   isOpen: boolean;
@@ -198,7 +198,7 @@ export function QrisPaymentModal({
               {isManual && qrisData ? (
                 <div className="flex flex-col items-center gap-4 w-full animate-in fade-in zoom-in duration-300">
                   <div className="w-full flex justify-center mt-2 max-w-[320px]">
-                    <QRISResult qrisString={qrisData} hideExtras={true} />
+                    <QrisCard qrisString={qrisData} />
                   </div>
                   <p className="text-xs text-muted-foreground text-center mt-2 px-4">
                     Minta pelanggan scan QRIS ini dan pastikan nominal tagihan sesuai.
