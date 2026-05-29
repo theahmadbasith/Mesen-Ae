@@ -17,7 +17,7 @@ const Button = ({ children, className, variant = 'primary', size = 'md', ...prop
     secondary: "bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100",
     outline:   "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-sm",
     ghost:     "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
-    danger:    "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 shadow-sm",
+    danger:    "bg-red-500 hover:bg-red-600 text-white shadow-md",
   };
   const sizes: any = { sm: "h-8 px-3 text-xs", md: "h-10 px-4 text-sm", lg: "h-12 px-6 text-base", icon: "h-10 w-10 p-0" };
   return <button className={cn(base, variants[variant], sizes[size], className)} {...props}>{children}</button>;
@@ -194,12 +194,9 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
           </div>
         </div>
 
-        {/* ── Info & Actions ── */}
-        <div className="p-5 flex flex-col flex-1 bg-card">
-          <h4 className="text-base font-black mb-1 line-clamp-1 text-foreground">{b.title || '(Tanpa Judul)'}</h4>
-          <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">{b.description ? b.description.replace(/<[^>]*>/g, '') : 'Tidak ada deskripsi'}</p>
-
-          <div className="flex items-center justify-between pt-4 border-t border-border">
+        {/* ── Actions ── */}
+        <div className="p-4 flex flex-col flex-1 bg-card">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Switch checked={!!b.isActive} onCheckedChange={() => onToggle(b.id, b.isActive)} />
               <span className="text-xs font-bold text-muted-foreground">Tampil</span>
@@ -209,7 +206,7 @@ function SortableBannerCard({ banner, onDelete, onToggle, onEdit }: { banner: an
                 onClick={() => onEdit(b.id)}>
                 <Edit2 className="w-3.5 h-3.5" /> Edit
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/40"
+              <Button variant="danger" size="sm" className="h-9 px-3 rounded-lg gap-1.5 text-xs font-semibold"
                 onClick={() => onDelete(b.id)}>
                 <Trash2 className="w-3.5 h-3.5" /> Hapus
               </Button>
