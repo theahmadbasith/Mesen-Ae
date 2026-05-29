@@ -9,7 +9,7 @@ import {
   FileSpreadsheet, FileDown, FileUp, Users, Shield, UserCog,
   Key, Eye, EyeOff, Table2, BadgeCheck, AlertTriangle,
   Loader2, Database, RefreshCw, CheckCircle2, Palette,
-  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat, Link as LinkIcon, Save, ZoomIn, GripVertical
+  ChevronRight, Paintbrush, UploadCloud, UtensilsCrossed, ChefHat, Link as LinkIcon, Save, ZoomIn, GripVertical, Copy
 } from 'lucide-react';
 import ThemeColorPicker from '@/admin/components/ThemeColorPicker';
 import ReceiptSettings from '@/admin/components/ReceiptSettings';
@@ -1039,7 +1039,31 @@ export default function Pengaturan() {
             {pmCategory === 'qris' && pmProvider === 'manual' && (
               <div className="space-y-1.5">
                 <Label className="text-xs">QRIS String Statis Dasar</Label>
-                <Input value={pmQrisString} onChange={e => setPmQrisString(e.target.value)} placeholder="000201010211..." className="font-mono text-[10px]" />
+                <div className="flex gap-2">
+                  <Input 
+                    value={pmQrisString} 
+                    onChange={e => setPmQrisString(e.target.value)} 
+                    placeholder="000201010211..." 
+                    className="font-mono text-[10px] flex-1" 
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-9 p-0 shrink-0 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95 animate-in fade-in"
+                    onClick={() => {
+                      if (!pmQrisString) {
+                        toast.error('Kolom string kosong.');
+                        return;
+                      }
+                      navigator.clipboard.writeText(pmQrisString);
+                      toast.success('String QRIS berhasil disalin.');
+                    }}
+                    title="Salin String QRIS"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-foreground" />
+                  </Button>
+                </div>
                 <p className="text-[10px] text-muted-foreground leading-snug">Sistem akan otomatis mengubah string statis ini menjadi QRIS dinamis di kasir berdasarkan nominal transaksi.</p>
               </div>
             )}

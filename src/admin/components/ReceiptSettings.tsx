@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { 
   Camera, Save, Loader2, CheckCircle2, Printer, ImageIcon,
   Sliders, Type, AlignCenter, Trash2, GripVertical, Store, Utensils, Coffee, Zap,
-  QrCode
+  QrCode, Copy
 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -696,7 +696,14 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                                       rawFooterImg && showFooterImg ? "cursor-zoom-in hover:border-primary/55 hover:scale-105 active:scale-95" : ""
                                     )}
                                   >
-                                    {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-4 h-4 text-muted-foreground/30" />}
+                                    {(rawFooterImg || footerImg) ? (
+                                      <img 
+                                        src={rawFooterImg || footerImg} 
+                                        className="w-full h-full object-contain p-0.5" 
+                                      />
+                                    ) : (
+                                      <ImageIcon className="w-4 h-4 text-muted-foreground/30" />
+                                    )}
                                   </div>
                                   <div className="flex flex-col">
                                     <span className="text-xs text-foreground font-semibold">Foto Struk Footer</span>
@@ -729,14 +736,31 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                                     <QrCode className="w-4 h-4 text-muted-foreground/30" />
                                   )}
                                 </div>
-                                <div className="flex-1 space-y-1">
+                                <div className="flex-1 flex gap-2">
                                   <Input 
                                     type="text" 
                                     placeholder="Masukkan link/URL qrcode..." 
                                     value={footerQrUrl}
                                     onChange={(e) => setFooterQrUrl(e.target.value)}
-                                    className="h-8 text-xs rounded-lg px-2.5 bg-background shadow-inner"
+                                    className="h-8 text-xs rounded-lg px-2.5 bg-background shadow-inner flex-1"
                                   />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 shrink-0 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95 animate-in fade-in"
+                                    onClick={() => {
+                                      if (!footerQrUrl) {
+                                        toast.error('Kolom URL QR Code kosong.');
+                                        return;
+                                      }
+                                      navigator.clipboard.writeText(footerQrUrl);
+                                      toast.success('Link QR Code berhasil disalin.');
+                                    }}
+                                    title="Salin Link QR Code"
+                                  >
+                                    <Copy className="w-3.5 h-3.5 text-foreground" />
+                                  </Button>
                                 </div>
                               </div>
                             )}
