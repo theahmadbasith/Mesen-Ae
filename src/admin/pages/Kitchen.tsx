@@ -2,7 +2,7 @@ import { useDbQuery, dbUpdate } from '@/hooks/db-hooks';
 import { sendPushToRole } from '@/lib/fcm';
 import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionItemRecord, StoreSettings } from '@/hooks/db-hooks';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -34,7 +34,7 @@ function KitchenItemsList({ transactionId }: { transactionId: number }) {
           
           {/* Item Details */}
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="font-extrabold text-foreground text-base leading-snug break-words">{item.productName}</span>
+            <span className="font-bold text-foreground text-sm leading-snug break-words">{item.productName}</span>
             
             {item.selectedVariants && item.selectedVariants.length > 0 && (
               <span className="text-xs font-semibold text-muted-foreground mt-1 break-words">
@@ -152,18 +152,18 @@ export default function Kitchen() {
   };
 
   return (
-    <div className="pt-8 pb-20 space-y-8 animate-in fade-in duration-500 w-full mx-auto min-h-[calc(100vh-4rem)]">
+    <div className="space-y-8 pb-24 animate-in fade-in duration-500">
       
 
 
       {/* Main Content */}
       {!processingBills || processingBills.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-card rounded-[2rem] border border-dashed border-border shadow-sm">
-          <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-6">
-            <UtensilsCrossed className="w-12 h-12 text-muted-foreground/40" strokeWidth={1.5} />
+        <div className="flex flex-col items-center justify-center py-24 text-center bg-card/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-border/60">
+          <div className="bg-muted p-6 rounded-full mb-4">
+            <UtensilsCrossed className="w-12 h-12 text-muted-foreground/50" />
           </div>
-          <h2 className="text-2xl font-extrabold text-foreground mb-2">Dapur Sedang Kosong</h2>
-          <p className="text-muted-foreground text-sm font-medium max-w-sm">
+          <h2 className="text-2xl font-bold mb-2 tracking-tight">Dapur Sedang Kosong</h2>
+          <p className="text-muted-foreground max-w-md">
             Semua pesanan telah diselesaikan atau restoran sedang menunggu pelanggan baru.
           </p>
         </div>
@@ -186,7 +186,7 @@ export default function Kitchen() {
                   <Badge variant="secondary" className="ml-2 rounded-full font-bold">{groupBills.length}</Badge>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {groupBills.map(bill => {
                     const billConfig = getStatusConfig(bill.kitchenStatus || 'diproses');
                     const orderDate = new Date(bill.date);
@@ -194,81 +194,98 @@ export default function Kitchen() {
                     const isLate = diffMins > 20;
             
             return (
-              <Card key={bill.id} className="border-border/60 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card rounded-2xl overflow-hidden group">
-                
+              <Card 
+                key={bill.id} 
+                className="flex flex-col border-border/60 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 ease-out overflow-hidden group"
+              >
                 {/* Ticket Header */}
-                <div className="bg-muted/40 px-5 py-4 flex flex-col gap-3 relative">
-                  <div className="flex justify-between items-start">
-                    <Badge variant="outline" className="bg-background font-mono text-xs font-bold border-border/60 shadow-sm">
-                      {bill.receiptNumber}
-                    </Badge>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-background border border-border/50 hover:bg-muted shadow-sm rounded-lg" onClick={() => setPrintActionTx(bill)} title="Pilihan Cetak">
-                      <Printer className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                <CardHeader className="p-5 pb-0">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="default" className="font-mono text-xs px-2.5 py-0.5 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                          {bill.receiptNumber}
+                        </Badge>
+                        <Badge className={cn("px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider shadow-none", billConfig.badge)}>
+                          {billConfig.label}
+                        </Badge>
+                        {isLate && (
+                          <Badge variant="destructive" className="text-[10px] px-2.5 py-0.5 font-bold uppercase animate-pulse">LATE</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs font-semibold text-muted-foreground flex-wrap">
+                        <div className={cn(
+                          "flex items-center gap-1.5",
+                          isLate && "text-red-500 font-bold"
+                        )}>
+                          <Clock className="w-3.5 h-3.5" />
+                          {diffMins} mnt lalu
+                        </div>
+                        {bill.date && (
+                          <div className="flex items-center">
+                            <Timer className="w-3.5 h-3.5 mr-1.5" />
+                            {format(orderDate, 'HH:mm', { locale: localeId })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0" 
+                      onClick={() => setPrintActionTx(bill)}
+                      title="Pilihan Cetak"
+                    >
+                      <Printer className="w-4 h-4" />
                     </Button>
                   </div>
-
-                  <div className="flex justify-between items-end">
-                    <div>
-                      {bill.tableNumber ? (
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Nomor Meja</span>
-                          <span className="text-3xl font-black text-primary">{bill.tableNumber}</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Pesanan</span>
-                          <span className="text-xl font-black text-foreground">Takeaway</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="text-right flex flex-col items-end">
-                      <div className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border shrink-0",
-                        isLate ? "bg-red-50 text-red-600 border-red-200" : "bg-muted border-border/50 text-muted-foreground"
-                      )}>
-                        <Clock className="w-3.5 h-3.5" />
-                        {diffMins} mnt lalu
-                      </div>
-                      <Badge className={cn("px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider shadow-none", billConfig.badge)}>
-                        {billConfig.label}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dashed Line Separator */}
-                <div className="relative h-0">
-                  <div className="absolute inset-0 border-t-2 border-dashed border-border/60 -mt-[1px]" />
-                  <div className="absolute -left-3 -top-3 w-6 h-6 bg-background rounded-full border-r border-border/60" />
-                  <div className="absolute -right-3 -top-3 w-6 h-6 bg-background rounded-full border-l border-border/60" />
-                </div>
+                </CardHeader>
                 
                 {/* Ticket Body (Items) */}
-                <CardContent className="p-5 flex-1 flex flex-col bg-background">
-                  {bill.customerName && (
-                    <div className="flex items-center gap-2 mb-4 bg-muted/30 px-3 py-2 rounded-lg border border-border/50">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-bold truncate">A.N: {bill.customerName}</span>
+                <CardContent className="p-5 flex-1 flex flex-col gap-3">
+                  <div className="space-y-2.5 flex-1">
+                    {/* Customer Name */}
+                    {bill.customerName && (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <div className="bg-muted p-1.5 rounded-md mr-2.5 text-foreground/70">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <span className="font-medium text-foreground truncate">{bill.customerName}</span>
+                      </div>
+                    )}
+                    
+                    {/* Table Number */}
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <div className="bg-muted p-1.5 rounded-md mr-2.5 text-foreground/70">
+                        <Hash className="w-4 h-4" />
+                      </div>
+                      {bill.tableNumber ? (
+                        <span>Meja <span className="font-semibold text-foreground">{bill.tableNumber}</span></span>
+                      ) : (
+                        <span>Bawa Pulang (Takeaway)</span>
+                      )}
                     </div>
-                  )}
 
-                  <div className="flex-1">
-                    <KitchenItemsList transactionId={bill.id!} />
+                    {/* Dashed Line Separator */}
+                    <div className="h-[1px] w-full border-t border-dashed border-border/60 my-2" />
+
+                    <div className="flex-1">
+                      <KitchenItemsList transactionId={bill.id!} />
+                    </div>
                   </div>
                 </CardContent>
 
                 {/* Ticket Footer (Action) */}
                 {hasEditAccess && (
-                  <div className="p-4 pt-0 mt-auto bg-background">
+                  <CardFooter className="px-5 pb-5 pt-0 mt-auto shrink-0 z-20 relative">
                     <Button 
-                      className={cn("w-full h-12 text-sm font-extrabold tracking-wide transition-all shadow-lg active:scale-95", billConfig.btn)}
+                      className={cn("w-full h-11 text-xs font-bold tracking-wide transition-all shadow-md active:scale-95 rounded-xl", billConfig.btn)}
                       onClick={() => handleNextStep(bill)}
                     >
                       {billConfig.icon}
                       <span>{billConfig.action}</span>
                     </Button>
-                  </div>
+                  </CardFooter>
                 )}
               </Card>
             );
