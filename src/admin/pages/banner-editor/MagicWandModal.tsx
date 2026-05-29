@@ -16,7 +16,6 @@ interface MagicWandModalProps {
 type ToolMode = 'wand' | 'brush' | 'restore' | 'crop' | 'pan';
 type BrushHardness = 'hard' | 'soft';
 
-// Definisi state history agar mendukung undo/redo fitur Crop
 interface HistoryState {
   imgData: ImageData;
   originalImageCanvas: HTMLCanvasElement;
@@ -28,12 +27,10 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   const [activeTool, setActiveTool] = useState<ToolMode>('wand');
   const [patternMode, setPatternMode] = useState<'light' | 'dark'>('light');
   
-  // States untuk Tools
   const [tolerance, setTolerance] = useState(32);
   const [brushSize, setBrushSize] = useState(30);
   const [brushHardness, setBrushHardness] = useState<BrushHardness>('hard');
   
-  // Workspace & Canvas States
   const [zoom, setZoom] = useState(100);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   
@@ -41,16 +38,15 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   const containerRef = useRef<HTMLDivElement>(null);
   const originalImageRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
   
-  // States History & Tools Interaksi
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const isDrawing = useRef(false);
   const isPanning = useRef(false);
   const lastPos = useRef<{ x: number, y: number } | null>(null);
 
-  // States untuk Crop Tool
-  const [cropStart, setCropStart] = useState<{ x: number, y: number } | null>(null);
-  const [cropEnd, setCropEnd] = useState<{ x: number, y: number } | null>(null);
+  // States untuk Profesional Crop Box
+  const [cropBox, setCropBox] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
+  const [cropInteraction, setCropInteraction] = useState<{ type: string, startX: number, startY: number, startBox: any } | null>(null);
 
   const saveToHistory = useCallback(() => {
     const cvs = canvasRef.current;
@@ -59,22 +55,13 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     if (!ctx) return;
     
     const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
-    
-    // Simpan juga versi aslinya jika crop dilakukan agar bisa di-undo
     const clonedOrig = document.createElement('canvas');
     clonedOrig.width = cvs.width;
     clonedOrig.height = cvs.height;
     clonedOrig.getContext('2d')?.drawImage(originalImageRef.current, 0, 0);
 
     const newHist = history.slice(0, historyIndex + 1);
-    const stateToSave: HistoryState = {
-      imgData,
-      originalImageCanvas: clonedOrig,
-      width: cvs.width,
-      height: cvs.height
-    };
-    
-    setHistory([...newHist, stateToSave]);
+    setHistory([...newHist, { imgData, originalImageCanvas: clonedOrig, width: cvs.width, height: cvs.height }]);
     setHistoryIndex(newHist.length);
   }, [history, historyIndex]);
 
@@ -113,10 +100,19 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
       img.src = imageUrl;
       setPatternMode('light');
       setActiveTool('wand');
-      setCropStart(null);
-      setCropEnd(null);
+      setCropBox(null);
     }
   }, [open, imageUrl]);
+
+  // Inisialisasi Crop Box penuh setiap kali mode Crop diaktifkan
+  useEffect(() => {
+    if (activeTool === 'crop' && imageSize.width > 0) {
+      // Set crop box persis sebesar foto saat baru masuk mode crop
+      setCropBox({ x: 0, y: 0, width: imageSize.width, height: imageSize.height });
+    } else {
+      setCropBox(null);
+    }
+  }, [activeTool, imageSize]);
 
   const fitToScreen = (imgW = imageSize.width, imgH = imageSize.height) => {
     const container = containerRef.current;
@@ -147,10 +143,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     const ctx = cvs?.getContext('2d');
     if (!cvs || !ctx || !originalImageRef.current) return;
 
-    // Untuk memastikan goresan halus (soft) tidak menumpuk aneh, kita gunakan kanvas sementara
     const tempCvs = document.createElement('canvas');
-    tempCvs.width = cvs.width;
-    tempCvs.height = cvs.height;
+    tempCvs.width = cvs.width; tempCvs.height = cvs.height;
     const tCtx = tempCvs.getContext('2d');
     if (!tCtx) return;
 
@@ -173,12 +167,10 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     }
 
     if (activeTool === 'brush') {
-      // Hapus piksel utama
       ctx.globalCompositeOperation = 'destination-out';
       ctx.drawImage(tempCvs, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
     } else if (activeTool === 'restore') {
-      // Ambil piksel asli dari bentuk brush lalu timpa ke kanvas utama
       tCtx.globalCompositeOperation = 'source-in';
       tCtx.drawImage(originalImageRef.current, 0, 0, cvs.width, cvs.height);
       ctx.globalCompositeOperation = 'source-over';
@@ -187,15 +179,9 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (activeTool === 'pan') return;
+    if (activeTool === 'pan' || activeTool === 'crop') return; // Crop punya event DOM sendiri sekarang
 
     const { x, y } = getCanvasMousePos(e);
-
-    if (activeTool === 'crop') {
-      setCropStart({ x, y });
-      setCropEnd({ x, y });
-      return;
-    }
 
     if (activeTool === 'brush' || activeTool === 'restore') {
       isDrawing.current = true;
@@ -206,17 +192,12 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
 
     if (activeTool === 'wand') {
       const cvs = canvasRef.current;
-      if (!cvs) return;
-      const ctx = cvs.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return;
-
-      if (x < 0 || y < 0 || x >= cvs.width || y >= cvs.height) return;
+      const ctx = cvs?.getContext('2d', { willReadFrequently: true });
+      if (!cvs || !ctx || x < 0 || y < 0 || x >= cvs.width || y >= cvs.height) return;
 
       const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
       const data = imgData.data;
-      const w = cvs.width;
-      const h = cvs.height;
-
+      const w = cvs.width, h = cvs.height;
       const targetIdx = (y * w + x) * 4;
       const tr = data[targetIdx], tg = data[targetIdx + 1], tb = data[targetIdx + 2], ta = data[targetIdx + 3];
       if (ta === 0) return;
@@ -229,8 +210,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
       const queue = [[x, y]];
       const seen = new Uint8Array(w * h);
       seen[y * w + x] = 1;
-
       let modified = false;
+
       while (queue.length > 0) {
         const [cx, cy] = queue.pop()!;
         const idx = (cy * w + cx) * 4;
@@ -238,14 +219,12 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
         if (colorMatch(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])) {
           data[idx + 3] = 0;
           modified = true;
-
           if (cx > 0 && !seen[cy * w + (cx - 1)]) { seen[cy * w + (cx - 1)] = 1; queue.push([cx - 1, cy]); }
           if (cx < w - 1 && !seen[cy * w + (cx + 1)]) { seen[cy * w + (cx + 1)] = 1; queue.push([cx + 1, cy]); }
           if (cy > 0 && !seen[(cy - 1) * w + cx]) { seen[(cy - 1) * w + cx] = 1; queue.push([cx, cy - 1]); }
           if (cy < h - 1 && !seen[(cy + 1) * w + cx]) { seen[(cy + 1) * w + cx] = 1; queue.push([cx, cy + 1]); }
         }
       }
-
       if (modified) {
         ctx.putImageData(imgData, 0, 0);
         saveToHistory();
@@ -254,11 +233,6 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (activeTool === 'crop' && cropStart) {
-      setCropEnd(getCanvasMousePos(e));
-      return;
-    }
-
     if ((activeTool === 'brush' || activeTool === 'restore') && isDrawing.current && lastPos.current) {
       const { x, y } = getCanvasMousePos(e);
       applyBrushOrRestore(x, y, 'line');
@@ -274,42 +248,84 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     }
   };
 
-  const executeCrop = () => {
-    if (!cropStart || !cropEnd) return;
-    const rx = Math.min(cropStart.x, cropEnd.x);
-    const ry = Math.min(cropStart.y, cropEnd.y);
-    const rw = Math.abs(cropStart.x - cropEnd.x);
-    const rh = Math.abs(cropStart.y - cropEnd.y);
-    
-    if (rw < 20 || rh < 20) {
-      setCropStart(null); setCropEnd(null);
-      return;
-    }
+  // --- LOGIKA CROP INTERAKTIF (DOM BASED) ---
+  const handleCropPointerDown = (e: React.PointerEvent, type: string) => {
+    e.stopPropagation();
+    if (!cropBox) return;
+    setCropInteraction({ type, startX: e.pageX, startY: e.pageY, startBox: { ...cropBox } });
+  };
 
+  useEffect(() => {
+    if (!cropInteraction) return;
+    
+    const onMove = (e: PointerEvent) => {
+      e.preventDefault();
+      const deltaX = (e.pageX - cropInteraction.startX) / (zoom / 100);
+      const deltaY = (e.pageY - cropInteraction.startY) / (zoom / 100);
+      let { x, y, width, height } = cropInteraction.startBox;
+      const minSize = 20;
+
+      if (cropInteraction.type === 'move') {
+        x = Math.max(0, Math.min(x + deltaX, imageSize.width - width));
+        y = Math.max(0, Math.min(y + deltaY, imageSize.height - height));
+      }
+      if (cropInteraction.type.includes('l')) {
+        const maxX = x + width - minSize;
+        const newX = Math.max(0, Math.min(x + deltaX, maxX));
+        width += (x - newX);
+        x = newX;
+      }
+      if (cropInteraction.type.includes('r')) {
+        width = Math.max(minSize, Math.min(width + deltaX, imageSize.width - x));
+      }
+      if (cropInteraction.type.includes('t')) {
+        const maxY = y + height - minSize;
+        const newY = Math.max(0, Math.min(y + deltaY, maxY));
+        height += (y - newY);
+        y = newY;
+      }
+      if (cropInteraction.type.includes('b')) {
+        height = Math.max(minSize, Math.min(height + deltaY, imageSize.height - y));
+      }
+
+      setCropBox({ x, y, width, height });
+    };
+
+    const onUp = () => setCropInteraction(null);
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [cropInteraction, zoom, imageSize]);
+
+  const executeCrop = () => {
+    if (!cropBox) return;
     const cvs = canvasRef.current;
     const ctx = cvs?.getContext('2d');
     if (!cvs || !ctx || !originalImageRef.current) return;
 
-    // Crop main canvas
     const tempMain = document.createElement('canvas');
-    tempMain.width = rw; tempMain.height = rh;
-    tempMain.getContext('2d')?.drawImage(cvs, -rx, -ry);
+    tempMain.width = cropBox.width; tempMain.height = cropBox.height;
+    tempMain.getContext('2d')?.drawImage(cvs, -cropBox.x, -cropBox.y);
 
-    // Crop original reference image
     const tempOrig = document.createElement('canvas');
-    tempOrig.width = rw; tempOrig.height = rh;
-    tempOrig.getContext('2d')?.drawImage(originalImageRef.current, -rx, -ry);
+    tempOrig.width = cropBox.width; tempOrig.height = cropBox.height;
+    tempOrig.getContext('2d')?.drawImage(originalImageRef.current, -cropBox.x, -cropBox.y);
 
-    // Apply
-    cvs.width = rw; cvs.height = rh;
+    cvs.width = cropBox.width; cvs.height = cropBox.height;
     ctx.drawImage(tempMain, 0, 0);
     originalImageRef.current = tempOrig;
-    setImageSize({ width: rw, height: rh });
+    setImageSize({ width: cropBox.width, height: cropBox.height });
     
-    setCropStart(null);
-    setCropEnd(null);
+    // Perbarui state kotak agar sesuai kanvas baru
+    setCropBox({ x: 0, y: 0, width: cropBox.width, height: cropBox.height });
     saveToHistory();
+    //setActiveTool('wand'); // (Opsional) Kembali ke wand setelah memotong
   };
+  // ------------------------------------------
 
   const undo = () => {
     if (historyIndex <= 0) return;
@@ -330,8 +346,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     const ctx = cvs?.getContext('2d', { willReadFrequently: true });
     if (!cvs || !ctx) return;
     
-    cvs.width = state.width;
-    cvs.height = state.height;
+    cvs.width = state.width; cvs.height = state.height;
     ctx.putImageData(state.imgData, 0, 0);
     setImageSize({ width: state.width, height: state.height });
     
@@ -339,6 +354,10 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     clonedOrig.width = state.width; clonedOrig.height = state.height;
     clonedOrig.getContext('2d')?.drawImage(state.originalImageCanvas, 0, 0);
     originalImageRef.current = clonedOrig;
+
+    if (activeTool === 'crop') {
+      setCropBox({ x: 0, y: 0, width: state.width, height: state.height });
+    }
   };
 
   const handleSave = () => {
@@ -374,10 +393,10 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     window.addEventListener('pointerup', onUp);
   };
 
-  // Dinamis Kursor Lingkaran untuk Brush / Repair
   const getCursorStyle = () => {
     if (activeTool === 'pan') return 'grab';
-    if (activeTool === 'crop' || activeTool === 'wand') return 'crosshair';
+    if (activeTool === 'crop') return 'default';
+    if (activeTool === 'wand') return 'crosshair';
     
     const size = Math.max(brushSize * (zoom / 100), 4);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${(size/2)-1}" fill="none" stroke="black" stroke-width="1"/><circle cx="${size/2}" cy="${size/2}" r="${(size/2)-2}" fill="none" stroke="white" stroke-width="1"/></svg>`;
@@ -420,9 +439,9 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
       <div className="flex flex-1 overflow-hidden relative">
         {/* Floating Sidebar Tools */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-xl border border-border">
-          <ToolButton icon={<Wand2 />} label="Magic Wand" active={activeTool === 'wand'} onClick={() => { setActiveTool('wand'); setCropStart(null); }} />
-          <ToolButton icon={<Eraser />} label="Hapus Manual (Brush)" active={activeTool === 'brush'} onClick={() => { setActiveTool('brush'); setCropStart(null); }} />
-          <ToolButton icon={<Paintbrush />} label="Kembalikan (Repair)" active={activeTool === 'restore'} onClick={() => { setActiveTool('restore'); setCropStart(null); }} />
+          <ToolButton icon={<Wand2 />} label="Magic Wand" active={activeTool === 'wand'} onClick={() => setActiveTool('wand')} />
+          <ToolButton icon={<Eraser />} label="Hapus Manual (Brush)" active={activeTool === 'brush'} onClick={() => setActiveTool('brush')} />
+          <ToolButton icon={<Paintbrush />} label="Kembalikan (Repair)" active={activeTool === 'restore'} onClick={() => setActiveTool('restore')} />
           <ToolButton icon={<Crop />} label="Potong Kanvas (Crop)" active={activeTool === 'crop'} onClick={() => setActiveTool('crop')} />
           <div className="w-8 h-px bg-border mx-auto my-1" />
           <ToolButton icon={<Hand />} label="Geser (Pan)" active={activeTool === 'pan'} onClick={() => setActiveTool('pan')} />
@@ -456,10 +475,14 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
 
           {activeTool === 'crop' && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-zinc-500 uppercase px-2">Seleksi area potong</span>
-              {cropStart && cropEnd && (
-                <button onClick={executeCrop} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded flex items-center gap-1.5"><Check className="w-3.5 h-3.5"/> Terapkan</button>
-              )}
+              <span className="text-xs font-semibold text-zinc-500 uppercase px-2">Geser Sudut Untuk Potong</span>
+              <button 
+                onClick={executeCrop} 
+                disabled={!cropBox || (cropBox.width === imageSize.width && cropBox.height === imageSize.height)}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 rounded flex items-center gap-1.5 transition-colors"
+              >
+                <Check className="w-3.5 h-3.5"/> Terapkan
+              </button>
             </div>
           )}
 
@@ -493,7 +516,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
               className="relative shadow-2xl transition-all duration-150 ease-out"
               style={{ width: `${imageSize.width * (zoom / 100)}px`, height: `${imageSize.height * (zoom / 100)}px` }}
             >
-              {/* Pattern Latar Belakang (White/Gray Default & Tahan Banting dari Dark Mode) */}
+              {/* Pattern Latar Belakang */}
               <div 
                 className="absolute inset-0 z-0 pointer-events-none rounded"
                 style={{
@@ -510,22 +533,43 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
-                className={cn("absolute inset-0 z-10 rounded w-full h-full", activeTool === 'pan' && "pointer-events-none")}
+                className={cn("absolute inset-0 z-10 rounded w-full h-full", (activeTool === 'pan' || activeTool === 'crop') && "pointer-events-none")}
                 style={{ touchAction: 'none', cursor: getCursorStyle() }}
               />
 
-              {/* Garis Potong (Crop Box) */}
-              {activeTool === 'crop' && cropStart && cropEnd && (
+              {/* DOM BASED CROP UI */}
+              {activeTool === 'crop' && cropBox && (
                 <div 
-                  className="absolute z-20 pointer-events-none border-2 border-blue-500 border-dashed"
+                  className="absolute z-20 cursor-move border-2 border-blue-500 group"
                   style={{
-                    left: `${Math.min(cropStart.x, cropEnd.x) * (zoom / 100)}px`,
-                    top: `${Math.min(cropStart.y, cropEnd.y) * (zoom / 100)}px`,
-                    width: `${Math.abs(cropStart.x - cropEnd.x) * (zoom / 100)}px`,
-                    height: `${Math.abs(cropStart.y - cropEnd.y) * (zoom / 100)}px`,
-                    boxShadow: '0 0 0 9999px rgba(0,0,0,0.4)',
+                    left: `${cropBox.x * (zoom / 100)}px`,
+                    top: `${cropBox.y * (zoom / 100)}px`,
+                    width: `${cropBox.width * (zoom / 100)}px`,
+                    height: `${cropBox.height * (zoom / 100)}px`,
+                    boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
                   }}
-                />
+                  onPointerDown={(e) => handleCropPointerDown(e, 'move')}
+                >
+                  {/* Rule of Thirds Grid (Hanya muncul saat hover/interaksi) */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                    <div className="w-full h-px bg-white/60 absolute top-1/3" />
+                    <div className="w-full h-px bg-white/60 absolute top-2/3" />
+                    <div className="h-full w-px bg-white/60 absolute left-1/3" />
+                    <div className="h-full w-px bg-white/60 absolute left-2/3" />
+                  </div>
+
+                  {/* Corner Handles */}
+                  <div className="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize" onPointerDown={(e) => handleCropPointerDown(e, 'tl')} />
+                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize" onPointerDown={(e) => handleCropPointerDown(e, 'tr')} />
+                  <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize" onPointerDown={(e) => handleCropPointerDown(e, 'bl')} />
+                  <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize" onPointerDown={(e) => handleCropPointerDown(e, 'br')} />
+
+                  {/* Edge Handles */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-3 cursor-ns-resize" onPointerDown={(e) => handleCropPointerDown(e, 't')} />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-6 h-3 cursor-ns-resize" onPointerDown={(e) => handleCropPointerDown(e, 'b')} />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-6 w-3 cursor-ew-resize" onPointerDown={(e) => handleCropPointerDown(e, 'l')} />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-6 w-3 cursor-ew-resize" onPointerDown={(e) => handleCropPointerDown(e, 'r')} />
+                </div>
               )}
             </div>
           </div>
