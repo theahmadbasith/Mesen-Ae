@@ -173,7 +173,7 @@ export function QRISResult({ qrisString }: Props) {
           const logoRatio = logo.width / logo.height;
           const logoTargetWidth = logoTargetHeight * logoRatio;
           const logoX = 25;
-          const logoY = 20;
+          const logoY = 10;
 
           ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
 
