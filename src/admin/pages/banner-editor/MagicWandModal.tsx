@@ -44,7 +44,6 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   const isPanning = useRef(false);
   const lastPos = useRef<{ x: number, y: number } | null>(null);
 
-  // States untuk Profesional Crop Box
   const [cropBox, setCropBox] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
   const [cropInteraction, setCropInteraction] = useState<{ type: string, startX: number, startY: number, startBox: any } | null>(null);
 
@@ -104,10 +103,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     }
   }, [open, imageUrl]);
 
-  // Inisialisasi Crop Box penuh setiap kali mode Crop diaktifkan
   useEffect(() => {
     if (activeTool === 'crop' && imageSize.width > 0) {
-      // Set crop box persis sebesar foto saat baru masuk mode crop
       setCropBox({ x: 0, y: 0, width: imageSize.width, height: imageSize.height });
     } else {
       setCropBox(null);
@@ -179,7 +176,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (activeTool === 'pan' || activeTool === 'crop') return; // Crop punya event DOM sendiri sekarang
+    if (activeTool === 'pan' || activeTool === 'crop') return;
 
     const { x, y } = getCanvasMousePos(e);
 
@@ -248,7 +245,6 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     }
   };
 
-  // --- LOGIKA CROP INTERAKTIF (DOM BASED) ---
   const handleCropPointerDown = (e: React.PointerEvent, type: string) => {
     e.stopPropagation();
     if (!cropBox) return;
@@ -307,6 +303,9 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     const ctx = cvs?.getContext('2d');
     if (!cvs || !ctx || !originalImageRef.current) return;
 
+    // Jika ukurannya sama, abaikan agar tidak makan memori history
+    if (cropBox.width === imageSize.width && cropBox.height === imageSize.height) return;
+
     const tempMain = document.createElement('canvas');
     tempMain.width = cropBox.width; tempMain.height = cropBox.height;
     tempMain.getContext('2d')?.drawImage(cvs, -cropBox.x, -cropBox.y);
@@ -320,12 +319,9 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
     originalImageRef.current = tempOrig;
     setImageSize({ width: cropBox.width, height: cropBox.height });
     
-    // Perbarui state kotak agar sesuai kanvas baru
     setCropBox({ x: 0, y: 0, width: cropBox.width, height: cropBox.height });
     saveToHistory();
-    //setActiveTool('wand'); // (Opsional) Kembali ke wand setelah memotong
   };
-  // ------------------------------------------
 
   const undo = () => {
     if (historyIndex <= 0) return;
@@ -408,8 +404,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
   return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
       
-      {/* Header Panel */}
-      <div className="h-16 shrink-0 border-b border-border bg-white dark:bg-zinc-900 flex items-center justify-between px-4 shadow-sm z-20">
+      {/* Header Panel - Diperbarui z-index */}
+      <div className="h-16 shrink-0 border-b border-border bg-white dark:bg-zinc-900 flex items-center justify-between px-4 shadow-sm z-[70]">
         <div className="flex items-center gap-3">
           <button onClick={() => onOpenChange(false)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
             <X className="w-5 h-5" />
@@ -437,8 +433,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Floating Sidebar Tools */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-xl border border-border">
+        {/* Floating Sidebar Tools - Diperbarui z-index ke 60 agar di atas shadow crop */}
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-2 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-xl border border-border">
           <ToolButton icon={<Wand2 />} label="Magic Wand" active={activeTool === 'wand'} onClick={() => setActiveTool('wand')} />
           <ToolButton icon={<Eraser />} label="Hapus Manual (Brush)" active={activeTool === 'brush'} onClick={() => setActiveTool('brush')} />
           <ToolButton icon={<Paintbrush />} label="Kembalikan (Repair)" active={activeTool === 'restore'} onClick={() => setActiveTool('restore')} />
@@ -447,8 +443,8 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
           <ToolButton icon={<Hand />} label="Geser (Pan)" active={activeTool === 'pan'} onClick={() => setActiveTool('pan')} />
         </div>
 
-        {/* Floating Top Options (Contextual Toolbar) */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-white dark:bg-zinc-900 px-5 py-2.5 rounded-full shadow-lg border border-border">
+        {/* Floating Top Options (Contextual Toolbar) - Diperbarui z-index ke 60 */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 bg-white dark:bg-zinc-900 px-5 py-2.5 rounded-full shadow-lg border border-border">
           
           {activeTool === 'wand' && (
             <div className="flex items-center gap-3">
@@ -474,19 +470,19 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
           )}
 
           {activeTool === 'crop' && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-zinc-500 uppercase px-2">Geser Sudut Untuk Potong</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-zinc-500 uppercase px-2">Sesuaikan Kotak</span>
+              {/* Tombol Terapkan diperbarui agar lebih mencolok, hidup, dan selalu aktif */}
               <button 
                 onClick={executeCrop} 
-                disabled={!cropBox || (cropBox.width === imageSize.width && cropBox.height === imageSize.height)}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 rounded flex items-center gap-1.5 transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-md transition-transform active:scale-95"
               >
-                <Check className="w-3.5 h-3.5"/> Terapkan
+                <Check className="w-4 h-4"/> Potong Terapkan
               </button>
             </div>
           )}
 
-          {activeTool === 'pan' && <span className="text-xs font-semibold text-zinc-500 uppercase px-2">Mode Navigasi (Bisa Zoom Bebas)</span>}
+          {activeTool === 'pan' && <span className="text-xs font-semibold text-zinc-500 uppercase px-2">Mode Navigasi Aktif</span>}
 
           <div className="w-px h-4 bg-border mx-2" />
 
@@ -498,10 +494,10 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
           </div>
         </div>
 
-        {/* Workspace / Canvas Area */}
+        {/* Workspace / Canvas Area - Diperbarui z-index agar shadow tetap di bawah Toolbars */}
         <div 
           ref={containerRef}
-          className={cn("flex-1 overflow-auto bg-zinc-200/50 dark:bg-zinc-950/50 touch-none", activeTool === 'pan' ? "cursor-grab active:cursor-grabbing" : "")}
+          className={cn("flex-1 overflow-auto bg-zinc-200/50 dark:bg-zinc-950/50 touch-none z-10 relative", activeTool === 'pan' ? "cursor-grab active:cursor-grabbing" : "")}
           onPointerDown={handleContainerPointerDown}
           onWheel={(e) => {
             if (e.ctrlKey || e.metaKey) {
@@ -537,7 +533,7 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
                 style={{ touchAction: 'none', cursor: getCursorStyle() }}
               />
 
-              {/* DOM BASED CROP UI */}
+              {/* DOM BASED CROP UI - Kotak z-20 di dalam Workspace (akan dilangkahi oleh z-60 toolbar) */}
               {activeTool === 'crop' && cropBox && (
                 <div 
                   className="absolute z-20 cursor-move border-2 border-blue-500 group"
@@ -550,7 +546,6 @@ export default function MagicWandModal({ open, onOpenChange, imageUrl, onSave }:
                   }}
                   onPointerDown={(e) => handleCropPointerDown(e, 'move')}
                 >
-                  {/* Rule of Thirds Grid (Hanya muncul saat hover/interaksi) */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
                     <div className="w-full h-px bg-white/60 absolute top-1/3" />
                     <div className="w-full h-px bg-white/60 absolute top-2/3" />
