@@ -524,7 +524,7 @@ export default function Pengaturan() {
         {activeTab === 'toko' && (
           <Section
             title="Info Toko"
-            description="Identitas, kontak, dan konfigurasi struk."
+            description="Identitas, kontak, dan informasi dasar operasional toko."
             action={hasEditAccess ? (
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={openStoreEdit}>
                 <Edit2 className="w-3.5 h-3.5" /> Edit
@@ -592,7 +592,7 @@ export default function Pengaturan() {
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide flex items-center gap-1.5"><Package className="w-3.5 h-3.5" /> Sistem Penjualan (Pesanan di Tempat)</p>
               <SettingCard>
                 <div className="p-4 space-y-3">
-                  <p className="text-xs text-muted-foreground leading-snug">Pilih apakah pelanggan harus mengambil pesanan sendiri saat siap (Ambil Sendiri), atau pelayan mengantarkannya ke meja (Diantar ke Meja).</p>
+                  <p className="text-xs text-muted-foreground leading-snug">Konfigurasi cara penyerahan pesanan di tempat: diambil mandiri oleh pelanggan (Ambil Sendiri) atau diantarkan langsung ke meja oleh pelayan (Diantar ke Meja).</p>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"

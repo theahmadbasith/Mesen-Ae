@@ -530,12 +530,12 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   {footerOrder.map(block => (
                     <SortableFooterItem key={block} id={block}>
                       {block === 'line1' && (
-                        <div className="flex items-center gap-2 w-full">
-                          <input
-                            type="text"
+                        <div className="flex items-start gap-2 w-full">
+                          <textarea
                             value={footerLine1}
                             onChange={e => setFooterLine1(e.target.value)}
-                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30 font-medium"
+                            rows={2}
+                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary min-h-[52px] transition-all placeholder:text-muted-foreground/30 font-medium resize-none focus:outline-none"
                             placeholder="Terima Kasih Atas Kunjungan Anda"
                           />
                           <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/30 shrink-0 h-8">
@@ -576,12 +576,12 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                         </div>
                       )}
                       {block === 'line2' && (
-                        <div className="flex items-center gap-2 w-full">
-                          <input
-                            type="text"
+                        <div className="flex items-start gap-2 w-full">
+                          <textarea
                             value={footerLine2}
                             onChange={e => setFooterLine2(e.target.value)}
-                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary h-8 transition-all placeholder:text-muted-foreground/30 font-medium"
+                            rows={2}
+                            className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-muted/10 focus:bg-background focus:ring-1 focus:ring-primary min-h-[52px] transition-all placeholder:text-muted-foreground/30 font-medium resize-none focus:outline-none"
                             placeholder="Layanan Konsumen: 0812-xxxx-xxxx"
                           />
                           <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/30 shrink-0 h-8">
