@@ -364,31 +364,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             </button>
           </div>
 
-          {/* iOS Toggle Switch (Premium Toggle) - Footer Image */}
-          <div className="flex items-center justify-between pt-1 pb-3 px-1 border-b border-border/50">
-            <div className="flex flex-col gap-0.5">
-              <Label htmlFor="showFooterImg" className="text-xs font-bold text-foreground cursor-pointer select-none">
-                Tampilkan Foto Footer
-              </Label>
-              <span className="text-[10px] text-muted-foreground">Menampilkan gambar/foto penutup di bagian bawah struk</span>
-            </div>
-            <button
-              type="button"
-              id="showFooterImg"
-              onClick={() => setShowFooterImg(!showFooterImg)}
-              className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20",
-                showFooterImg ? "bg-primary" : "bg-muted"
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
-                  showFooterImg ? "translate-x-4" : "translate-x-0"
-                )}
-              />
-            </button>
-          </div>
+
 
           {/* §1 — Template Selection */}
           <div className="space-y-3">
@@ -585,6 +561,28 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Toggle Aktif/Nonaktif */}
+                            <div className="flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded-lg border border-border/30 h-7 shrink-0">
+                              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider select-none">
+                                {showFooterImg ? 'Aktif' : 'Off'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowFooterImg(!showFooterImg)}
+                                className={cn(
+                                  "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                                  showFooterImg ? "bg-primary border-primary" : "bg-muted border-muted-foreground/30"
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "pointer-events-none inline-block h-3 w-3 transform rounded-full bg-background shadow transition duration-200 ease-in-out",
+                                    showFooterImg ? "translate-x-3.5" : "translate-x-0"
+                                  )}
+                                />
+                              </button>
+                            </div>
+
                             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-[10px] px-2.5 rounded-lg bg-background">
                               <Camera className="w-3 h-3 mr-1" /> {footerImg ? 'Ganti' : 'Unggah'}
                             </Button>
