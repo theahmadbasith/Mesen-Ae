@@ -29,7 +29,7 @@ export function QRISResult({ qrisString }: Props) {
    */
   const extractNmid = (rawString: string): string => {
     const match = rawString.match(/0215(ID[A-Z0-9]{13})/);
-    return match ? match[1] : ""; // Mengembalikan Capture Group 1 (IDxxxxxxxxxxxxx)
+    return match ? match[1] : ""; 
   };
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function QRISResult({ qrisString }: Props) {
       // Konfigurasi HD Canvas (Scale 4x)
       const scale = 4;
       const width = 400;   // Lebar logis kartu
-      const height = 580;  // Tinggi logis kartu (disesuaikan untuk ruang ekstra di bawah)
+      const height = 580;  // Tinggi logis kartu 
       const cardRadius = 24;
 
       canvas.width = width * scale;
@@ -97,10 +97,10 @@ export function QRISResult({ qrisString }: Props) {
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.clip(); 
 
-      const qrisRed = "#DA291C"; // Merah spesifik standar
+      const qrisRed = "#DA291C"; 
       ctx.fillStyle = qrisRed;
 
-      // Segitiga Merah Kiri (Akan ditimpa sebagian oleh putihnya QR Code)
+      // Segitiga Merah Kiri
       ctx.beginPath();
       ctx.moveTo(0, 180);
       ctx.lineTo(100, 270);
@@ -117,42 +117,43 @@ export function QRISResult({ qrisString }: Props) {
       ctx.restore(); // Lepas masking sudut kartu
 
       // ==========================================
-      // C. RENDER TEKS (Merchant, NMID & Header)
+      // C. RENDER TEKS (Merchant, NMID & Footer)
       // ==========================================
       let displayName = parsed.merchantName;
       if (displayName.length > 25) {
         displayName = displayName.substring(0, 22) + "...";
       }
 
+      // Render Nama & NMID (Tengah Atas)
       ctx.textAlign = "center";
       
-      // Nama Toko
       ctx.fillStyle = "#000000";
       ctx.font = "700 32px 'Inter', system-ui, sans-serif";
       ctx.fillText(displayName, width / 2, 140);
 
-      // NMID
       if (currentNmid) {
         ctx.fillStyle = "#1E293B"; 
         ctx.font = "400 16px 'Inter', system-ui, sans-serif";
         ctx.fillText(`NMID: ${currentNmid}`, width / 2, 170);
       }
 
-      // Teks Footer: Dinamis & Powered By
+      // Render Footer (Rata Kiri Bawah)
+      ctx.textAlign = "left";
+      
       ctx.fillStyle = "#0f172a";
-      ctx.font = "700 16px 'Inter', system-ui, sans-serif";
-      ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, width / 2, 535);
+      ctx.font = "700 15px 'Inter', system-ui, sans-serif";
+      ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, 40, 540);
 
       ctx.fillStyle = "#64748b"; 
       ctx.font = "500 12px 'Inter', system-ui, sans-serif";
-      ctx.fillText("Powered by MesenAe", width / 2, 555);
+      ctx.fillText("Powered by MesenAe", 40, 560);
 
       // ==========================================
       // D. PROSES ASYNC: LOGO & QR CODE CUTOUT
       // ==========================================
       const renderAssets = async () => {
         try {
-          // 1. Gambar Logo QRIS (Diperbesar)
+          // 1. Gambar Logo QRIS
           const logo = new Image();
           logo.crossOrigin = "anonymous";
           logo.src = "/ico/qris.png"; 
@@ -163,29 +164,30 @@ export function QRISResult({ qrisString }: Props) {
           });
 
           // Kalkulasi proporsi logo
-          const logoTargetWidth = 120; // Lebih besar & tegas
-          const logoRatio = logo.height / logo.width;
-          const logoTargetHeight = logoTargetWidth * logoRatio;
+          const logoTargetHeight = 32;
+          const logoRatio = logo.width / logo.height;
+          const logoTargetWidth = logoTargetHeight * logoRatio;
           const logoX = 40;
-          const logoY = 40;
+          const logoY = 30;
 
           ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
 
-          // Teks Header Pendamping Logo (Diperbesar)
-          const textStartX = logoX + logoTargetWidth + 18;
+          // Teks Header Pendamping Logo 
+          const textStartX = logoX + logoTargetWidth + 14;
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           
-          ctx.font = "700 15px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", textStartX, logoY + 16);
+          ctx.font = "700 14px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QR Code Standar", textStartX, logoY + 13);
           
-          ctx.font = "400 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 34);
+          ctx.fillStyle = "#334155";
+          ctx.font = "400 13px 'Inter', system-ui, sans-serif";
+          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 30);
 
           // 2. Efek "Cutout" untuk QR Code
           // Kotak putih tebal membulat untuk menimpa aksen merah
           const qrBoxSize = 310;
-          const qrBoxX = (width - qrBoxSize) / 2; // Tengah (45)
+          const qrBoxX = (width - qrBoxSize) / 2; 
           const qrBoxY = 195;
           
           ctx.fillStyle = "#FFFFFF";
@@ -194,10 +196,10 @@ export function QRISResult({ qrisString }: Props) {
 
           // 3. Render Barcode QRIS di atas kotak putih
           const qrVirtualCanvas = document.createElement("canvas");
-          const qrInnerSize = 290; // Beri margin 10px dari kotak pemotong
+          const qrInnerSize = 290; 
           await QRCode.toCanvas(qrVirtualCanvas, qrisString, {
             width: qrInnerSize,
-            margin: 1, // Margin internal kecil karena sudah ada kotak pemotong
+            margin: 1, 
             color: { dark: "#000000", light: "#FFFFFF" },
             errorCorrectionLevel: "M", 
           });
@@ -214,11 +216,11 @@ export function QRISResult({ qrisString }: Props) {
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           ctx.font = "900 36px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QRIS", 40, 70);
+          ctx.fillText("QRIS", 40, 60);
           ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", 135, 55);
+          ctx.fillText("QR Code Standar", 135, 48);
           ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", 135, 75);
+          ctx.fillText("Pembayaran Nasional", 135, 65);
           setIsRendered(true);
         }
       };
