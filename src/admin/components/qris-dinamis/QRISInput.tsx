@@ -200,7 +200,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
       {/* Textarea Area */}
       <div className="space-y-2.5">
         
-        {/* Header Section dengan Tombol Hapus */}
+        {/* Header Section: Tombol Hapus mepet ke kanan */}
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold text-foreground/90">String QRIS</Label>
           {hasValue && (
@@ -209,10 +209,10 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
               variant="ghost"
               size="sm"
               onClick={onReset}
-              className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+              className="h-6 px-2 text-[11px] font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
             >
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              Hapus Text
+              <Trash2 className="w-3 h-3 mr-1" />
+              Hapus Teks
             </Button>
           )}
         </div>
@@ -220,12 +220,12 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
         <div
           className={`relative rounded-xl border-2 transition-all duration-200 ${
             dragOver
-              ? "border-primary bg-primary/5 shadow-[0_0_0_4px_hsl(var(--primary)/0.1)]"
+              ? "border-primary border-dotted bg-primary/5 shadow-[0_0_0_4px_hsl(var(--primary)/0.1)]"
               : hasError
-                ? "border-destructive/60 bg-destructive/[0.02] shadow-[0_0_0_3px_hsl(var(--destructive)/0.08)]"
+                ? "border-destructive/60 bg-destructive/[0.02] focus-within:border-destructive focus-within:border-dotted focus-within:shadow-[0_0_0_3px_hsl(var(--destructive)/0.1)]"
                 : hasValue
-                  ? "border-emerald-500/60 bg-emerald-50/30 dark:bg-emerald-950/10 shadow-[0_0_0_3px_hsl(142_76%_36%/0.08)]"
-                  : "border-border hover:border-primary/40 bg-background"
+                  ? "border-emerald-500/60 bg-emerald-50/30 dark:bg-emerald-950/10 focus-within:border-emerald-500 focus-within:border-dotted focus-within:shadow-[0_0_0_3px_hsl(142_76%_36%/0.1)]"
+                  : "border-border hover:border-primary/40 bg-background focus-within:border-primary focus-within:border-dotted focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -234,7 +234,7 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
           <Textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="Paste string QRIS di sini, atau drag & drop gambar QR..."
+            placeholder="Paste string QRIS atau drag & drop gambar"
             rows={6}
             className={`
               w-full border-0 shadow-none
