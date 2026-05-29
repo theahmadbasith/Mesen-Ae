@@ -65,7 +65,7 @@ export function QRISResult({ qrisString }: Props) {
         context.closePath();
       };
 
-      // Base Kartu Putih
+      // 1. Base Kartu Putih
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.fillStyle = "#FFFFFF";
       ctx.shadowColor = "rgba(0, 0, 0, 0.08)";
@@ -77,7 +77,7 @@ export function QRISResult({ qrisString }: Props) {
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
-      // Aksen Merah
+      // 2. Aksen Merah
       ctx.save();
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.clip(); 
@@ -99,7 +99,7 @@ export function QRISResult({ qrisString }: Props) {
 
       ctx.restore(); 
 
-      // Footer
+      // 3. Footer
       const footerX = 25; 
       ctx.textAlign = "left";
       
@@ -111,6 +111,7 @@ export function QRISResult({ qrisString }: Props) {
       ctx.font = "500 12px 'Inter', system-ui, sans-serif";
       ctx.fillText("Powered by MesenAe", footerX, 560);
 
+      // 4. Proses Async (Logo Transparan, Nama Merchant, & Barcode)
       const renderAssets = async () => {
         try {
           const logo = new Image();
@@ -122,26 +123,59 @@ export function QRISResult({ qrisString }: Props) {
             logo.onerror = reject;
           });
 
-          // Konfigurasi Logo (Tinggi 60, Y 10 sesuai instruksi)
           const logoTargetHeight = 60;
           const logoRatio = logo.width / logo.height;
           const logoTargetWidth = logoTargetHeight * logoRatio;
           const logoX = 25;
           const logoY = 10;
 
-          ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
+          // ==============================================================
+          // PEMBERSIHAN PIXEL PUTIH DARI LOGO (SMOOTH WHITE REMOVAL)
+          // ==============================================================
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = logo.width;
+          tempCanvas.height = logo.height;
+          const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
+          
+          if (tempCtx) {
+            tempCtx.drawImage(logo, 0, 0);
+            const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imgData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              
+              // Hitung rata-rata kecerahan pixel
+              const avg = (r + g + b) / 3;
+              
+              // Jika pixel berwarna terang (mendekati putih)
+              if (avg > 210) {
+                // Algoritma gradasi alpha untuk mencegah pinggiran kasar (anti-aliasing)
+                const alpha = Math.max(0, 255 - (avg - 210) * (255 / 45)); 
+                data[i + 3] = Math.min(data[i + 3], alpha);
+              }
+            }
+            tempCtx.putImageData(imgData, 0, 0);
+            ctx.drawImage(tempCanvas, logoX, logoY, logoTargetWidth, logoTargetHeight);
+          } else {
+            // Fallback
+            ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
+          }
+          // ==============================================================
 
-          // Teks di samping logo (Diturunkan sejajar dengan visual logo 60px)
+          // Teks di samping logo
           const textStartX = logoX + logoTargetWidth + 14;
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           
           ctx.font = "700 14px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", textStartX, 40); // Y spesifik agar pas di tengah logo
+          ctx.fillText("QR Code Standar", textStartX, 40); 
           
           ctx.fillStyle = "#334155";
           ctx.font = "400 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", textStartX, 58); // Y spesifik
+          ctx.fillText("Pembayaran Nasional", textStartX, 58);
 
           // Auto-scaling font size untuk Merchant Name
           let fontSize = 28;
@@ -329,9 +363,8 @@ export function QRISResult({ qrisString }: Props) {
         </div>
       </div>
 
-      {/* Modal Preview Gambar Besaran Penuh (Diperbaiki) */}
+      {/* Modal Preview Gambar Besaran Penuh */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        {/* [&>button]:hidden digunakan untuk menyembunyikan default close button dari komponen Dialog shadcn */}
         <DialogContent className="max-w-[440px] w-[95vw] bg-transparent border-none shadow-none p-0 flex flex-col items-center justify-center outline-none [&>button]:hidden">
           <div className="sr-only">
             <DialogTitle>Preview Kartu QRIS</DialogTitle>
@@ -345,7 +378,6 @@ export function QRISResult({ qrisString }: Props) {
                 className="w-full h-auto max-h-[80vh] object-contain rounded-[24px] shadow-2xl animate-in zoom-in-95 duration-300"
               />
               
-              {/* Custom Floating Close Button (Desktop & Mobile Friendly) */}
               <Button 
                 variant="secondary" 
                 onClick={() => setPreviewOpen(false)}
