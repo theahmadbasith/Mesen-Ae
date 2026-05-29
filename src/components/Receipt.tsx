@@ -453,8 +453,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
             {template === 'minimarket' && (
               <div className="w-full text-left uppercase text-[0.85em] relative z-10">
                 {showLogo && storeSettings?.logo && (
-                  <div className="mb-3 text-center">
-                    <img src={storeSettings.logo} alt="Logo" className="w-28 h-8 object-contain mx-auto mb-2 grayscale" />
+                  <div className="mb-3 text-center mix-blend-multiply">
+                    <img src={storeSettings.logo} alt="Logo" className="w-28 h-8 object-contain mx-auto mb-2 grayscale mix-blend-multiply" />
                   </div>
                 )}
                 <div className="mb-2">
@@ -526,8 +526,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               <div className="w-full text-left text-[0.85em] relative z-10">
                 <div className="text-center mb-4">
                   {showLogo && storeSettings?.logo && (
-                    <div className="w-14 h-14 mx-auto mb-2 grayscale">
-                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto" />
+                    <div className="w-14 h-14 mx-auto mb-2 grayscale mix-blend-multiply">
+                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto mix-blend-multiply" />
                     </div>
                   )}
                   <h2 className="font-bold text-[1.25em]">{storeSettings?.storeName?.toUpperCase() || 'TOKO'}</h2>
@@ -601,8 +601,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               <div className="w-full text-[0.85em] relative z-10">
                 <div className="text-center mb-3">
                   {showLogo && storeSettings?.logo && (
-                    <div className="w-16 h-16 mx-auto mb-2 grayscale">
-                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto" />
+                    <div className="w-16 h-16 mx-auto mb-2 grayscale mix-blend-multiply">
+                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto mix-blend-multiply" />
                     </div>
                   )}
                   <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings?.storeName || 'TOKO'}</h2>
@@ -681,8 +681,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               <div className="w-full text-center text-[0.85em] relative z-10">
                 <div className="mb-4">
                   {showLogo && storeSettings?.logo && (
-                    <div className="w-10 h-10 mx-auto mb-2 grayscale">
-                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto" />
+                    <div className="w-10 h-10 mx-auto mb-2 grayscale mix-blend-multiply">
+                      <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-contain mx-auto mix-blend-multiply" />
                     </div>
                   )}
                   <h2 className="font-bold text-[1.15em]">{storeSettings?.storeName || 'Toko'}</h2>
@@ -788,11 +788,11 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 }
                 if (block === 'image' && showFooterImg && footerImgData) {
                   return (
-                    <div key={idx} className="my-2.5 text-center">
+                    <div key={idx} className="my-2.5 text-center mix-blend-multiply">
                       <img 
                         src={footerImgData} 
                         alt="Footer" 
-                        className="h-16 w-auto mx-auto object-contain rounded-xl grayscale opacity-75 shadow-sm select-none" 
+                        className="h-16 w-auto mx-auto object-contain rounded-xl grayscale opacity-75 select-none mix-blend-multiply" 
                         style={{ filter: 'grayscale(1) contrast(1.2)' }}
                       />
                     </div>

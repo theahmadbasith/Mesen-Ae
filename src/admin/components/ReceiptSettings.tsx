@@ -622,8 +622,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             <div className="w-full text-left uppercase text-[0.85em] relative z-10">
               {showLogo && storeSettings.logo && (
                 <div className="mb-3">
-                  <div className="w-28 h-8 mb-2 grayscale">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain object-left" />
+                  <div className="w-28 h-8 mb-2 grayscale mix-blend-multiply">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain object-left mix-blend-multiply" />
                   </div>
                 </div>
               )}
@@ -677,8 +677,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             <div className="w-full text-left text-[0.85em] relative z-10">
               <div className="text-center mb-4">
                 {showLogo && storeSettings.logo && (
-                  <div className="w-14 h-14 mx-auto mb-2 grayscale">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                  <div className="w-14 h-14 mx-auto mb-2 grayscale mix-blend-multiply">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain mix-blend-multiply" />
                   </div>
                 )}
                 <h2 className="font-bold text-[1.2em]">{storeSettings.storeName?.toUpperCase() || 'KOPI NUSANTARA'}</h2>
@@ -720,8 +720,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             <div className="w-full text-[0.85em] relative z-10">
               <div className="text-center mb-3">
                 {showLogo && storeSettings.logo && (
-                  <div className="w-16 h-16 mx-auto mb-2 grayscale">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                  <div className="w-16 h-16 mx-auto mb-2 grayscale mix-blend-multiply">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain mix-blend-multiply" />
                   </div>
                 )}
                 <h2 className="font-extrabold text-[1.25em] tracking-wide">{storeSettings.storeName || 'TOKO SAYA'}</h2>
@@ -763,8 +763,8 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
             <div className="w-full text-center text-[0.85em] relative z-10">
               <div className="mb-4">
                 {showLogo && storeSettings.logo && (
-                  <div className="w-10 h-10 mx-auto mb-2 grayscale">
-                    <img src={storeSettings.logo} className="w-full h-full object-contain" />
+                  <div className="w-10 h-10 mx-auto mb-2 grayscale mix-blend-multiply">
+                    <img src={storeSettings.logo} className="w-full h-full object-contain mix-blend-multiply" />
                   </div>
                 )}
                 <h2 className="font-bold text-[1.1em]">{storeSettings.storeName || 'Toko'}</h2>
