@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Upload, Scan, X, AlertTriangle, XCircle } from "lucide-react";
+import { Upload, Scan, X, AlertTriangle, XCircle, SwitchCamera } from "lucide-react";
 
 interface Props {
   value: string;
@@ -19,7 +19,9 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number>(0);
+  
   const [scanning, setScanning] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [dragOver, setDragOver] = useState(false);
   const [alertModal, setAlertModal] = useState({ open: false, title: "", message: "" });
 
@@ -36,7 +38,6 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
-          // Optimasi untuk sering membaca data piksel
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (!ctx) return;
           ctx.drawImage(img, 0, 0);
@@ -105,56 +106,78 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
     setScanning(false);
   }, []);
 
-  const startCamera = async () => {
+  const startCamera = async (mode: "environment" | "user" = facingMode) => {
     try {
+      // Pastikan stream lama dihentikan sebelum meminta yang baru (penting untuk ganti kamera)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { facingMode: mode },
       });
       streamRef.current = stream;
       setScanning(true);
+      setFacingMode(mode);
 
-      const video = videoRef.current;
-      if (!video) return;
-      video.srcObject = stream;
-      video.setAttribute("playsinline", "true"); // Penting untuk iOS
-      await video.play();
-
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      // Gunakan willReadFrequently karena kita memanggil getImageData di setiap frame
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      const scan = () => {
-        if (!streamRef.current) return;
+      // Gunakan setTimeout kecil untuk memberi waktu React me-render elemen <video> jika baru dibuka
+      setTimeout(async () => {
+        const video = videoRef.current;
+        if (!video) return;
         
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          // dontInvert mempercepat proses pemindaian secara signifikan
-          const code = jsQR(imageData.data, canvas.width, canvas.height, {
-            inversionAttempts: "dontInvert",
-          });
-          
-          if (code) {
-            onChange(code.data);
-            stopCamera();
-            return;
-          }
+        video.srcObject = stream;
+        video.setAttribute("playsinline", "true"); // Fallback untuk iOS lama
+        
+        try {
+          await video.play();
+        } catch (playErr) {
+          console.warn("Auto-play terganggu:", playErr);
         }
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return;
+
+        const scan = () => {
+          if (!streamRef.current || !video) return;
+          
+          // Memastikan video sudah siap dan dimensinya valid (>0) sebelum drawImage
+          if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, canvas.width, canvas.height, {
+              inversionAttempts: "dontInvert",
+            });
+            
+            if (code) {
+              onChange(code.data);
+              stopCamera();
+              return;
+            }
+          }
+          animationRef.current = requestAnimationFrame(scan);
+        };
+        
         animationRef.current = requestAnimationFrame(scan);
-      };
-      
-      // Mulai loop pemindaian
-      animationRef.current = requestAnimationFrame(scan);
+      }, 100);
     } catch (err) {
       console.error("Camera access error:", err);
-      showAlert("Akses Ditolak", "Kamera tidak dapat diakses. Pastikan Anda telah memberikan izin dan perangkat memiliki kamera yang berfungsi.");
+      showAlert("Akses Ditolak", "Kamera tidak dapat diakses. Pastikan Anda telah memberikan izin dan perangkat Anda memiliki kamera yang berfungsi.");
       setScanning(false);
     }
+  };
+
+  const toggleCameraMode = () => {
+    const newMode = facingMode === "environment" ? "user" : "environment";
+    // Hentikan kamera saat ini lalu mulai ulang dengan mode baru
+    stopCamera();
+    setTimeout(() => {
+      startCamera(newMode);
+    }, 200); // Jeda singkat agar perangkat keras kamera punya waktu untuk reset
   };
 
   useEffect(() => {
@@ -166,7 +189,6 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Animasi Scanner Khusus */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes scan-animation {
           0% { top: 0; opacity: 0; }
@@ -281,11 +303,11 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
           type="button"
           variant={scanning ? "destructive" : "default"}
           size="lg"
-          onClick={scanning ? stopCamera : startCamera}
+          onClick={() => (scanning ? stopCamera() : startCamera(facingMode))}
           className="gap-2 h-11 w-full text-sm font-semibold rounded-xl transition-all"
         >
           <Scan className="w-4 h-4" />
-          {scanning ? "Stop Kamera" : "Scan Kamera"}
+          {scanning ? "Batal Scan" : "Scan Kamera"}
         </Button>
 
         <input
@@ -299,38 +321,46 @@ export function QRISInput({ value, onChange, onReset, errors }: Props) {
 
       {/* Camera view */}
       {scanning && (
-        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg bg-black animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg bg-black animate-in fade-in slide-in-from-top-4 duration-300 group">
           <video
             ref={videoRef}
-            className="w-full h-[60vh] object-cover"
+            className={`w-full h-[60vh] object-cover transition-transform duration-300 ${facingMode === "user" ? "scale-x-[-1]" : ""}`}
             playsInline
+            autoPlay
             muted
           />
           <canvas ref={canvasRef} className="hidden" />
 
+          {/* Tombol Balik Kamera */}
+          <div className="absolute top-4 right-4 z-30">
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              onClick={toggleCameraMode}
+              className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md border border-white/30 text-white shadow-xl transition-all"
+            >
+              <SwitchCamera className="w-5 h-5" />
+            </Button>
+          </div>
+
           {/* Overlay & Scan Area */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {/* Dark overlay around the scan area */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
             
-            {/* The transparent cutout area for scanning */}
             <div className="relative w-64 h-64 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] rounded-2xl overflow-hidden">
-              
-              {/* Animated Scan Line */}
               <div className="absolute left-0 right-0 h-0.5 bg-primary/80 shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] scanner-line z-10" />
 
-              {/* Corner brackets */}
               <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-2xl z-20" />
               <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-2xl z-20" />
               <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-2xl z-20" />
               <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-2xl z-20" />
               
-              {/* Subtle inner grid/pulse effect */}
               <div className="w-full h-full border-2 border-white/10 rounded-2xl animate-pulse" />
             </div>
           </div>
 
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-20">
             <span className="bg-black/70 backdrop-blur-md text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2">
               <Scan className="w-4 h-4 text-primary" />
               Arahkan ke kode QRIS
