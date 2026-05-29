@@ -24,7 +24,13 @@ function ProcessingBillCard({ bill, onComplete }: { bill: Transaction, onComplet
             <Badge variant="outline" className="font-mono text-xs">{bill.receiptNumber}</Badge>
             <div className="text-xs text-muted-foreground mt-1">
               {bill.customerName && <span className="mr-2">👤 {bill.customerName}</span>}
-              {bill.tableNumber && <span>🪑 {String(bill.tableNumber) === 'Bawa Pulang' ? 'Take Away' : /^meja\s+/i.test(String(bill.tableNumber)) ? String(bill.tableNumber) : `Meja ${bill.tableNumber}`}</span>}
+              {bill.tableNumber && (
+                <span>
+                  🪑 {String(bill.tableNumber).toLowerCase() === 'bawa pulang' || String(bill.tableNumber).toLowerCase() === 'take away'
+                    ? 'Bawa Pulang'
+                    : 'Meja ' + String(bill.tableNumber).replace(/^(meja\s+)+/i, '')}
+                </span>
+              )}
             </div>
           </div>
           <Badge className="bg-blue-500 hover:bg-blue-600 capitalize">{bill.kitchenStatus || 'diproses'}</Badge>

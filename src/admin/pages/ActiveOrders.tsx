@@ -199,9 +199,12 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
 
       // Send push notification if it goes to kitchen
       if (getBillNeedsKitchen(bill)) {
+        const tableLabel = String(data.tableNumber).toLowerCase() === 'bawa pulang' || String(data.tableNumber).toLowerCase() === 'take away'
+          ? 'Bawa Pulang'
+          : 'Meja ' + String(data.tableNumber).replace(/^(meja\s+)+/i, '');
         sendPushToRole('admin', {
           title: 'Pesanan Lunas! 🚀',
-          body: `Pesanan (${bill.receiptNumber}) dari Kasir untuk ${data.tableNumber ? 'Meja ' + data.tableNumber : 'Bawa Pulang'} sudah dibayar dan siap diproses.`,
+          body: `Pesanan (${bill.receiptNumber}) dari Kasir untuk ${tableLabel} sudah dibayar dan siap diproses.`,
           url: '/admin/kitchen',
         }).catch(console.error);
       }
@@ -329,7 +332,17 @@ export default function ActiveOrders({ onSwitchToKitchen }: { onSwitchToKitchen?
                       <div className="bg-muted p-1.5 rounded-md mr-2.5 text-foreground/70">
                         <Hash className="w-4 h-4" />
                       </div>
-                      <span>{String(bill.tableNumber) === 'Bawa Pulang' ? 'Take Away' : <>Meja <span className="font-semibold text-foreground">{bill.tableNumber}</span></>}</span>
+                      <span>
+                        {String(bill.tableNumber).toLowerCase() === 'bawa pulang' || String(bill.tableNumber).toLowerCase() === 'take away' ? (
+                          'Bawa Pulang'
+                        ) : (
+                          <>
+                            Meja <span className="font-semibold text-foreground">
+                              {String(bill.tableNumber).replace(/^(meja\s+)+/i, '')}
+                            </span>
+                          </>
+                        )}
+                      </span>
                     </div>
                   )}
 

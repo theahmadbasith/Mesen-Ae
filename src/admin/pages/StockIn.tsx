@@ -46,11 +46,11 @@ export default function StockInPage() {
 
   // Filter Data
   const filteredStockIns = stockIns.filter((si: any) =>
-    filterSupplier === 'all' || si.supplierId === Number(filterSupplier)
+    filterSupplier === 'all' || String(si.supplierId) === String(filterSupplier)
   ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const getProductName = (pid: number | string) => products.find((p: any) => p.id === pid)?.name ?? 'Produk Tidak Diketahui';
-  const getSupplierName = (sid: number | string) => suppliers.find((s: any) => s.id === sid)?.name ?? 'Supplier Tidak Diketahui';
+  const getProductName = (pid: number | string) => products.find((p: any) => String(p.id) === String(pid))?.name ?? 'Produk Tidak Diketahui';
+  const getSupplierName = (sid: number | string) => suppliers.find((s: any) => String(s.id) === String(sid))?.name ?? 'Supplier Tidak Diketahui';
 
   const openAdd = () => {
     setProductId('');
@@ -74,9 +74,9 @@ export default function StockInPage() {
       return;
     }
 
-    const selectedProduct = Number(productId);
-    const selectedSupplier = Number(supplierId);
-    const product = products.find((p: any) => p.id === selectedProduct);
+    const selectedProduct = productId;
+    const selectedSupplier = supplierId;
+    const product = products.find((p: any) => String(p.id) === String(selectedProduct));
     
     if (!product) {
       toast.error('Produk tidak ditemukan');
@@ -90,7 +90,7 @@ export default function StockInPage() {
       // 1. Catat ke tabel stockIns
       await dbInsert('stockIns', {
         productId: selectedProduct,
-        supplierId: selectedSupplier || 0,
+        supplierId: selectedSupplier || '',
         quantity: qty,
         buyPrice: price,
         totalPrice: total,

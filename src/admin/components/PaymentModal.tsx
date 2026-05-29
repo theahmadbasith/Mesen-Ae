@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Banknote, Building2, Wallet, QrCode, LayoutGrid, CreditCard, User, Hash, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useDbQuery } from '@/hooks/db-hooks';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export interface PaymentMethod {
   id: number;
@@ -74,6 +76,9 @@ export default function PaymentModal({
   const [customerName, setCustomerName] = useState(initialCustomerName);
   const [tableNumber, setTableNumber] = useState(initialTableNumber);
   const [remarks, setRemarks] = useState(initialRemarks);
+
+  const storeSettings = useDbQuery<any>('storeSettings')?.[0];
+  const tables = useMemo(() => Array.isArray(storeSettings?.tables) ? storeSettings.tables : [], [storeSettings?.tables]);
 
   // ── Computed values ──────────────────────────────────────────
   const currentMethod = useMemo(
@@ -391,8 +396,26 @@ export default function PaymentModal({
                 </div>
                 {tableNumber !== 'Bawa Pulang' && (
                   <div className="relative flex-[0.7]">
-                    <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <Input placeholder="No. Meja" value={tableNumber} onChange={e => setTableNumber(e.target.value)} className="pl-8 h-10 text-sm" />
+                    <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground z-10" />
+                    <Select value={tableNumber} onValueChange={setTableNumber}>
+                      <SelectTrigger className="pl-8 h-10 text-sm rounded-lg bg-background border-border/70 w-full text-left">
+                        <SelectValue placeholder="Pilih Meja" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl max-h-[200px]">
+                        {tables.length === 0 ? (
+                          <SelectItem value="none" disabled>Belum ada meja</SelectItem>
+                        ) : (
+                          tables.map((t: string) => {
+                            const label = t.toLowerCase().startsWith('meja') ? t : `Meja ${t}`;
+                            return (
+                              <SelectItem key={t} value={t}>
+                                {label}
+                              </SelectItem>
+                            );
+                          })
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
               </div>

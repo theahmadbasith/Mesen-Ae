@@ -46,7 +46,13 @@ export default function OpenBillsModal({
                       </Badge>
                       <div className="font-semibold text-sm">
                         {bill.customerName || 'Tamu'}
-                        {bill.tableNumber && <span className="text-muted-foreground ml-1">({String(bill.tableNumber) === 'Bawa Pulang' ? 'Take Away' : /^meja\s+/i.test(String(bill.tableNumber)) ? String(bill.tableNumber) : `Meja ${bill.tableNumber}`})</span>}
+                        {bill.tableNumber && (
+                          <span className="text-muted-foreground ml-1">
+                            ({String(bill.tableNumber).toLowerCase() === 'bawa pulang' || String(bill.tableNumber).toLowerCase() === 'take away'
+                              ? 'Bawa Pulang'
+                              : 'Meja ' + String(bill.tableNumber).replace(/^(meja\s+)+/i, '')})
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">
                         {format(new Date(bill.date), 'dd MMM yyyy, HH:mm', { locale: localeId })}

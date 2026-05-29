@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCashier, getItemSubtotal } from './CashierContext';
 import { 
   ShoppingCart, Plus, Minus, X, Pencil, User, Hash, Tag, Save, CreditCard, Trash2 
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useDbQuery } from '@/hooks/db-hooks';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const CashierCart: React.FC = React.memo(() => {
   const {
@@ -45,6 +47,9 @@ const CashierCart: React.FC = React.memo(() => {
     rp,
     setCart
   } = useCashier();
+
+  const storeSettings = useDbQuery<any>('storeSettings')?.[0];
+  const tables = useMemo(() => Array.isArray(storeSettings?.tables) ? storeSettings.tables : [], [storeSettings?.tables]);
 
   const handleResetCart = () => {
     if (cart.length === 0) return;
@@ -160,8 +165,8 @@ const CashierCart: React.FC = React.memo(() => {
             </div>
 
             <div className="flex gap-2 px-4 mb-2">
-              <div className="relative flex-1">
-                <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <div className="relative flex-[1.2]">
+                <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground z-10" />
                 <Input
                   placeholder="Nama pelanggan"
                   value={customerName}
@@ -169,14 +174,24 @@ const CashierCart: React.FC = React.memo(() => {
                   className="pl-8 h-9 text-xs"
                 />
               </div>
-              <div className="relative flex-[0.6]">
-                <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Meja"
-                  value={tableNumber}
-                  onChange={e => setTableNumber(e.target.value)}
-                  className="pl-8 h-9 text-xs"
-                />
+              <div className="relative flex-[0.8] min-w-0">
+                <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground z-10" />
+                <Select value={tableNumber} onValueChange={setTableNumber}>
+                  <SelectTrigger className="pl-8 h-9 text-xs rounded-lg bg-background border-border/70 w-full text-left">
+                    <SelectValue placeholder="Pilih Meja" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-[200px]">
+                    <SelectItem value="Bawa Pulang">🛍️ Bawa Pulang</SelectItem>
+                    {tables.map((t: string) => {
+                      const label = t.toLowerCase().startsWith('meja') ? t : `Meja ${t}`;
+                      return (
+                        <SelectItem key={t} value={t}>
+                          🍽️ {label}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -388,14 +403,27 @@ const CashierCart: React.FC = React.memo(() => {
                     />
                   </div>
                   {tableNumber !== 'Bawa Pulang' && (
-                    <div className="relative flex-[0.6]">
-                      <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                      <Input
-                        placeholder="No. Meja"
-                        value={tableNumber}
-                        onChange={e => setTableNumber(e.target.value)}
-                        className="pl-8 h-9 text-xs"
-                      />
+                    <div className="relative flex-[0.8] min-w-0">
+                      <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground z-10" />
+                      <Select value={tableNumber} onValueChange={setTableNumber}>
+                        <SelectTrigger className="pl-8 h-9 text-xs rounded-lg bg-background border-border/70 w-full text-left">
+                          <SelectValue placeholder="Pilih Meja" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-[200px]">
+                          {tables.length === 0 ? (
+                            <SelectItem value="none" disabled>Belum ada meja</SelectItem>
+                          ) : (
+                            tables.map((t: string) => {
+                              const label = t.toLowerCase().startsWith('meja') ? t : `Meja ${t}`;
+                              return (
+                                <SelectItem key={t} value={t}>
+                                  {label}
+                                </SelectItem>
+                              );
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 </div>

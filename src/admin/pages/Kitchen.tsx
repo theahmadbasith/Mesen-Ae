@@ -259,8 +259,8 @@ export default function Kitchen() {
                       <div className="bg-muted p-1.5 rounded-md mr-2.5 text-foreground/70">
                         <Hash className="w-4 h-4" />
                       </div>
-                      {bill.tableNumber ? (
-                        <span>Meja <span className="font-semibold text-foreground">{bill.tableNumber}</span></span>
+                      {bill.tableNumber && String(bill.tableNumber).toLowerCase() !== 'bawa pulang' && String(bill.tableNumber).toLowerCase() !== 'take away' ? (
+                        <span>Meja <span className="font-semibold text-foreground">{String(bill.tableNumber).replace(/^(meja\s+)+/i, '')}</span></span>
                       ) : (
                         <span>Bawa Pulang (Takeaway)</span>
                       )}

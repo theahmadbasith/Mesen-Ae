@@ -47,8 +47,8 @@ export default function StockOutPage() {
     (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const getProductName = (pid: number | string) => products.find((p: any) => p.id === pid)?.name ?? 'Produk Tidak Diketahui';
-  const selectedProduct = products.find((p: any) => p.id === Number(productId));
+  const getProductName = (pid: number | string) => products.find((p: any) => String(p.id) === String(pid))?.name ?? 'Produk Tidak Diketahui';
+  const selectedProduct = products.find((p: any) => String(p.id) === String(productId));
 
   const openAdd = () => {
     setProductId('');
@@ -70,7 +70,7 @@ export default function StockOutPage() {
       return;
     }
 
-    const product = products.find((p: any) => p.id === Number(productId));
+    const product = products.find((p: any) => String(p.id) === String(productId));
     if (!product) {
       toast.error('Produk tidak ditemukan');
       return;
@@ -86,7 +86,7 @@ export default function StockOutPage() {
 
       // 1. Catat transaksi pengurangan stok
       await dbInsert('stockOuts', {
-        productId: Number(productId),
+        productId: productId,
         quantity: qty,
         reason,
         date: new Date().toISOString(),

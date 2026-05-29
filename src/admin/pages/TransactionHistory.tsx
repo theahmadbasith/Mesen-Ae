@@ -335,7 +335,14 @@ export default function TransactionHistory() {
                         {/* Tags */}
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           {tx.customerName && <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex items-center gap-1"><User className="w-3 h-3"/> {tx.customerName}</span>}
-                          {tx.tableNumber && <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex items-center gap-1"><ShoppingCart className="w-3 h-3"/> {String(tx.tableNumber) === 'Bawa Pulang' ? 'Take Away' : /^meja\s+/i.test(String(tx.tableNumber)) ? String(tx.tableNumber) : `Meja ${tx.tableNumber}`}</span>}
+                          {tx.tableNumber && (
+                            <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <ShoppingCart className="w-3 h-3"/>
+                              {String(tx.tableNumber).toLowerCase() === 'bawa pulang' || String(tx.tableNumber).toLowerCase() === 'take away'
+                                ? 'Bawa Pulang'
+                                : 'Meja ' + String(tx.tableNumber).replace(/^(meja\s+)+/i, '')}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
@@ -389,7 +396,11 @@ export default function TransactionHistory() {
                 {selectedTx.tableNumber && (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground font-medium">Meja</span>
-                    <span className="font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md">{selectedTx.tableNumber}</span>
+                    <span className="font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
+                      {String(selectedTx.tableNumber).toLowerCase() === 'bawa pulang' || String(selectedTx.tableNumber).toLowerCase() === 'take away'
+                        ? 'Bawa Pulang'
+                        : 'Meja ' + String(selectedTx.tableNumber).replace(/^(meja\s+)+/i, '')}
+                    </span>
                   </div>
                 )}
                 {selectedTx.remarks && (
