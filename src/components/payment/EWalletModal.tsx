@@ -10,6 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, RefreshCw, ChevronLeft, Wallet } from 'lucide-react';
 import { MidtransService } from '@/services/midtransService';
 import { PaymentMethod } from '@/hooks/db-hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // ==========================================
 // Tipe Data & Interfaces (TypeScript)
@@ -118,6 +128,7 @@ export function EWalletModal({
   const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [snapActive, setSnapActive] = useState<boolean>(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   
   const onSuccessRef = useRef(onSuccess);
   const onCloseRef = useRef(onClose);
@@ -225,202 +236,225 @@ export function EWalletModal({
   const dialogOpen = isOpen && !snapActive;
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-[2rem] p-0 overflow-hidden z-[100] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl">
-        
-        {/* Header dengan Gradasi Halus */}
-        <div className="bg-gradient-to-br from-indigo-600 via-violet-700 to-purple-800 p-6 text-white relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl pointer-events-none" />
+    <>
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-2xl p-0 overflow-hidden z-[100] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl">
           
-          <DialogHeader className="relative z-10">
-            <DialogTitle className="text-white text-lg font-bold flex items-center gap-2 tracking-tight">
-              {step === 'error' && (
-                <button
-                  onClick={() => setStep('select')}
-                  className="mr-1 p-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                  aria-label="Kembali"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              )}
-              ⚡ Pembayaran Digital
-            </DialogTitle>
-            <DialogDescription className="text-white/80 text-xs mt-0.5">
-              Konfirmasi nominal tagihan & pilih metode dompet digital
-            </DialogDescription>
-          </DialogHeader>
+          {/* Header Compact */}
+          <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-white relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Card Info Tagihan */}
-          <div className="mt-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-inner">
-            <p className="text-[11px] text-indigo-200 font-semibold uppercase tracking-wider">Total Tagihan Anda</p>
-            <p className="text-3xl font-black text-white mt-0.5 tracking-tight">
-              Rp {amount.toLocaleString('id-ID')}
-            </p>
-            <div className="h-[1px] bg-white/10 my-2" />
-            <p className="text-xs text-indigo-100/80 font-medium truncate">
-              Atas Nama: <span className="text-white font-bold">{customerName || 'Pelanggan'}</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Konten Utama */}
-        <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar-hide">
-          
-          {/* STEP 1: PILIH WALLET */}
-          {step === 'select' && isManual && paymentMethod && (
-            <div className="animate-in fade-in zoom-in duration-300">
-              <p className="text-sm text-slate-500 mb-4 font-medium text-center">Silakan transfer E-Wallet ke nomor berikut:</p>
-              
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 mb-4 flex flex-col items-center text-center gap-2 shadow-inner">
-                {paymentMethod.iconName ? (
-                  <img src={`/ico/${paymentMethod.iconName}.png`} alt={paymentMethod.bankName} className="h-12 object-contain mb-2 drop-shadow-sm" />
-                ) : (
-                  <Wallet className="w-12 h-12 text-indigo-500 mb-2 opacity-80 drop-shadow-sm" />
+            <DialogHeader className="relative z-10">
+              <DialogTitle className="text-white text-base font-bold flex items-center gap-2 tracking-tight">
+                {step === 'error' && (
+                  <button
+                    onClick={() => setStep('select')}
+                    className="mr-1 p-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                    aria-label="Kembali"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
                 )}
-                <div>
-                  <p className="text-xs text-indigo-500 font-bold uppercase tracking-widest">{paymentMethod.bankName}</p>
-                  <p className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100 mt-1">{paymentMethod.accountNumber}</p>
-                  <p className="text-sm font-semibold text-slate-500 mt-1">a.n {paymentMethod.accountName}</p>
+                ⚡ Pembayaran Digital
+              </DialogTitle>
+              <DialogDescription className="text-white/80 text-xs mt-0.5">
+                Konfirmasi nominal tagihan & pilih metode dompet digital
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Card Info Tagihan */}
+            <div className="mt-3 bg-white/15 backdrop-blur-md rounded-xl p-3 text-center border border-white/10">
+              <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Total Tagihan</p>
+              <p className="text-2xl font-black text-white mt-0.5 tracking-tight">
+                Rp {amount.toLocaleString('id-ID')}
+              </p>
+              <p className="text-xs text-white/70 mt-1 truncate">
+                {customerName || 'Pelanggan'}
+              </p>
+            </div>
+          </div>
+
+          {/* Konten Utama */}
+          <div className="p-4 overflow-y-auto max-h-[55vh] custom-scrollbar-hide">
+            
+            {/* STEP 1: PILIH WALLET (MANUAL) */}
+            {step === 'select' && isManual && paymentMethod && (
+              <div className="animate-in fade-in zoom-in duration-300">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 font-medium text-center">Silakan transfer E-Wallet ke nomor berikut:</p>
+                
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 mb-3 flex flex-col items-center text-center gap-2 shadow-inner">
+                  {paymentMethod.iconName ? (
+                    <img src={`/ico/${paymentMethod.iconName}.png`} alt={paymentMethod.bankName} className="h-10 object-contain mb-1 drop-shadow-sm" />
+                  ) : (
+                    <Wallet className="w-10 h-10 text-primary mb-1 opacity-80 drop-shadow-sm" />
+                  )}
+                  <div>
+                    <p className="text-xs text-primary font-bold uppercase tracking-widest">{paymentMethod.bankName}</p>
+                    <p className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100 mt-1">{paymentMethod.accountNumber}</p>
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">a.n {paymentMethod.accountName}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-xl h-10 font-semibold text-xs" onClick={handleClose}>Batalkan</Button>
+                  <Button
+                    className="flex-1 font-bold rounded-xl h-10 text-xs bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => setConfirmOpen(true)}
+                  >
+                    Konfirmasi Pembayaran
+                  </Button>
                 </div>
               </div>
+            )}
 
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={handleClose}>Batalkan</Button>
-                <Button className="flex-1 font-bold rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white" onClick={() => {
-                  const isConfirmed = window.confirm(
-                    `Konfirmasi Pembayaran?\n\n` +
-                    `Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan ${orderId || '-'}?\n\n` +
-                    `Tindakan ini akan menandai pesanan sebagai Lunas.`
-                  );
-                  if (isConfirmed) {
-                    setStep('success');
-                    setTimeout(() => onSuccessRef.current(), 1200);
-                  }
-                }}>
-                  Konfirmasi Pembayaran
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {step === 'select' && !isManual && (
-            <>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold mb-3 uppercase tracking-wider">
-                Metode Tersedia
-              </p>
-              <div className="flex flex-col gap-3">
-                {WALLETS.map((wallet) => (
-                  <button
-                    key={wallet.id}
-                    onClick={() => handleWalletSelect(wallet)}
-                    className={`group flex items-center gap-4 p-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-900/80 transition-all duration-200 outline-none focus:ring-4 text-left shadow-sm hover:shadow-md ${wallet.borderColor}`}
-                  >
-                    {/* Wadah Logo */}
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-md border-2 border-white/80 dark:border-slate-800 bg-white overflow-hidden`}>
-                      {wallet.svg}
-                    </div>
-
-                    {/* Deskripsi & Teks */}
-                    <div className="flex-1 min-w-0 pr-2">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {wallet.name}
-                        </p>
-                        {wallet.tag && (
-                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/50">
-                            {wallet.tag}
-                          </span>
-                        )}
+            {/* STEP 1: PILIH WALLET (MIDTRANS) */}
+            {step === 'select' && !isManual && (
+              <>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold mb-3 uppercase tracking-wider">
+                  Metode Tersedia
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {WALLETS.map((wallet) => (
+                    <button
+                      key={wallet.id}
+                      onClick={() => handleWalletSelect(wallet)}
+                      className={`group flex items-center gap-3.5 p-3 rounded-xl border-2 border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-900/80 transition-all duration-200 outline-none focus:ring-4 text-left shadow-sm hover:shadow-md ${wallet.borderColor}`}
+                    >
+                      {/* Wadah Logo */}
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-md border-2 border-white/80 dark:border-slate-800 bg-white overflow-hidden">
+                        {wallet.svg}
                       </div>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug line-clamp-2">
-                        {wallet.desc}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              
-              <Button
-                variant="ghost"
-                className="w-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-xs font-semibold mt-4 rounded-xl"
-                onClick={handleClose}
-              >
-                Batalkan Transaksi
-              </Button>
-            </>
-          )}
 
-          {/* STEP 2: LOADING GATEWAY */}
-          {step === 'loading' && (
-            <div className="flex flex-col items-center py-10 gap-4">
-              <div className="relative flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full border-4 border-slate-100 dark:border-slate-900 animate-pulse absolute" />
-                <Loader2 className="w-10 h-10 text-violet-600 dark:text-violet-400 animate-spin relative z-10" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  Menghubungkan ke {selectedWallet?.name}
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[240px]">
-                  Mohon tunggu sebentar, sistem sedang mengamankan token transaksi Anda...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: SUKSES */}
-          {step === 'success' && (
-            <div className="flex flex-col items-center py-8 gap-4 text-center">
-              <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shadow-md animate-bounce">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
-                  Pembayaran Sukses!
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[220px]">
-                  Sistem berhasil memverifikasi mutasi dana. Halaman akan segera dialihkan.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: ERROR */}
-          {step === 'error' && (
-            <div className="flex flex-col items-center py-6 gap-4 text-center">
-              <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center shadow-sm">
-                <XCircle className="w-10 h-10 text-rose-500" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-rose-600 dark:text-rose-400">Gagal Memproses Pembayaran</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] leading-relaxed">
-                  {errorMsg}
-                </p>
-              </div>
-              <div className="flex gap-2.5 w-full mt-2">
+                      {/* Deskripsi & Teks */}
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
+                            {wallet.name}
+                          </p>
+                          {wallet.tag && (
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/50">
+                              {wallet.tag}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug line-clamp-2">
+                          {wallet.desc}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                
                 <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setStep('select')}
-                  className="flex-1 gap-1.5 rounded-xl text-xs font-bold py-5 border-slate-200 text-slate-700 dark:border-slate-800 dark:text-slate-300"
+                  variant="ghost"
+                  className="w-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-xs font-semibold mt-3 rounded-xl"
+                  onClick={handleClose}
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" /> Ganti Metode
+                  Batalkan Transaksi
                 </Button>
-                {selectedWallet && (
+              </>
+            )}
+
+            {/* STEP 2: LOADING GATEWAY */}
+            {step === 'loading' && (
+              <div className="flex flex-col items-center py-8 gap-4">
+                <div className="relative flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full border-4 border-slate-100 dark:border-slate-900 animate-pulse absolute" />
+                  <Loader2 className="w-9 h-9 text-primary animate-spin relative z-10" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Menghubungkan ke {selectedWallet?.name}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[240px]">
+                    Mohon tunggu sebentar, sistem sedang mengamankan token transaksi Anda...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: SUKSES */}
+            {step === 'success' && (
+              <div className="flex flex-col items-center py-6 gap-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shadow-md animate-bounce">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
+                    Pembayaran Sukses!
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[220px]">
+                    Sistem berhasil memverifikasi mutasi dana. Halaman akan segera dialihkan.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: ERROR */}
+            {step === 'error' && (
+              <div className="flex flex-col items-center py-4 gap-3 text-center">
+                <div className="w-14 h-14 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center shadow-sm">
+                  <XCircle className="w-9 h-9 text-rose-500" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-rose-600 dark:text-rose-400">Gagal Memproses Pembayaran</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] leading-relaxed">
+                    {errorMsg}
+                  </p>
+                </div>
+                <div className="flex gap-2 w-full mt-1">
                   <Button
                     size="sm"
-                    onClick={() => handleWalletSelect(selectedWallet)}
-                    className="flex-1 gap-1.5 rounded-xl text-xs font-bold py-5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
+                    variant="outline"
+                    onClick={() => setStep('select')}
+                    className="flex-1 gap-1.5 rounded-xl text-xs font-bold h-10 border-slate-200 text-slate-700 dark:border-slate-800 dark:text-slate-300"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" /> Coba Lagi
+                    <ChevronLeft className="w-3.5 h-3.5" /> Ganti Metode
                   </Button>
-                )}
+                  {selectedWallet && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleWalletSelect(selectedWallet)}
+                      className="flex-1 gap-1.5 rounded-xl text-xs font-bold h-10 bg-primary hover:bg-primary/90 text-white"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Coba Lagi
+                    </Button>
+                  )}
+                </div>
               </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog Konfirmasi Pembayaran Manual */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="max-w-[400px] w-[95vw] rounded-2xl p-6">
+          <AlertDialogHeader>
+            <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2 mx-auto">
+              <CheckCircle2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+            <AlertDialogTitle className="text-center text-lg font-extrabold">Konfirmasi Pembayaran?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-sm leading-relaxed">
+              Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan <strong>{orderId || '-'}</strong>?
+              Tindakan ini akan menandai pesanan sebagai <strong>Lunas</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 sm:justify-center flex-row gap-3">
+            <AlertDialogCancel className="flex-1 mt-0 rounded-xl h-11 font-bold">Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmOpen(false);
+                setStep('success');
+                setTimeout(() => onSuccessRef.current(), 1200);
+              }}
+              className="flex-1 rounded-xl h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
+            >
+              Ya, Konfirmasi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
