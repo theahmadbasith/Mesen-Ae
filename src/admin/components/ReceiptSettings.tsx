@@ -68,6 +68,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
 
   // Logo Toggle Checklist
   const [showLogo, setShowLogo] = useState<boolean>(true);
+  const [showFooterImg, setShowFooterImg] = useState<boolean>(true);
 
   // Typography
   const [fontFamily, setFontFamily] = useState<'monospace' | 'sans-serif' | 'courier' | 'receipt-font'>('receipt-font');
@@ -117,6 +118,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
 
       // Logo Toggle
       setShowLogo(s.receiptShowLogo ?? true);
+      setShowFooterImg(s.receiptShowFooterImg ?? true);
 
       // Typography
       const typo = s.receiptTypography || {};
@@ -163,7 +165,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
   const executeSave = async (
     tmpl = template, img = footerImg, l1 = footerLine1, l2 = footerLine2,
     order = footerOrder, font = fontFamily, size = fontSize,
-    lh = lineHeight, logo = showLogo,
+    lh = lineHeight, logo = showLogo, footerLogo = showFooterImg,
     l1B = line1Bold, l1I = line1Italic, l1U = line1Underline,
     l2B = line2Bold, l2I = line2Italic, l2U = line2Underline
   ) => {
@@ -189,6 +191,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
     await dbUpdate('storeSettings', storeSettings.id, {
       receiptTemplate: tmpl,
       receiptShowLogo: logo,
+      receiptShowFooterImg: footerLogo,
       receiptShowCashier: true,
       receiptShowCustomer: true,
       receiptShowTable: true,
@@ -356,6 +359,32 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                 className={cn(
                   "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
                   showLogo ? "translate-x-4" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+
+          {/* iOS Toggle Switch (Premium Toggle) - Footer Image */}
+          <div className="flex items-center justify-between pt-1 pb-3 px-1 border-b border-border/50">
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="showFooterImg" className="text-xs font-bold text-foreground cursor-pointer select-none">
+                Tampilkan Foto Footer
+              </Label>
+              <span className="text-[10px] text-muted-foreground">Menampilkan gambar/foto penutup di bagian bawah struk</span>
+            </div>
+            <button
+              type="button"
+              id="showFooterImg"
+              onClick={() => setShowFooterImg(!showFooterImg)}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20",
+                showFooterImg ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
+                  showFooterImg ? "translate-x-4" : "translate-x-0"
                 )}
               />
             </button>
@@ -539,18 +568,21 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                         </div>
                       )}
                       {block === 'image' && (
-                        <div className="flex items-center justify-between gap-3 w-full">
+                        <div className={cn("flex items-center justify-between gap-3 w-full transition-opacity", !showFooterImg && "opacity-50")}>
                           <div className="flex items-center gap-3">
                             <div 
-                              onClick={() => footerImg && setLightboxOpen(true)}
+                              onClick={() => footerImg && showFooterImg && setLightboxOpen(true)}
                               className={cn(
                                 "h-8 w-8 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden grayscale shadow-inner shrink-0",
-                                footerImg ? "cursor-zoom-in hover:border-primary/40 transition-colors" : ""
+                                footerImg && showFooterImg ? "cursor-zoom-in hover:border-primary/40 transition-colors" : ""
                               )}
                             >
                               {footerImg ? <img src={footerImg} className="w-full h-full object-contain p-0.5" /> : <ImageIcon className="w-3.5 h-3.5 text-muted-foreground/30" />}
                             </div>
-                            <span className="text-xs text-muted-foreground font-medium">Gambar Struk Footer</span>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-muted-foreground font-medium">Gambar Struk Footer</span>
+                              {!showFooterImg && <span className="text-[9px] text-amber-500 font-bold uppercase tracking-wider">Nonaktif</span>}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-[10px] px-2.5 rounded-lg bg-background">
@@ -793,7 +825,7 @@ export default function ReceiptSettings({ storeSettings, hasEditAccess }: Receip
                   </p>
                 );
               }
-              if (block === 'image' && footerImg) {
+              if (block === 'image' && showFooterImg && footerImg) {
                 return (
                   <div key={idx} className="my-2">
                     <img

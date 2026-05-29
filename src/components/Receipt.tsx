@@ -120,6 +120,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const rawTemplate = (storeSettings as any)?.receiptTemplate ?? 'fnb';
   const template = rawTemplate === 'finedining' ? 'classic' : rawTemplate;
   const showLogo = (storeSettings as any)?.receiptShowLogo ?? true;
+  const showFooterImg = (storeSettings as any)?.receiptShowFooterImg ?? true;
 
   // Custom Styles
   const footerStyles = (storeSettings as any)?.receiptFooterStyles || {};
@@ -353,7 +354,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         if (block === 'line2' && footerLines[1]?.trim()) {
           footerLines[1].split('\n').forEach(sub => { if (sub.trim()) lines.push(`${sub}\n`); });
         }
-        if (block === 'image' && footerImgUrl) {
+        if (block === 'image' && showFooterImg && footerImgUrl) {
           try {
             const rasterData = await convertImageUrlToEscPosRaster(footerImgUrl);
             if (rasterData) {
@@ -785,7 +786,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                     </p>
                   );
                 }
-                if (block === 'image' && footerImgData) {
+                if (block === 'image' && showFooterImg && footerImgData) {
                   return (
                     <div key={idx} className="my-2.5 text-center">
                       <img 
