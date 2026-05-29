@@ -109,6 +109,7 @@ export function EWalletModal({
   isOpen,
   amount,
   customerName,
+  orderId,
   paymentMethod,
   onSuccess,
   onClose,
@@ -287,8 +288,15 @@ export function EWalletModal({
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 rounded-xl" onClick={handleClose}>Batalkan</Button>
                 <Button className="flex-1 font-bold rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white" onClick={() => {
-                  setStep('success');
-                  setTimeout(() => onSuccessRef.current(), 1200);
+                  const isConfirmed = window.confirm(
+                    `Konfirmasi Pembayaran?\n\n` +
+                    `Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan ${orderId || '-'}?\n\n` +
+                    `Tindakan ini akan menandai pesanan sebagai Lunas.`
+                  );
+                  if (isConfirmed) {
+                    setStep('success');
+                    setTimeout(() => onSuccessRef.current(), 1200);
+                  }
                 }}>
                   Konfirmasi Pembayaran
                 </Button>

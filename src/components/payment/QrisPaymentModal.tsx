@@ -184,44 +184,66 @@ export function QrisPaymentModal({
   return (
     <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
       {isManual ? (
-        <DialogContent className="max-w-[90vw] sm:max-w-[280px] rounded-[2rem] p-5 overflow-hidden flex flex-col items-center justify-center gap-4 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-2xl [&>button]:hidden">
-          <DialogTitle className="sr-only">QRIS Manual</DialogTitle>
-          <DialogDescription className="sr-only">Scan menggunakan E-Wallet & Mobile Banking apa pun</DialogDescription>
+        <DialogContent className="max-w-[92vw] sm:max-w-[400px] rounded-[2rem] p-0 overflow-hidden z-[100] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl">
+          {/* Header dengan Gradasi Halus */}
+          <div className="bg-gradient-to-br from-indigo-600 via-violet-700 to-purple-800 p-6 text-white relative overflow-hidden text-left">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl pointer-events-none" />
+            
+            <DialogHeader className="relative z-10">
+              <DialogTitle className="text-white text-lg font-bold flex items-center gap-2 tracking-tight">
+                <img src="/ico/qris.png" alt="QRIS" className="w-auto h-5 object-contain rounded bg-white px-1" />
+                QRIS Manual
+              </DialogTitle>
+              <DialogDescription className="text-white/80 text-xs mt-0.5">
+                Scan menggunakan E-Wallet & Mobile Banking apa pun
+              </DialogDescription>
+            </DialogHeader>
 
-          {/* QRIS Card */}
-          <div className="w-full flex justify-center mt-1">
-            {qrisData && (
-              <QrisCard 
-                qrisString={qrisData} 
-                className="w-[240px] h-[348px] rounded-[20px] shadow-sm pointer-events-none" 
-              />
-            )}
+            {/* Card Info Tagihan */}
+            <div className="mt-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-inner">
+              <p className="text-[11px] text-indigo-200 font-semibold uppercase tracking-wider">Total Tagihan</p>
+              <p className="text-3xl font-black text-white mt-0.5 tracking-tight">
+                Rp {amount.toLocaleString('id-ID')}
+              </p>
+              <div className="h-[1px] bg-white/10 my-2" />
+              <p className="text-xs text-indigo-100/80 font-medium truncate">
+                Atas Nama: <span className="text-white font-bold">{customerName || 'Pelanggan'}</span>
+              </p>
+            </div>
           </div>
-          
-          <div className="flex flex-col gap-2 w-full mt-2">
-            <Button 
-              className="w-full font-bold h-11 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs shadow-md shadow-indigo-100 dark:shadow-none" 
-              onClick={() => onSuccessRef.current()}
-            >
-              Konfirmasi Pembayaran
-            </Button>
-            <div className="flex gap-2 w-full">
-              <Button 
-                variant="outline" 
-                className="flex-1 rounded-xl h-10 text-xs border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900" 
-                onClick={handleClose}
-              >
+
+          {/* Konten Utama */}
+          <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar-hide flex flex-col items-center gap-4">
+            <p className="text-sm text-slate-500 font-medium text-center">Silakan scan kode QRIS di bawah ini:</p>
+            
+            <div className="w-full flex justify-center">
+              {qrisData && (
+                <QrisCard 
+                  qrisString={qrisData} 
+                  className="w-[240px] h-[348px] rounded-[20px] shadow-sm pointer-events-none" 
+                />
+              )}
+            </div>
+
+            <div className="flex gap-2 w-full mt-2">
+              <Button variant="outline" className="flex-1 rounded-xl h-11 text-xs" onClick={handleClose}>
                 Batalkan
               </Button>
               <Button 
-                variant="outline"
-                className="flex-1 font-bold rounded-xl h-10 text-xs border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 flex items-center justify-center gap-1.5" 
-                onClick={handleConfirmWA}
+                className="flex-1 font-bold rounded-xl h-11 text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+                onClick={() => {
+                  const isConfirmed = window.confirm(
+                    `Konfirmasi Pembayaran?\n\n` +
+                    `Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan ${orderId || '-'}?\n\n` +
+                    `Tindakan ini akan menandai pesanan sebagai Lunas.`
+                  );
+                  if (isConfirmed) {
+                    onSuccessRef.current();
+                  }
+                }}
               >
-                <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.335 4.963L2 22l5.233-1.371a9.96 9.96 0 0 0 4.779 1.21h.005c5.505 0 9.989-4.478 9.99-9.984.001-2.67-1.037-5.18-2.92-7.062a9.923 9.923 0 0 0-7.075-2.923v.012zm5.719 14.158c-.313.882-1.572 1.623-2.155 1.706-.52.073-1.205.132-3.486-.816-2.915-1.212-4.792-4.18-4.937-4.375-.145-.195-1.182-1.576-1.182-3.003 0-1.427.747-2.128 1.012-2.408.265-.28.58-.35.772-.35.192 0 .385.002.553.01.176.009.414-.067.65.503.242.585.83 2.02.902 2.169.073.149.121.321.024.514-.097.194-.145.313-.29.479-.145.166-.303.372-.433.498-.145.14-.297.293-.127.585.17.292.756 1.246 1.626 2.021.87.775 1.602 1.016 1.83 1.127.228.11.362.093.497-.062.135-.156.578-.673.733-.902.156-.23.313-.193.53-.11.216.082 1.372.648 1.613.768.24.12.4.179.46.28.06.1.06.58-.253 1.462z"/>
-                </svg>
-                <span>WhatsApp</span>
+                Konfirmasi Pembayaran
               </Button>
             </div>
           </div>

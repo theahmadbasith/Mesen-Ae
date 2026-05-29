@@ -45,6 +45,7 @@ export function BankTransferModal({
   isOpen,
   amount,
   customerName,
+  orderId,
   paymentMethod,
   onSuccess,
   onClose,
@@ -181,8 +182,15 @@ export function BankTransferModal({
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={handleClose}>Batalkan</Button>
                 <Button className="flex-1 font-bold" onClick={() => {
-                  setStep('success');
-                  setTimeout(() => onSuccess(), 1200);
+                  const isConfirmed = window.confirm(
+                    `Konfirmasi Pembayaran?\n\n` +
+                    `Apakah Anda yakin sudah menerima bukti pembayaran dari pelanggan untuk pesanan ${orderId || '-'}?\n\n` +
+                    `Tindakan ini akan menandai pesanan sebagai Lunas.`
+                  );
+                  if (isConfirmed) {
+                    setStep('success');
+                    setTimeout(() => onSuccess(), 1200);
+                  }
                 }}>
                   Konfirmasi Pembayaran
                 </Button>
