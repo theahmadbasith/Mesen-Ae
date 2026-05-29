@@ -14,157 +14,145 @@ export function QRISResult({ qrisString }: Props) {
   const [nmid, setNmid] = useState<string>("");
   const [isRendered, setIsRendered] = useState(false);
 
-  // Parse data string QRIS untuk mendapatkan Nominal, Tip, dan Nama Merchant
+  // Parse data string QRIS
   const parsed = parseQRIS(qrisString);
   const nominalValue = Number(parsed.amount ?? 0);
   const formattedNominal = nominalValue.toLocaleString("id-ID");
 
   /**
-   * Fungsi ekstraksi NMID (National Merchant ID).
-   * Standar QRIS: Biasanya berada pada tag spesifik dan memiliki format 
-   * awalan "ID" diikuti 11 hingga 15 karakter numerik/alfanumerik.
+   * Fungsi ekstraksi NMID Akurat berdasarkan arsitektur standar QRIS Nasional.
+   * Mencari spesifik pada struktur:
+   * 02 = ID Subtag (Merchant ID)
+   * 15 = Panjang Data (15 Karakter)
+   * ID = Prefix wajib
+   * [A-Z0-9]{13} = 13 Karakter Alfanumerik NMID
    */
   const extractNmid = (rawString: string): string => {
-    const match = rawString.match(/ID[A-Za-z0-9]{11,15}/);
-    return match ? match[0] : "";
+    const match = rawString.match(/0215(ID[A-Z0-9]{13})/);
+    return match ? match[1] : ""; // Mengembalikan Capture Group 1 (IDxxxxxxxxxxxxx)
   };
 
   useEffect(() => {
-    // 1. Ekstrak dan set NMID asli dari string
+    // 1. Ekstrak NMID yang valid
     const currentNmid = extractNmid(qrisString);
     setNmid(currentNmid);
     setIsRendered(false);
 
-    // 2. Render UI Kartu QRIS ke dalam Canvas
+    // 2. Render Canvas dengan spesifikasi visual presisi
     if (cardCanvasRef.current && qrisString) {
       const canvas = cardCanvasRef.current;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Konfigurasi Dimensi Canvas & Resolusi (Scale 4x untuk PNG resolusi tinggi)
+      // Konfigurasi HD Canvas (Scale 4x)
       const scale = 4;
-      const width = 400;   // Lebar logis yang pas
-      const height = 560;  // Tinggi logis, cukup padat dan tidak terlalu panjang
-      const radius = 24;
+      const width = 400;   // Lebar logis kartu
+      const height = 580;  // Tinggi logis kartu (disesuaikan untuk ruang ekstra di bawah)
+      const cardRadius = 24;
 
       canvas.width = width * scale;
       canvas.height = height * scale;
       
-      // Reset dan aplikasikan skala tinggi
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.scale(scale, scale);
 
+      // Fungsi utilitas untuk menggambar Rounded Rectangle
+      const drawRoundedRect = (
+        context: CanvasRenderingContext2D, 
+        x: number, y: number, w: number, h: number, r: number
+      ) => {
+        context.beginPath();
+        context.moveTo(x + r, y);
+        context.lineTo(x + w - r, y);
+        context.quadraticCurveTo(x + w, y, x + w, y + r);
+        context.lineTo(x + w, y + h - r);
+        context.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        context.lineTo(x + r, y + h);
+        context.quadraticCurveTo(x, y + h, x, y + h - r);
+        context.lineTo(x, y + r);
+        context.quadraticCurveTo(x, y, x + r, y);
+        context.closePath();
+      };
+
       // ==========================================
-      // A. BASE KARTU (Putih dengan Sudut Melengkung)
+      // A. MENGGAMBAR BASE KARTU PUTIH
       // ==========================================
-      ctx.beginPath();
-      ctx.moveTo(radius, 0);
-      ctx.lineTo(width - radius, 0);
-      ctx.quadraticCurveTo(width, 0, width, radius);
-      ctx.lineTo(width, height - radius);
-      ctx.quadraticCurveTo(width, height, width - radius, height);
-      ctx.lineTo(radius, height);
-      ctx.quadraticCurveTo(0, height, 0, height - radius);
-      ctx.lineTo(0, radius);
-      ctx.quadraticCurveTo(0, 0, radius, 0);
-      ctx.closePath();
-      
-      // Efek bayangan halus
-      ctx.shadowColor = "rgba(0, 0, 0, 0.05)";
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetY = 8;
+      drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.fillStyle = "#FFFFFF";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.08)";
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetY = 10;
       ctx.fill();
       
-      // Reset shadow untuk layer berikutnya
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
       // ==========================================
-      // B. AKSEN MERAH STANDAR QRIS (Vector Masking)
+      // B. MENGGAMBAR AKSEN MERAH
       // ==========================================
       ctx.save();
-      ctx.clip(); // Agar warna merah tidak meluber keluar batas radius kartu
+      // Buat mask agar warna merah terpotong rapi oleh pinggiran kartu
+      drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
+      ctx.clip(); 
 
-      const qrisRed = "#ED1C24"; // Merah ofisial QRIS
+      const qrisRed = "#DA291C"; // Merah spesifik standar
       ctx.fillStyle = qrisRed;
 
-      // Aksen Merah Kiri Tengah (Sejajar tinggi QR)
+      // Segitiga Merah Kiri (Akan ditimpa sebagian oleh putihnya QR Code)
       ctx.beginPath();
-      ctx.moveTo(0, 205);
-      ctx.lineTo(65, 270);
-      ctx.lineTo(0, 335);
-      ctx.closePath();
+      ctx.moveTo(0, 180);
+      ctx.lineTo(100, 270);
+      ctx.lineTo(0, 400);
       ctx.fill();
 
-      // Aksen Merah Kanan Bawah
+      // Poligon Merah Kanan Bawah
       ctx.beginPath();
-      ctx.moveTo(260, height);
-      ctx.lineTo(330, height - 85);
-      ctx.lineTo(width, height - 85);
-      ctx.lineTo(width, height);
-      ctx.closePath();
+      ctx.moveTo(250, height);
+      ctx.lineTo(400, height - 160);
+      ctx.lineTo(400, height);
       ctx.fill();
 
-      ctx.restore(); 
+      ctx.restore(); // Lepas masking sudut kartu
 
       // ==========================================
-      // C. RENDER TEKS (Merchant, NMID & Footer)
+      // C. RENDER TEKS (Merchant, NMID & Header)
       // ==========================================
-      // Pemotongan nama toko jika sangat panjang agar rapi
-      const maxNameLength = 26;
       let displayName = parsed.merchantName;
-      if (displayName.length > maxNameLength) {
-        displayName = displayName.substring(0, maxNameLength - 3) + "...";
+      if (displayName.length > 25) {
+        displayName = displayName.substring(0, 22) + "...";
       }
 
       ctx.textAlign = "center";
       
-      // Nama Toko (Tengah Atas)
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "700 28px 'Inter', system-ui, sans-serif";
-      ctx.fillText(displayName, width / 2, 135);
+      // Nama Toko
+      ctx.fillStyle = "#000000";
+      ctx.font = "700 32px 'Inter', system-ui, sans-serif";
+      ctx.fillText(displayName, width / 2, 140);
 
-      // NMID (Di bawah nama toko)
+      // NMID
       if (currentNmid) {
-        ctx.fillStyle = "#475569"; // Abu-abu tegas
-        ctx.font = "500 14px 'Inter', system-ui, sans-serif";
-        ctx.fillText(`NMID: ${currentNmid}`, width / 2, 160);
+        ctx.fillStyle = "#1E293B"; 
+        ctx.font = "400 16px 'Inter', system-ui, sans-serif";
+        ctx.fillText(`NMID: ${currentNmid}`, width / 2, 170);
       }
 
-      // Teks Footer 1: Indikator QRIS Dinamis & Nominal
+      // Teks Footer: Dinamis & Powered By
       ctx.fillStyle = "#0f172a";
-      ctx.font = "700 15px 'Inter', system-ui, sans-serif";
-      ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, width / 2, 505);
+      ctx.font = "700 16px 'Inter', system-ui, sans-serif";
+      ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, width / 2, 535);
 
-      // Teks Footer 2: Powered By
-      ctx.fillStyle = "#94a3b8"; // Abu-abu muda
-      ctx.font = "600 11px 'Inter', system-ui, sans-serif";
-      ctx.fillText("Powered by MesenAe", width / 2, 528);
+      ctx.fillStyle = "#64748b"; 
+      ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+      ctx.fillText("Powered by MesenAe", width / 2, 555);
 
       // ==========================================
-      // D. ASYNC RENDER (QR Code & Logo)
+      // D. PROSES ASYNC: LOGO & QR CODE CUTOUT
       // ==========================================
       const renderAssets = async () => {
         try {
-          // 1. Render Barcode QRIS
-          const qrVirtualCanvas = document.createElement("canvas");
-          const qrSize = 280;
-          await QRCode.toCanvas(qrVirtualCanvas, qrisString, {
-            width: qrSize,
-            margin: 1.5,
-            color: { dark: "#000000", light: "#FFFFFF" },
-            errorCorrectionLevel: "M", 
-          });
-
-          // Posisikan QR di bagian tengah
-          const qrX = (width - qrSize) / 2;
-          const qrY = 185; 
-          ctx.drawImage(qrVirtualCanvas, qrX, qrY, qrSize, qrSize);
-
-          // 2. Render Logo QRIS
+          // 1. Gambar Logo QRIS (Diperbesar)
           const logo = new Image();
           logo.crossOrigin = "anonymous";
           logo.src = "/ico/qris.png"; 
@@ -174,45 +162,63 @@ export function QRISResult({ qrisString }: Props) {
             logo.onerror = reject;
           });
 
-          // Kalkulasi tinggi/lebar logo yang diperbesar namun tetap proporsional
-          const logoTargetHeight = 38; // Logo diperbesar dari versi sebelumnya
-          const logoRatio = logo.width / logo.height;
-          const logoTargetWidth = logoTargetHeight * logoRatio;
-          const logoX = 35;
-          const logoY = 32;
+          // Kalkulasi proporsi logo
+          const logoTargetWidth = 120; // Lebih besar & tegas
+          const logoRatio = logo.height / logo.width;
+          const logoTargetHeight = logoTargetWidth * logoRatio;
+          const logoX = 40;
+          const logoY = 40;
 
           ctx.drawImage(logo, logoX, logoY, logoTargetWidth, logoTargetHeight);
 
-          // Teks di samping logo (Diperbesar agar jelas)
-          const textStartX = logoX + logoTargetWidth + 16;
-          
-          ctx.fillStyle = "#0f172a";
+          // Teks Header Pendamping Logo (Diperbesar)
+          const textStartX = logoX + logoTargetWidth + 18;
+          ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
           
-          ctx.font = "700 13px 'Inter', system-ui, sans-serif"; // Lebih tebal dan besar
+          ctx.font = "700 15px 'Inter', system-ui, sans-serif";
           ctx.fillText("QR Code Standar", textStartX, logoY + 16);
           
-          ctx.fillStyle = "#334155";
-          ctx.font = "500 12px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 32);
+          ctx.font = "400 14px 'Inter', system-ui, sans-serif";
+          ctx.fillText("Pembayaran Nasional", textStartX, logoY + 34);
 
-          // Sukses
+          // 2. Efek "Cutout" untuk QR Code
+          // Kotak putih tebal membulat untuk menimpa aksen merah
+          const qrBoxSize = 310;
+          const qrBoxX = (width - qrBoxSize) / 2; // Tengah (45)
+          const qrBoxY = 195;
+          
+          ctx.fillStyle = "#FFFFFF";
+          drawRoundedRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 20);
+          ctx.fill();
+
+          // 3. Render Barcode QRIS di atas kotak putih
+          const qrVirtualCanvas = document.createElement("canvas");
+          const qrInnerSize = 290; // Beri margin 10px dari kotak pemotong
+          await QRCode.toCanvas(qrVirtualCanvas, qrisString, {
+            width: qrInnerSize,
+            margin: 1, // Margin internal kecil karena sudah ada kotak pemotong
+            color: { dark: "#000000", light: "#FFFFFF" },
+            errorCorrectionLevel: "M", 
+          });
+
+          const qrInnerX = qrBoxX + (qrBoxSize - qrInnerSize) / 2;
+          const qrInnerY = qrBoxY + (qrBoxSize - qrInnerSize) / 2;
+          ctx.drawImage(qrVirtualCanvas, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize);
+
           setIsRendered(true);
         } catch (error) {
           console.error("Gagal me-render QRIS Canvas:", error);
           
-          // Fallback murni Canvas jika gambar Logo tidak ditemukan
-          ctx.fillStyle = "#0f172a";
+          // Fallback UI Jika Gambar Gagal Dimuat
+          ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
-          ctx.font = "900 32px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QRIS", 35, 62);
-          
-          ctx.font = "700 13px 'Inter', system-ui, sans-serif";
-          ctx.fillText("QR Code Standar", 125, 48);
-          ctx.fillStyle = "#334155";
-          ctx.font = "500 12px 'Inter', system-ui, sans-serif";
-          ctx.fillText("Pembayaran Nasional", 125, 64);
-          
+          ctx.font = "900 36px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QRIS", 40, 70);
+          ctx.font = "700 14px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QR Code Standar", 135, 55);
+          ctx.font = "400 13px 'Inter', system-ui, sans-serif";
+          ctx.fillText("Pembayaran Nasional", 135, 75);
           setIsRendered(true);
         }
       };
@@ -221,7 +227,6 @@ export function QRISResult({ qrisString }: Props) {
     }
   }, [qrisString, parsed.merchantName, formattedNominal]);
 
-  // Handler Salin Teks
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(qrisString);
@@ -232,12 +237,11 @@ export function QRISResult({ qrisString }: Props) {
     }
   };
 
-  // Handler Download Gambar Kartu QRIS
   const handleDownload = () => {
     if (!cardCanvasRef.current || !isRendered) return;
     const link = document.createElement("a");
     const sanitizedName = parsed.merchantName.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
-    link.download = `qris-${sanitizedName || 'dinamis'}.png`;
+    link.download = `qris-${sanitizedName}.png`;
     link.href = cardCanvasRef.current.toDataURL("image/png");
     link.click();
   };
@@ -245,7 +249,6 @@ export function QRISResult({ qrisString }: Props) {
   return (
     <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Header Label */}
       <div className="px-5 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
         <h2 className="text-sm font-semibold flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -256,18 +259,17 @@ export function QRISResult({ qrisString }: Props) {
       <div className="p-6 flex flex-col items-center space-y-6">
         
         {/* ======================================= */}
-        {/* AREA PREVIEW CANVAS KARTU QRIS          */}
+        {/* PREVIEW KARTU                             */}
         {/* ======================================= */}
         <div className="bg-slate-50/50 p-3 rounded-[28px] border border-border/60 shadow-inner">
           <canvas 
             ref={cardCanvasRef} 
-            // Tampilan di UI diperkecil secara visual (skala CSS) tapi ukuran asli tetap 4x HD
-            className="w-[300px] h-[420px] rounded-[20px] shadow-sm pointer-events-none transition-transform duration-300 hover:scale-[1.02]" 
+            className="w-[300px] h-[435px] rounded-[20px] shadow-sm pointer-events-none transition-transform duration-300 hover:scale-[1.02]" 
           />
         </div>
 
         {/* ======================================= */}
-        {/* RINGKASAN PEMBAYARAN (Teks UI)          */}
+        {/* RINGKASAN PEMBAYARAN                    */}
         {/* ======================================= */}
         <div className="text-center space-y-1 w-full">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
@@ -277,37 +279,30 @@ export function QRISResult({ qrisString }: Props) {
             Rp {formattedNominal}
           </p>
           
-          {/* Detail Tambahan Biaya/Tip (Bila Ada) */}
           {parsed.tipIndicator === "fixed" && parsed.tipFixed && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full mt-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <p className="text-xs font-medium">
-                Termasuk Biaya Rp {Number(parsed.tipFixed).toLocaleString("id-ID")}
-              </p>
+              <p className="text-xs font-medium">Termasuk Biaya Rp {Number(parsed.tipFixed).toLocaleString("id-ID")}</p>
             </div>
           )}
           {parsed.tipIndicator === "percentage" && parsed.tipPercentage && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full mt-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <p className="text-xs font-medium">
-                Termasuk Biaya {parsed.tipPercentage}%
-              </p>
+              <p className="text-xs font-medium">Termasuk Biaya {parsed.tipPercentage}%</p>
             </div>
           )}
         </div>
 
         {/* ======================================= */}
-        {/* KOLOM STRING & TOMBOL DOWNLOAD          */}
+        {/* TEKS STRING & TOMBOL SIMPAN             */}
         {/* ======================================= */}
         <div className="w-full max-w-[340px] space-y-4 pt-2">
           
-          {/* Kolom Teks String QRIS sebaris (dengan ellipsis) yang rapi */}
           <div className="flex items-center gap-2 p-1.5 bg-background rounded-xl border border-input shadow-sm">
             <div className="flex-1 px-3 text-xs font-mono text-muted-foreground truncate" title={qrisString}>
               {qrisString}
             </div>
             
-            {/* Tombol Salin Terintegrasi di Kolom Teks */}
             <Button
               type="button"
               variant="secondary"
@@ -329,7 +324,6 @@ export function QRISResult({ qrisString }: Props) {
             </Button>
           </div>
 
-          {/* Tombol Utama Download Tunggal, Besar, dan Eksklusif */}
           <Button
             onClick={handleDownload}
             disabled={!isRendered}
