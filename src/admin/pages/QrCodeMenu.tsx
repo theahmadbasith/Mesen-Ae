@@ -213,8 +213,16 @@ export default function QrCodeMenu() {
                   padding-top: 20px;
                 }
                 @media print {
-                  body { background-color: white; justify-content: flex-start; padding-top: 40px; }
-                  .print-container { border: none; box-shadow: none; }
+                  @page { margin: 0; } /* Mencegah halaman ekstra */
+                  body { 
+                    background-color: white; 
+                    justify-content: center; 
+                    height: 100vh;
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden; /* Memastikan tidak ada scroll/halaman 2 */
+                  }
+                  .print-container { border: none; box-shadow: none; transform: scale(0.95); }
                   .table-badge { background: #000; color: #fff; box-shadow: none; }
                 }
               </style>
@@ -361,7 +369,7 @@ export default function QrCodeMenu() {
             <div className="bg-muted/30 px-6 py-4 border-b border-border/50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <QrCode className="w-5 h-5 text-muted-foreground" />
-                Live Preview QR Code
+                Preview QR Code
               </CardTitle>
             </div>
             
@@ -406,31 +414,31 @@ export default function QrCodeMenu() {
                           includeMargin={false}
                           imageSettings={storeSettings?.logo ? {
                             src: transparentPixel,
-                            height: 52, // Area yg diexcavate lebih kecil
-                            width: 52,
+                            height: 60, // Lubang di-set agak besar 60px
+                            width: 60,
                             excavate: true,
                           } : undefined}
                         />
                         
-                        {/* Overlay Logo dengan Kurva Halus (Lebih besar dari area kotak excavate) */}
+                        {/* Overlay Logo menutupi potongan kasar modul QR */}
                         {storeSettings?.logo && (
                           <div 
                             className="absolute flex items-center justify-center bg-white"
                             style={{
-                              width: '76px', // Lebih besar dari kotak lubang (52px) menutupi tepian kasar
-                              height: '76px',
-                              borderRadius: '22px', // Sudut melengkung halus
+                              width: '72px', // Ukuran overlap 72px sepenuhnya menutupi kotak kasar 60px
+                              height: '72px',
+                              borderRadius: '20px', // Kurva mulus (rounded curve)
                               top: '50%',
                               left: '50%',
                               transform: 'translate(-50%, -50%)',
-                              padding: '6px', // Spacer area putih
+                              padding: '6px', // Spacer padding putih di sekitar logo
                             }}
                           >
                             <img 
                               src={storeSettings.logo} 
                               alt="Logo" 
                               className="w-full h-full object-cover" 
-                              style={{ borderRadius: '16px' }}
+                              style={{ borderRadius: '14px' }} // Ikon dalamnya juga melengkung
                               crossOrigin="anonymous" 
                             />
                           </div>
