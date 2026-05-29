@@ -4,9 +4,11 @@ import { parseQRIS } from "@/lib/qris-dinamis/index";
 
 interface Props {
   qrisString: string;
+  onCanvasRendered?: (dataUrl: string) => void;
+  className?: string;
 }
 
-export function QrisCard({ qrisString }: Props) {
+export function QrisCard({ qrisString, onCanvasRendered, className }: Props) {
   const cardCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -16,10 +18,12 @@ export function QrisCard({ qrisString }: Props) {
     if (!ctx) return;
 
     const parsed = parseQRIS(qrisString);
+    const nominalValue = Number(parsed.amount ?? 0);
+    const formattedNominal = nominalValue.toLocaleString("id-ID");
 
     const scale = 4;
     const width = 400;   
-    const height = 510; // Shorter because no footer text
+    const height = 580; // Full height to include footer
     const cardRadius = 24;
 
     canvas.width = width * scale;
@@ -119,6 +123,18 @@ export function QrisCard({ qrisString }: Props) {
     ctx.lineTo(400, height);
     ctx.fill();
     ctx.restore(); 
+
+    // 4. FOOTER (Teks Original)
+    const footerX = 25; 
+    ctx.textAlign = "left";
+    
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "700 15px 'Inter', system-ui, sans-serif";
+    ctx.fillText(`QRIS Dinamis - Rp ${formattedNominal}`, footerX, 540);
+
+    ctx.fillStyle = "#64748b"; 
+    ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+    ctx.fillText("Powered by MesenAe", footerX, 560);
 
     // PROSES ASYNC
     const renderAssets = async () => {
@@ -237,7 +253,7 @@ export function QrisCard({ qrisString }: Props) {
 
         const qrBoxSize = 310;
         const qrBoxX = (width - qrBoxSize) / 2; 
-        const qrBoxY = 180;
+        const qrBoxY = 190; // Align to 190 like QRISResult
         
         ctx.fillStyle = "#FFFFFF";
         drawRoundedRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 20);
@@ -256,18 +272,22 @@ export function QrisCard({ qrisString }: Props) {
         const qrInnerY = qrBoxY + (qrBoxSize - qrInnerSize) / 2;
         ctx.drawImage(qrVirtualCanvas, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize);
 
+        if (onCanvasRendered) {
+          onCanvasRendered(canvas.toDataURL("image/png", 1.0));
+        }
+
       } catch (error) {
         console.error("Gagal me-render QRIS Canvas:", error);
       }
     };
 
     renderAssets();
-  }, [qrisString]);
+  }, [qrisString, onCanvasRendered]);
 
   return (
     <canvas 
       ref={cardCanvasRef} 
-      className="w-full max-w-[300px] h-auto rounded-[20px] shadow-sm" 
+      className={className || "w-full max-w-[300px] h-auto rounded-[20px] shadow-sm"} 
     />
   );
 }

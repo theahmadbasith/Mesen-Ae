@@ -24,7 +24,7 @@ import { Loader2, CheckCircle2, XCircle, RefreshCw, QrCode } from 'lucide-react'
 import { MidtransService } from '@/services/midtransService';
 import { PaymentMethod } from '@/hooks/db-hooks';
 import { QRCodeSVG } from 'qrcode.react';
-import { QrisCard } from '@/admin/components/qris-dinamis/QrisCard';
+import { QrisCard } from '@/components/payment/QrisCard';
 import { convertQRIS } from '@/lib/qris-dinamis';
 
 interface QrisPaymentModalProps {
