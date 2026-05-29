@@ -87,7 +87,7 @@ export function QRISResult({ qrisString }: Props) {
       ctx.closePath();
       ctx.fill();
 
-      // Merah Kanan Bawah (Poligon presisi seperti di gambar pertama)
+      // Merah Kanan Bawah (Poligon presisi)
       ctx.beginPath();
       ctx.moveTo(250, 640);
       ctx.lineTo(340, 520);
@@ -158,4 +158,114 @@ export function QRISResult({ qrisString }: Props) {
 
           setIsRendered(true);
         } catch (error) {
-          console.
+          console.error("Gagal me-render aset QRIS:", error);
+          // Fallback teks jika logo gagal di-load
+          ctx.fillStyle = "#000000";
+          ctx.textAlign = "left";
+          ctx.font = "900 24px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QRIS", 35, 70);
+          ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+          ctx.fillText("QR Code Standar", 120, 55);
+          ctx.fillText("Pembayaran Nasional", 120, 72);
+          setIsRendered(true);
+        }
+      };
+
+      renderAssets();
+    }
+  }, [qrisString, parsed.merchantName]);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(qrisString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    if (!cardCanvasRef.current || !isRendered) return;
+    const link = document.createElement("a");
+    link.download = `QRIS-${parsed.merchantName.replace(/\s+/g, "-").toUpperCase()}.png`;
+    link.href = cardCanvasRef.current.toDataURL("image/png");
+    link.click();
+  };
+
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="px-5 py-4 border-b border-border/50 bg-muted/20">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <QrCode className="w-4 h-4 text-emerald-500" />
+          Kartu QRIS Dinamis
+        </h2>
+      </div>
+
+      <div className="p-6 flex flex-col items-center space-y-6">
+        
+        {/* Area Preview Card */}
+        <div className="bg-muted/10 p-3 rounded-[32px] border border-border/50 shadow-inner">
+          <canvas 
+            ref={cardCanvasRef} 
+            // Tampilan di UI diperkecil agar rapi (Resolusi aslinya 4x lebih besar)
+            className="w-[300px] h-[480px] rounded-[24px] shadow-sm pointer-events-none" 
+          />
+        </div>
+
+        {/* Informasi Pembayaran (UI Only) */}
+        <div className="text-center space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Total Pembayaran</p>
+          <p className="text-3xl font-extrabold text-foreground">
+            Rp {Number(parsed.amount ?? 0).toLocaleString("id-ID")}
+          </p>
+          
+          {/* Detail Tambahan Biaya/Tip */}
+          {parsed.tipIndicator === "fixed" && parsed.tipFixed && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Termasuk Biaya Rp {Number(parsed.tipFixed).toLocaleString("id-ID")}
+              </p>
+            </div>
+          )}
+          {parsed.tipIndicator === "percentage" && parsed.tipPercentage && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Termasuk Biaya {parsed.tipPercentage}%
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3 w-full max-w-[340px]">
+          <Button
+            variant="outline"
+            onClick={handleCopy}
+            className="h-11 rounded-xl gap-2 border-border/80 font-semibold"
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-500" />
+                Tersalin
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 text-muted-foreground" />
+                Salin String
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleDownload}
+            disabled={!isRendered}
+            className="h-11 rounded-xl gap-2 font-semibold shadow-md shadow-primary/20"
+          >
+            <Download className="w-4 h-4" />
+            Simpan PNG
+          </Button>
+        </div>
+        
+      </div>
+    </div>
+  );
+}
