@@ -65,7 +65,7 @@ export function QRISResult({ qrisString }: Props) {
         context.closePath();
       };
 
-      // 1. Base Kartu Putih
+      // 1. Base Kartu Putih Solid
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.fillStyle = "#FFFFFF";
       ctx.shadowColor = "rgba(0, 0, 0, 0.08)";
@@ -73,13 +73,13 @@ export function QRISResult({ qrisString }: Props) {
       ctx.shadowOffsetY = 10;
       ctx.fill();
       
-      // Matikan shadow agar tidak menumpuk ke elemen selanjutnya
+      // Matikan shadow agar tidak menumpuk
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
       // ==============================================================
-      // 2. POLA BACKGROUND GEOMETRIS DIAGONAL (KOTAK QRIS PRESISI)
+      // 2. POLA GEOMETRIS KAWUNG DIAGONAL (ABU-ABU PUDAR PRESISI)
       // ==============================================================
       ctx.save();
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
@@ -92,7 +92,8 @@ export function QRISResult({ qrisString }: Props) {
       const pCtx = patCanvas.getContext("2d");
       
       if (pCtx) {
-        pCtx.strokeStyle = "rgba(15, 23, 42, 0.07)"; 
+        // Warna abu-abu netral pudar yang cukup terlihat (20% opacity)
+        pCtx.strokeStyle = "rgba(100, 116, 139, 0.2)"; 
         pCtx.lineWidth = 1.5;
         pCtx.lineCap = "square";
         
@@ -103,12 +104,12 @@ export function QRISResult({ qrisString }: Props) {
         // Kotak Dalam
         pCtx.strokeRect(20, 20, 16, 16); 
         
-        // Garis Konektor (Menyambung antar Tile)
+        // Garis Konektor
         pCtx.beginPath();
-        pCtx.moveTo(center, 0); pCtx.lineTo(center, 12); // Atas
-        pCtx.moveTo(center, 44); pCtx.lineTo(center, pSize); // Bawah
-        pCtx.moveTo(0, center); pCtx.lineTo(12, center); // Kiri
-        pCtx.moveTo(44, center); pCtx.lineTo(pSize, center); // Kanan
+        pCtx.moveTo(center, 0); pCtx.lineTo(center, 12); 
+        pCtx.moveTo(center, 44); pCtx.lineTo(center, pSize); 
+        pCtx.moveTo(0, center); pCtx.lineTo(12, center); 
+        pCtx.moveTo(44, center); pCtx.lineTo(pSize, center); 
         pCtx.stroke();
         
         // Kotak Kecil di Sudut Persimpangan (Interlocking Corners)
@@ -123,46 +124,53 @@ export function QRISResult({ qrisString }: Props) {
       const pattern = ctx.createPattern(patCanvas, "repeat");
       if (pattern) {
         ctx.fillStyle = pattern;
-        // Buat polygon untuk memotong pattern secara miring
-        // Kemiringan disesuaikan sejajar lurus dengan segitiga merah di kiri
+        
+        // A. Potongan Pola di Kiri (Batas Diagonal Sejajar Segitiga Kiri)
         ctx.beginPath();
-        ctx.moveTo(0, 140); // Mulai dari ujung atas segitiga kiri
-        ctx.lineTo(400, 540); // Ditarik miring memotong ke kanan bawah
-        ctx.lineTo(400, height); 
-        ctx.lineTo(0, height);
+        ctx.moveTo(0, 220); 
+        ctx.lineTo(360, 580); 
+        ctx.lineTo(0, 580);
+        ctx.closePath();
+        ctx.fill();
+
+        // B. Potongan Pola di Kanan (Batas Diagonal Sejajar Segitiga Kanan)
+        ctx.beginPath();
+        ctx.moveTo(400, 220); 
+        ctx.lineTo(40, 580); 
+        ctx.lineTo(400, 580);
         ctx.closePath();
         ctx.fill();
       }
       ctx.restore();
 
       // ==============================================================
-      // 3. Aksen Segitiga Merah
+      // 3. AKSEN SEGITIGA MERAH (GEOMETRI SEJAJAR)
       // ==============================================================
       ctx.save();
       drawRoundedRect(ctx, 0, 0, width, height, cardRadius);
       ctx.clip(); 
 
-      const qrisRed = "#ED1C24"; 
+      const qrisRed = "#DA291C"; 
       ctx.fillStyle = qrisRed;
 
-      // Segitiga Merah Kiri (Sudut dan proporsi dipertajam)
+      // Segitiga Merah Kiri (Titik koordinat disempurnakan jadi pas 45 derajat)
       ctx.beginPath();
       ctx.moveTo(0, 140);
       ctx.lineTo(110, 250);
       ctx.lineTo(0, 360);
       ctx.fill();
 
-      // Segitiga Merah Kanan Bawah
+      // Segitiga Merah Kanan Bawah (Pas 45 derajat sejajar tepi pola)
       ctx.beginPath();
       ctx.moveTo(250, height);
-      ctx.lineTo(400, height - 150);
+      ctx.lineTo(400, height - 150); // Titik atas berada di y = 430
       ctx.lineTo(400, height);
       ctx.fill();
 
       ctx.restore(); 
 
       // ==============================================================
-      // 4. Footer Dasar 
+      // 4. FOOTER (Teks Original)
       // ==============================================================
       const footerX = 25; 
       ctx.textAlign = "left";
@@ -176,7 +184,7 @@ export function QRISResult({ qrisString }: Props) {
       ctx.fillText("Powered by MesenAe", footerX, 560);
 
       // ==============================================================
-      // 5. Proses Async (Logo Transparan, Nama Merchant, & Barcode)
+      // 5. PROSES ASYNC (Logo, Nama Merchant, & Barcode QR)
       // ==============================================================
       const renderAssets = async () => {
         try {
@@ -269,8 +277,10 @@ export function QRISResult({ qrisString }: Props) {
           const textStartX = logoX + logoTargetWidth + 14;
           ctx.fillStyle = "#000000";
           ctx.textAlign = "left";
+          
           ctx.font = "800 13px 'Inter', system-ui, sans-serif";
           ctx.fillText("QR Code Standar", textStartX, 44); 
+          
           ctx.fillStyle = "#334155";
           ctx.font = "600 12px 'Inter', system-ui, sans-serif";
           ctx.fillText("Pembayaran Nasional", textStartX, 60);
@@ -303,7 +313,8 @@ export function QRISResult({ qrisString }: Props) {
             ctx.fillText(`NMID: ${currentNmid}`, width / 2, 160);
           }
 
-          // Cutout Background Putih & Barcode QR
+          // Latar Belakang Putih Solid untuk QR Code
+          // Melindungi QR Code dari tabrakan dengan background pola
           const qrBoxSize = 310;
           const qrBoxX = (width - qrBoxSize) / 2; 
           const qrBoxY = 190;
