@@ -14,6 +14,7 @@ interface BarcodeScannerProps {
 export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
   const [activeCameraIdx, setActiveCameraIdx] = useState(0);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -49,7 +50,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
   };
 
   // Inisialisasi pemindai khusus Barcode (1D) dengan fallback cerdas
-  const startScanner = async (cameraId?: string) => {
+  const startScanner = async (cameraId?: string, customFacingMode?: 'environment' | 'user') => {
     setIsInitializing(true);
     setScanError(null);
 
@@ -108,8 +109,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
             constraint,
             {
               fps: 30, // Frame rate maksimal untuk respon cepat
-              qrbox: { width: 340, height: 120 }, // Area scan persegi panjang khusus barcode
-              // Jangan paksa aspectRatio 1.0 agar tidak memicu OverconstrainedError di banyak perangkat
+              // Tanpa batasan internal qrbox agar library memproses frame penuh (jauh lebih cepat & hilangkan box putih)
               disableFlip: false,
             },
             (decodedText) => {
@@ -135,11 +135,12 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
       if (cameraId) {
         success = await tryStart(cameraId);
       } else {
-        // Coba kamera belakang dahulu (facingMode: environment)
-        success = await tryStart({ facingMode: "environment" });
+        const targetMode = customFacingMode || facingMode;
+        success = await tryStart({ facingMode: targetMode });
         if (!success) {
-          // Fallback 1: Coba kamera depan (facingMode: user)
-          success = await tryStart({ facingMode: "user" });
+          // Fallback 1: Coba mode sebaliknya
+          const altMode = targetMode === 'environment' ? 'user' : 'environment';
+          success = await tryStart({ facingMode: altMode });
         }
         if (!success) {
           // Fallback 2: Coba dapatkan list kamera dan pakai kamera indeks aktif
@@ -244,11 +245,11 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
   }, [open]);
 
   const handleSwitchCamera = async () => {
-    if (cameras.length < 2 || isInitializing) return;
-    const nextIdx = (activeCameraIdx + 1) % cameras.length;
-    setActiveCameraIdx(nextIdx);
+    if (isInitializing) return;
+    const newMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newMode);
     runAtomicOperation(async () => {
-      await startScanner(cameras[nextIdx].id);
+      await startScanner(undefined, newMode);
     });
   };
 
@@ -261,7 +262,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
 
   // Identifikasi kamera depan untuk memberikan efek cermin (mirroring)
   const activeLabel = cameras[activeCameraIdx]?.label.toLowerCase() || "";
-  const isFrontCamera = activeLabel.includes('front') || activeLabel.includes('depan') || activeLabel.includes('user');
+  const isFrontCamera = facingMode === 'user' || activeLabel.includes('front') || activeLabel.includes('depan') || activeLabel.includes('user');
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
@@ -283,6 +284,9 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
           
           /* Hapus canvas overlay bawaan html5-qrcode agar tidak ada kotak putih ganda */
           #${scannerId} canvas { display: none !important; }
+
+          /* Hapus border kotak putih/outlines bawaan library html5-qrcode secara total */
+          #${scannerId} div, #${scannerId} span { border: none !important; outline: none !important; }
         `}} />
 
         {/* ── HEADER ── */}
@@ -327,35 +331,31 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
                 >
                   Coba Lagi
                 </Button>
-                {cameras.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleSwitchCamera}
-                    className="flex-1 h-10 rounded-xl bg-transparent border-zinc-700 text-zinc-300 font-semibold text-[13px] hover:bg-zinc-800 hover:text-white"
-                  >
-                    Ganti Kamera
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSwitchCamera}
+                  className="flex-1 h-10 rounded-xl bg-transparent border-zinc-700 text-zinc-300 font-semibold text-[13px] hover:bg-zinc-800 hover:text-white"
+                >
+                  Ganti Kamera
+                </Button>
               </div>
             </div>
           ) : scanning ? (
             <>
-              {/* Tombol Putar Kamera */}
-              {cameras.length > 1 && (
-                <div className="absolute top-4 right-4 z-40">
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="secondary"
-                    onClick={handleSwitchCamera}
-                    disabled={isInitializing}
-                    className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 text-white shadow-lg transition-all"
-                  >
-                    <SwitchCamera className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} />
-                  </Button>
-                </div>
-              )}
+              {/* Tombol Putar Kamera - Selalu Ditampilkan Seperti QRIS Input */}
+              <div className="absolute top-4 right-4 z-40">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={handleSwitchCamera}
+                  disabled={isInitializing}
+                  className="rounded-full w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 text-white shadow-lg transition-all"
+                >
+                  <SwitchCamera className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
 
               {/* Area Cutout Pemindai Khusus Barcode */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
